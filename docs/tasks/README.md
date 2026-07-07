@@ -10,7 +10,7 @@
 
 | Phase | File                                     | Tasks | Status  | Scope                                                        |
 | ----- | ---------------------------------------- | ----- | ------- | ------------------------------------------------------------- |
-| P0    | `phase-00-repo-foundation-ci.md`         | 0/6   | 📋 ToDo | pnpm workspace, toolchain, husky/commitlint, **CI from day one** (conditional CodeQL/Scorecard) |
+| P0    | `phase-00-repo-foundation-ci.md`         | 1/6   | 🔄 In Progress | pnpm workspace, toolchain, husky/commitlint, **CI from day one** (conditional CodeQL/Scorecard) |
 | P1    | `phase-01-minio-stack-library-link.md`   | 0/5   | 📋 ToDo | docker-compose MinIO (3 buckets, versioning, seed) + `file:` link + subpath probes |
 | P2    | `phase-02-api-skeleton-wiring.md`        | 0/6   | 📋 ToDo | NestJS 11 skeleton, Zod env, canonical `forRootAsync`, filter, health, recipes |
 | P3    | `phase-03-core-object-operations.md`     | 0/5   | 📋 ToDo | uploads (single/multipart/stream/progress/idempotency/SSE) + downloads (stream/buffer/range/version) |

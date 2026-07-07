@@ -1,6 +1,6 @@
 # Phase 0: repo-foundation-ci
 
-> **Status**: 📋 ToDo · **Progress**: 0 / 6 tasks · **Last updated**: 2026-07-06
+> **Status**: 🔄 In Progress · **Progress**: 1 / 6 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P0)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §5, §6, §22
 
@@ -29,7 +29,7 @@ automatically when it goes public.
 
 | ID  | Task                                                            | Status  | Priority | Size | Depends on |
 | --- | ---------------------------------------------------------------- | ------- | -------- | ---- | ---------- |
-| 0.1 | Branch + workspace root (pnpm, engines, scripts, tsconfig base)  | 📋 ToDo | P0       | S    | none       |
+| 0.1 | Branch + workspace root (pnpm, engines, scripts, tsconfig base)  | ✅ Done | P0       | S    | none       |
 | 0.2 | Lint & format toolchain (ESLint 9 flat + Prettier 3)             | 📋 ToDo | P0       | S    | 0.1        |
 | 0.3 | Git governance (husky, commitlint, lint-staged, .gitmessage)     | 📋 ToDo | P0       | S    | 0.1        |
 | 0.4 | Community & meta files (LICENSE, README stub, CHANGELOG, Renovate)| 📋 ToDo | P1       | S    | 0.1        |
@@ -40,7 +40,7 @@ automatically when it goes public.
 
 ### Task 0.1: Branch + workspace root
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: none
@@ -52,11 +52,11 @@ Create the phase branch and the pnpm workspace skeleton: root `package.json`,
 
 #### Acceptance criteria
 
-- [ ] Branch `feat/phase-00-repo-foundation-ci` created with `git switch -c`.
-- [ ] Root `package.json`: `private: true`, `packageManager` pnpm pin, `engines.node >=24`, workspaces via `pnpm-workspace.yaml` (`apps/*`), scripts `lint`, `typecheck`, `format`, `format:check`, `test`, `test:e2e`, `infra:up|down|nuke|logs` (infra scripts may point at the compose file arriving in P1; they must fail gracefully until then).
-- [ ] `.nvmrc` = `24`; `.npmrc` with `engine-strict=true` and `frozen-lockfile=true`; `.gitignore`; `.editorconfig`.
-- [ ] `tsconfig.base.json`: `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `verbatimModuleSyntax`, ES2022, NodeNext.
-- [ ] `pnpm install` exits 0 on a clean clone.
+- [x] Branch `feat/phase-00-repo-foundation-ci` created with `git switch -c`.
+- [x] Root `package.json`: `private: true`, `packageManager` pnpm pin, `engines.node >=24`, workspaces via `pnpm-workspace.yaml` (`apps/*`), scripts `lint`, `typecheck`, `format`, `format:check`, `test`, `test:e2e`, `infra:up|down|nuke|logs` (infra scripts may point at the compose file arriving in P1; they must fail gracefully until then).
+- [x] `.nvmrc` = `24`; `.npmrc` with `engine-strict=true` and `frozen-lockfile=true`; `.gitignore`; `.editorconfig`.
+- [x] `tsconfig.base.json`: `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `verbatimModuleSyntax`, ES2022, NodeNext.
+- [x] `pnpm install` exits 0 on a clean clone.
 
 #### Files to create / modify
 
@@ -487,3 +487,4 @@ Completion Protocol:
 ## Completion log
 
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
+- 0.1 ✅ 2026-07-07: scaffolded pnpm workspace root with package.json, pnpm-workspace.yaml, .nvmrc, .npmrc, .gitignore, .editorconfig, and tsconfig.base.json
