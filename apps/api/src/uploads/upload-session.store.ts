@@ -60,28 +60,32 @@ export class UploadSessionStore {
   append(id: string, snapshot: ProgressSnapshot): void {
     const entry = this.sessions.get(id)
     if (entry === undefined) return
-    // Touch: delete + reinsert to move the entry to newest position. Build the
-    // new snapshot list immutably to prevent aliasing through previously returned
-    // array references.
+    // Mutate the internal array in place (push) so a long upload does not clone
+    // the whole snapshot list on every progress event. Callers never receive
+    // this array directly -- get() hands out a copy -- so in-place growth is safe.
+    entry.snapshots.push(snapshot)
+    // Touch: delete + reinsert to move the entry to the newest position.
     this.sessions.delete(id)
-    this.sessions.set(id, { snapshots: [...entry.snapshots, snapshot] })
+    this.sessions.set(id, entry)
   }
 
   /**
    * Returns the snapshot list for a session, or `null` when the session is
-   * unknown (never created or already evicted). A hit refreshes LRU recency
-   * (delete + reinsert to the newest position) so an actively-polled idle
-   * session is not evicted while new sessions are created.
+   * unknown (never created or already evicted). The returned array is a
+   * defensive shallow copy: callers can mutate it freely without aliasing the
+   * store's internal state. A hit refreshes LRU recency (delete + reinsert to
+   * the newest position) so an actively-polled idle session is not evicted
+   * while new sessions are created.
    *
    * @param id - The session identifier.
-   * @returns The snapshot array, or `null`.
+   * @returns A copy of the snapshot array, or `null`.
    */
   get(id: string): ProgressSnapshot[] | null {
     const entry = this.sessions.get(id)
     if (entry === undefined) return null
     this.sessions.delete(id)
     this.sessions.set(id, entry)
-    return entry.snapshots
+    return [...entry.snapshots]
   }
 
   /**

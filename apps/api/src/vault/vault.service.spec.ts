@@ -159,19 +159,40 @@ describe('VaultService (unit)', () => {
       expect(downloadBuffer).not.toHaveBeenCalled()
     })
 
-    it('throws PayloadTooLargeException when the range exceeds 50 MiB', async () => {
+    it('throws PayloadTooLargeException when the base64-encoded range exceeds 50 MiB', async () => {
       /*
-       * Scenario: caller requests a range larger than 50 MiB (start=0, end past cap).
-       * Rule it protects: downloadBuffer() is not called for oversized ranges; a
-       * size-limit breach is a 413, distinct from the 400 inverted-range case.
+       * Scenario: caller requests a raw range whose base64 encoding exceeds the
+       * 50 MiB cap. The raw ceiling is ~37.5 MiB; 39_321_601 raw bytes encode to
+       * 52_428_804 base64 bytes, one over the cap.
+       * Rule it protects: the guard bounds the *encoded* size (not the raw byte
+       * count) so the JSON response stays under the heap cap; downloadBuffer() is
+       * not called, and a size breach is a 413, distinct from the 400 inverted case.
        */
       const { service, downloadBuffer } = setup()
-      const FIFTY_MIB = 50 * 1024 * 1024
+      const MAX_RAW_BYTES = 39_321_600
 
-      await expect(service.downloadRange('my/key', 0, FIFTY_MIB + 1)).rejects.toBeInstanceOf(
+      await expect(service.downloadRange('my/key', 0, MAX_RAW_BYTES)).rejects.toBeInstanceOf(
         PayloadTooLargeException,
       )
       expect(downloadBuffer).not.toHaveBeenCalled()
+    })
+
+    it('allows a range whose base64 encoding is exactly at the 50 MiB cap', async () => {
+      /*
+       * Scenario: 39_321_600 raw bytes encode to exactly 52_428_800 base64 bytes
+       * (the 50 MiB cap), so end=39_321_599 (0-based) is the largest allowed range.
+       * Rule it protects: the boundary is inclusive; a range at the cap is served.
+       */
+      const { service, downloadBuffer } = setup()
+      downloadBuffer.mockResolvedValue({ buffer: Buffer.alloc(0), metadata: makeMetadata() })
+      const MAX_ALLOWED_END = 39_321_599
+
+      await service.downloadRange('my/key', 0, MAX_ALLOWED_END)
+
+      expect(downloadBuffer).toHaveBeenCalledWith({
+        key: 'my/key',
+        range: `bytes=0-${MAX_ALLOWED_END}`,
+      })
     })
   })
 

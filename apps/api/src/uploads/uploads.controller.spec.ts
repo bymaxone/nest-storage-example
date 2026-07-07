@@ -237,6 +237,33 @@ describe('UploadsController (unit)', () => {
       expect(sizeArg).toBeUndefined()
     })
 
+    it('normalizes array-valued Content-Type and Content-Length headers to the first value', async () => {
+      /*
+       * Scenario: repeated headers arrive as string[] per Node typings.
+       * Rule it protects: the handler takes the first value before use, forwarding
+       * a single content-type string and a parsed integer size.
+       */
+      const { controller, uploadStream } = setup()
+      const payload = { sessionId: 's6', result: makeResult({ multipart: false }) }
+      uploadStream.mockResolvedValue(payload)
+      const req = {
+        headers: {
+          'content-type': ['video/mp4', 'text/plain'],
+          'content-length': ['2048', '4096'],
+        },
+        pipe: jest.fn(),
+      } as unknown as Request
+
+      await controller.uploadStream(req, { category: 'media', knownSize: true })
+
+      expect(uploadStream).toHaveBeenCalledWith(
+        req,
+        'video/mp4',
+        { category: 'media', knownSize: true },
+        2048,
+      )
+    })
+
     it('defaults content-type to application/octet-stream when header is absent', async () => {
       /*
        * Scenario: stream request has no Content-Type header.

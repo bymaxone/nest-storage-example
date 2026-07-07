@@ -39,6 +39,23 @@ describe('UploadSessionStore (unit)', () => {
       const store = makeStore()
       expect(store.get('unknown')).toBeNull()
     })
+
+    it('returns a defensive copy so caller mutation does not affect the store', () => {
+      /*
+       * Scenario: a caller mutates the array returned by get() (push + reverse).
+       * Rule it protects: get() hands out a copy, so the store's internal state
+       * is not aliased and a subsequent get() is unaffected.
+       */
+      const store = makeStore()
+      store.create('copy-s')
+      store.append('copy-s', { loaded: 100, total: 500, part: 1 })
+      const first = store.get('copy-s')
+      first?.push({ loaded: 999 })
+      first?.reverse()
+      const second = store.get('copy-s')
+      expect(second).toEqual([{ loaded: 100, total: 500, part: 1 }])
+      expect(second).not.toBe(first)
+    })
   })
 
   describe('append', () => {

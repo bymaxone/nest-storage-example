@@ -45,6 +45,18 @@ import type { MulterFile } from './uploads.service.js'
 /** Maximum file size accepted by multer memory storage (matches UPLOAD_MAX_SIZE_BYTES default). */
 const MULTER_MAX_FILE_BYTES = 26_214_400
 
+/**
+ * Normalizes a possibly-multivalued request header to a single string. Node's
+ * `IncomingHttpHeaders` typings allow `string | string[] | undefined`; when a
+ * repeated header arrives as an array, the first value is used.
+ *
+ * @param value - The raw header value.
+ * @returns The first header value, or `undefined` when the header is absent.
+ */
+function firstHeaderValue(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value
+}
+
 /** Upload controller: all `/uploads/*` routes. */
 @Controller('uploads')
 export class UploadsController {
@@ -147,8 +159,10 @@ export class UploadsController {
     @Req() req: Request,
     @Query(new ZodValidationPipe(streamUploadQuerySchema)) query: StreamUploadQuery,
   ): Promise<{ sessionId: string; result: UploadResult }> {
-    const contentType = req.headers['content-type'] ?? 'application/octet-stream'
-    const lengthHeader = req.headers['content-length']
+    // Headers may arrive as string[] (repeated headers) per Node typings; take
+    // the first value before use.
+    const contentType = firstHeaderValue(req.headers['content-type']) ?? 'application/octet-stream'
+    const lengthHeader = firstHeaderValue(req.headers['content-length'])
     // Only forward a Content-Length that is a finite, non-negative integer as the
     // size hint; a negative, fractional, or NaN value is treated as unknown size.
     const parsedLength = lengthHeader !== undefined ? Number(lengthHeader) : NaN

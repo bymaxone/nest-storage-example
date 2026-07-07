@@ -18,8 +18,15 @@ import type { StorageService, ObjectMetadata } from '@bymax-one/nest-storage'
 /** Maximum allowed preview size in bytes (10 MiB). */
 const MAX_PREVIEW_BYTES = 10 * 1024 * 1024
 
-/** Maximum allowed byte-range size in bytes (50 MiB) to prevent heap exhaustion. */
-const MAX_RANGE_BYTES = 50 * 1024 * 1024
+/**
+ * Maximum allowed size of the base64-encoded range response in bytes (50 MiB).
+ * The byte-range endpoint returns bytes as base64 inside JSON, which inflates
+ * the payload by ~33% over the raw byte count (base64 encodes 3 raw bytes into
+ * 4 characters). The guard bounds the *encoded* size rather than the raw size,
+ * so the JSON response heap footprint stays under this cap regardless of the
+ * inflation. The corresponding raw-byte ceiling is ~37.5 MiB.
+ */
+const MAX_RANGE_BASE64_BYTES = 50 * 1024 * 1024
 
 /** Response shape for range and version download endpoints. */
 export interface BufferedDownloadResult {
@@ -85,7 +92,7 @@ export class VaultService {
    * @param end - Last byte offset (inclusive).
    * @returns Base64-encoded range bytes and object metadata.
    * @throws {BadRequestException} When `start > end` (an inverted range is an invalid request shape, 400).
-   * @throws {PayloadTooLargeException} When the requested range exceeds 50 MiB (a size-limit breach, 413).
+   * @throws {PayloadTooLargeException} When the range's base64-encoded size exceeds 50 MiB (a size-limit breach, 413).
    * @throws {StorageException} Propagates from the library when the provider returns an error.
    */
   async downloadRange(key: string, start: number, end: number): Promise<BufferedDownloadResult> {
@@ -97,12 +104,17 @@ export class VaultService {
         },
       })
     }
-    if (end - start + 1 > MAX_RANGE_BYTES) {
+    const rawBytes = end - start + 1
+    // The response encodes the bytes as base64, so guard the estimated encoded
+    // size (ceil(rawBytes / 3) * 4) rather than the raw count. This keeps the
+    // JSON payload bounded despite the ~33% base64 inflation.
+    const base64Bytes = Math.ceil(rawBytes / 3) * 4
+    if (base64Bytes > MAX_RANGE_BASE64_BYTES) {
       throw new PayloadTooLargeException({
         error: {
           code: 'RANGE_TOO_LARGE',
-          message: `Requested range ${end - start + 1} bytes exceeds the ${MAX_RANGE_BYTES} byte limit.`,
-          maxBytes: MAX_RANGE_BYTES,
+          message: `Requested range (${rawBytes} bytes, ~${base64Bytes} bytes base64) exceeds the ${MAX_RANGE_BASE64_BYTES} byte encoded-response limit.`,
+          maxBase64Bytes: MAX_RANGE_BASE64_BYTES,
         },
       })
     }
