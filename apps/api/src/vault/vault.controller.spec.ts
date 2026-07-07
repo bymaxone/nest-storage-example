@@ -109,13 +109,16 @@ function setup() {
     UPLOAD_MAX_SIZE_BYTES: 26_214_400,
   }
 
+  const configGet = jest.fn(() => env)
   const config = {
-    get: jest.fn(() => env),
+    get: configGet,
   } as unknown as ConfigService<{ env: Env }, true>
 
   const controller = new VaultController(service, config)
   return {
     controller,
+    config,
+    configGet,
     download,
     preview,
     downloadRange,
@@ -127,6 +130,19 @@ function setup() {
 }
 
 describe('VaultController (unit)', () => {
+  describe('config resolution', () => {
+    it('resolves the validated env via the typed inference option', () => {
+      /*
+       * Scenario: the controller reads its versioned bucket from the config.
+       * Rule it protects: config.get is called with 'env' and { infer: true } so
+       * the typed inference is used (kills a dropped option object or a flipped
+       * infer flag), and the versioned bucket flows into the version download.
+       */
+      const { configGet } = setup()
+      expect(configGet).toHaveBeenCalledWith('env', { infer: true })
+    })
+  })
+
   describe('download (stream)', () => {
     it('sets Content-Type and Content-Length headers then streams the body', async () => {
       /*
@@ -302,7 +318,7 @@ describe('VaultController (unit)', () => {
        * Scenario: STORAGE_CDN_BASE_URL is empty; only url and note are present.
        * Rule it protects: cdnUrl is absent when CDN is not configured.
        */
-      const { controller, getPublicUrls } = setup()
+      const { controller, getPublicUrls, configGet } = setup()
       const response = {
         url: 'http://localhost:9000/vault/storage-example/avatars/uuid.png',
         note: 'URL is unsigned and existence is unchecked.',
@@ -317,6 +333,9 @@ describe('VaultController (unit)', () => {
         'storage-example',
       )
       expect(result).toBe(response)
+      // The handler's own env lookup (distinct from the constructor's) uses the
+      // typed inference option, so a mutation of that call's option object is caught.
+      expect(configGet.mock.calls.at(-1)).toEqual(['env', { infer: true }])
     })
   })
 

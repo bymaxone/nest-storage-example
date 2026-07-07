@@ -108,6 +108,9 @@ describe('TenantsService (unit)', () => {
     expect(list.mock.calls[0]?.[0]).toEqual({ prefix: 'acme/' })
     expect(res.objects[0]?.fullKey).toBe('storage-example/acme/invoices/1.txt')
     expect(res.nextCursor).toBeUndefined()
+    // The key is OMITTED (not set to undefined) when the provider returns no
+    // continuation token, so a mutant that always spreads the cursor is caught.
+    expect('nextCursor' in res).toBe(false)
   })
 
   it('narrows the listing to a category and threads cursor plus maxKeys', async () => {

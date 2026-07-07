@@ -109,18 +109,44 @@ describe('VaultService (unit)', () => {
       expect(result.metadata).toBe(downloadMetadata)
     })
 
-    it('throws PayloadTooLargeException without downloading when size > 10 MiB', async () => {
+    it('throws PayloadTooLargeException with the size envelope when size > 10 MiB', async () => {
       /*
        * Scenario: head() reports an 11 MiB object.
-       * Rule it protects: downloadBuffer() is NEVER called for oversized objects.
+       * Rule it protects: downloadBuffer() is NEVER called for oversized objects,
+       * and the 413 body pins the exact PREVIEW_SIZE_EXCEEDED envelope (code,
+       * message, the 10 MiB limit, and the actual size).
        */
       const { service, head, downloadBuffer } = setup()
-      head.mockResolvedValue(makeMetadata({ size: 11 * 1024 * 1024 }))
+      const oversize = 11 * 1024 * 1024
+      head.mockResolvedValue(makeMetadata({ size: oversize }))
 
-      await expect(service.preview('large/object.bin')).rejects.toBeInstanceOf(
-        PayloadTooLargeException,
-      )
+      const error = await service.preview('large/object.bin').catch((e: unknown) => e)
+      expect(error).toBeInstanceOf(PayloadTooLargeException)
+      expect((error as PayloadTooLargeException).getResponse()).toEqual({
+        error: {
+          code: 'PREVIEW_SIZE_EXCEEDED',
+          message: `Object size ${oversize} exceeds the 10 MiB preview limit.`,
+          limit: 10 * 1024 * 1024,
+          actual: oversize,
+        },
+      })
       expect(downloadBuffer).not.toHaveBeenCalled()
+    })
+
+    it('serves an object whose size is exactly at the 10 MiB limit', async () => {
+      /*
+       * Scenario: head() reports an object of exactly 10 MiB (the limit).
+       * Rule it protects: the guard is strictly greater-than, so an object AT the
+       * limit is served rather than rejected (kills a > to >= mutation).
+       */
+      const { service, head, downloadBuffer } = setup()
+      const atLimit = 10 * 1024 * 1024
+      head.mockResolvedValue(makeMetadata({ size: atLimit }))
+      downloadBuffer.mockResolvedValue({ buffer: Buffer.from('ok'), metadata: makeMetadata() })
+
+      const result = await service.preview('exact/limit.bin')
+      expect(result.base64).toBe(Buffer.from('ok').toString('base64'))
+      expect(downloadBuffer).toHaveBeenCalledTimes(1)
     })
 
     it('propagates StorageException from head() (not-found)', async () => {
@@ -163,18 +189,51 @@ describe('VaultService (unit)', () => {
       expect(result.base64).toBe(buf.toString('base64'))
     })
 
-    it('throws BadRequestException when start > end', async () => {
+    it('throws BadRequestException with the RANGE_INVALID envelope when start > end', async () => {
       /*
        * Scenario: caller supplies an inverted range (start=100, end=0).
-       * Rule it protects: downloadBuffer() is not called for invalid ranges; 400 is
-       * the correct HTTP status for an invalid parameter value, not 413.
+       * Rule it protects: downloadBuffer() is not called for invalid ranges; the
+       * 400 body pins the exact RANGE_INVALID envelope with both offsets.
        */
       const { service, downloadBuffer } = setup()
 
-      await expect(service.downloadRange('my/key', 100, 0)).rejects.toBeInstanceOf(
-        BadRequestException,
-      )
+      const error = await service.downloadRange('my/key', 100, 0).catch((e: unknown) => e)
+      expect(error).toBeInstanceOf(BadRequestException)
+      expect((error as BadRequestException).getResponse()).toEqual({
+        error: { code: 'RANGE_INVALID', message: 'start (100) must be <= end (0).' },
+      })
       expect(downloadBuffer).not.toHaveBeenCalled()
+    })
+
+    it('serves a single-byte range when start equals end', async () => {
+      /*
+       * Scenario: start === end (a one-byte range at offset 5).
+       * Rule it protects: the invalid-range guard is strictly greater-than, so an
+       * equal start/end is a valid one-byte range (kills a > to >= mutation) and
+       * the range string spans byte 5 to 5.
+       */
+      const { service, downloadBuffer } = setup()
+      downloadBuffer.mockResolvedValue({ buffer: Buffer.from('X'), metadata: makeMetadata() })
+
+      const result = await service.downloadRange('my/key', 5, 5)
+      expect(downloadBuffer).toHaveBeenCalledWith({ key: 'my/key', range: 'bytes=5-5' })
+      expect(result.base64).toBe(Buffer.from('X').toString('base64'))
+    })
+
+    it('computes the raw byte count as end - start + 1 for the size guard', async () => {
+      /*
+       * Scenario: a non-zero start where end - start + 1 sits exactly at the cap
+       * (39_321_600 raw bytes -> 52_428_800 base64 bytes) while end + start would
+       * exceed it.
+       * Rule it protects: the raw count is `end - start + 1`; the range is served
+       * (kills an end - start + 1 to end + start mutation, which would 413 here).
+       */
+      const { service, downloadBuffer } = setup()
+      downloadBuffer.mockResolvedValue({ buffer: Buffer.alloc(0), metadata: makeMetadata() })
+
+      await service.downloadRange('my/key', 10, 39_321_609)
+
+      expect(downloadBuffer).toHaveBeenCalledWith({ key: 'my/key', range: 'bytes=10-39321609' })
     })
 
     it('throws PayloadTooLargeException when the base64-encoded range exceeds 50 MiB', async () => {
@@ -189,9 +248,16 @@ describe('VaultService (unit)', () => {
       const { service, downloadBuffer } = setup()
       const MAX_RAW_BYTES = 39_321_600
 
-      await expect(service.downloadRange('my/key', 0, MAX_RAW_BYTES)).rejects.toBeInstanceOf(
-        PayloadTooLargeException,
-      )
+      const error = await service.downloadRange('my/key', 0, MAX_RAW_BYTES).catch((e: unknown) => e)
+      expect(error).toBeInstanceOf(PayloadTooLargeException)
+      expect((error as PayloadTooLargeException).getResponse()).toEqual({
+        error: {
+          code: 'RANGE_TOO_LARGE',
+          message:
+            'Requested range (39321601 bytes, ~52428804 bytes base64) exceeds the 52428800 byte encoded-response limit.',
+          maxBase64Bytes: 52_428_800,
+        },
+      })
       expect(downloadBuffer).not.toHaveBeenCalled()
     })
 
@@ -312,6 +378,9 @@ describe('VaultService (unit)', () => {
       const result = await service.list({ maxKeys: 50 })
       expect(result.isTruncated).toBe(false)
       expect(result.nextCursor).toBeUndefined()
+      // The key is omitted entirely (not present with an undefined value), so a
+      // mutant that always spreads the nextCursor field is caught.
+      expect('nextCursor' in result).toBe(false)
     })
 
     it('propagates StorageException from the library', async () => {
@@ -469,6 +538,28 @@ describe('VaultService (unit)', () => {
       const { service } = setup()
       const result = service.getPublicUrls('docs/file.pdf', 'http://localhost:9000/vault', '', '')
       expect(result.url).toBe('http://localhost:9000/vault/docs/file.pdf')
+    })
+
+    it('trims a single trailing slash from the public and CDN base URLs', () => {
+      /*
+       * Scenario: both the public base and the CDN base arrive with a trailing
+       * slash.
+       * Rule it protects: exactly one trailing slash is stripped from each base so
+       * the joined URL has no double slash (kills a mutation of the '' replacement
+       * argument, which would otherwise inject the replacement text).
+       */
+      const { service } = setup()
+      const result = service.getPublicUrls(
+        'avatars/uuid.png',
+        'http://localhost:9000/vault/',
+        'https://cdn.example.com/',
+        'storage-example',
+      )
+      expect(result.url).toBe('http://localhost:9000/vault/storage-example/avatars/uuid.png')
+      expect(result.cdnUrl).toBe('https://cdn.example.com/storage-example/avatars/uuid.png')
+      expect(result.note).toBe(
+        'URL is unsigned and existence is unchecked; public delivery depends on the bucket policy or CDN.',
+      )
     })
 
     it('url-encodes keys with spaces and reserved characters per segment', () => {
@@ -663,13 +754,20 @@ describe('VaultService (unit)', () => {
       const { service, head, copy } = setup()
       head.mockRejectedValue(new StorageException('STORAGE_OBJECT_NOT_FOUND'))
 
-      await expect(
-        service.copy(
+      const error = await service
+        .copy(
           { sourceKey: 'missing.png', destinationKey: 'dst.png', destination: 'same' },
           'vault-archive',
           'vault',
-        ),
-      ).rejects.toBeInstanceOf(StorageException)
+        )
+        .catch((e: unknown) => e)
+      expect(error).toBeInstanceOf(StorageException)
+      expect((error as StorageException).code).toBe('STORAGE_OBJECT_NOT_FOUND')
+      // The thrown envelope carries the absent source key in its details, so a
+      // mutant that empties the details object is caught.
+      expect((error as StorageException).getResponse()).toMatchObject({
+        error: { details: { key: 'missing.png' } },
+      })
       expect(copy).not.toHaveBeenCalled()
     })
 

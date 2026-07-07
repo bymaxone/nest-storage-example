@@ -108,6 +108,19 @@ describe('ValidationLabService (unit)', () => {
     expect(upload.mock.calls[0]?.[0]?.key).toMatch(/^validation-lab\/[0-9a-f-]+$/)
   })
 
+  it('preserves a leading-dot extension (dotfile at index 0)', async () => {
+    /*
+     * Scenario: an uploaded file named like a dotfile (".env"), whose only dot is
+     * at index 0.
+     * Rule it protects: the extension boundary is inclusive of index 0, so the
+     * dotfile suffix is preserved (kills a `>= 0` to `> 0` mutation that drops it).
+     */
+    const { service, upload } = setup()
+    upload.mockResolvedValue(makeUploadResult())
+    await service.upload(makeFile({ originalname: '.env' }))
+    expect(upload.mock.calls[0]?.[0]?.key).toMatch(/^validation-lab\/[0-9a-f-]+\.env$/)
+  })
+
   it('propagates the MIME envelope for a disallowed content type', async () => {
     /*
      * Scenario: the library rejects a content type outside the whitelist.

@@ -99,6 +99,33 @@ describe('MarkerFileScanner (unit)', () => {
     expect(result.status).toBe('infected')
   })
 
+  it('does not detect a marker that begins after the byte bound (single chunk)', async () => {
+    /*
+     * Scenario: one 4096-byte benign prefix followed by X-DEMO-INFECTED, in a
+     * single oversized stream chunk.
+     * Rule it protects: the chunk is truncated to the remaining budget before it
+     * is retained, so a marker past MAX_SCAN_BYTES is never scanned and the body
+     * reads clean (kills a chunk-truncation comparison that keeps the whole chunk).
+     */
+    const oversized = Buffer.from(`${'a'.repeat(4096)}X-DEMO-INFECTED`)
+    const stream = Readable.from([oversized])
+    const result = await scanner.scan(preUpload(stream))
+    expect(result.status).toBe('clean')
+  })
+
+  it('keeps scanning across multiple sub-bound chunks until a later chunk carries the marker', async () => {
+    /*
+     * Scenario: two small chunks well under the byte bound; the marker is only in
+     * the second chunk.
+     * Rule it protects: the reader does not stop after the first chunk while the
+     * running total is below MAX_SCAN_BYTES, so a marker in a later in-budget
+     * chunk is still found (kills an early-break comparison).
+     */
+    const stream = Readable.from([Buffer.from('benign-head '), Buffer.from('X-DEMO-INFECTED tail')])
+    const result = await scanner.scan(preUpload(stream))
+    expect(result.status).toBe('infected')
+  })
+
   it('scans the object key when no body is present (post-upload mode)', async () => {
     /*
      * Scenario: post-upload mode delivers only the key/bucket, no body.

@@ -58,12 +58,13 @@ function setup() {
     UPLOAD_MAX_SIZE_BYTES: 26_214_400,
   }
 
+  const configGet = jest.fn(() => env)
   const config = {
-    get: jest.fn(() => env),
+    get: configGet,
   } as unknown as ConfigService<{ env: Env }, true>
 
   const controller = new VaultBrowseController(service, config)
-  return { controller, list, deleteMany, copy, env, config }
+  return { controller, list, deleteMany, copy, env, config, configGet }
 }
 
 describe('VaultBrowseController (unit)', () => {
@@ -136,7 +137,7 @@ describe('VaultBrowseController (unit)', () => {
        * Scenario: same-bucket copy; config bucket values are forwarded to the service.
        * Rule it protects: the controller reads bucket names from env, not hardcodes them.
        */
-      const { controller, copy } = setup()
+      const { controller, copy, configGet } = setup()
       const response: CopyResponse = {
         etag: '"e"',
         source: 'src.png',
@@ -157,6 +158,9 @@ describe('VaultBrowseController (unit)', () => {
         'vault',
       )
       expect(result).toBe(response)
+      // The env lookup uses the typed inference option; a mutation of that option
+      // object or its flag is caught.
+      expect(configGet).toHaveBeenCalledWith('env', { infer: true })
     })
 
     it('passes archive bucket for an archive-destination copy', async () => {

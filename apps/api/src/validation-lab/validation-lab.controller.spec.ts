@@ -8,7 +8,6 @@
  */
 import 'reflect-metadata'
 import { jest } from '@jest/globals'
-import { BadRequestException } from '@nestjs/common'
 import { ValidationLabController } from './validation-lab.controller.js'
 import type {
   MulterFile,
@@ -72,9 +71,9 @@ describe('ValidationLabController (unit)', () => {
      * Rule it protects: a missing file is a 400 bad request, never forwarded.
      */
     const { controller, upload } = setup()
-    await expect(controller.upload(undefined as unknown as MulterFile)).rejects.toBeInstanceOf(
-      BadRequestException,
-    )
+    await expect(controller.upload(undefined as unknown as MulterFile)).rejects.toMatchObject({
+      response: { error: { code: 'VALIDATION', message: 'file is required' } },
+    })
     expect(upload).not.toHaveBeenCalled()
   })
 

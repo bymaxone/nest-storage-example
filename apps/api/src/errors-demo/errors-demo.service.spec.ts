@@ -14,6 +14,10 @@ import { jest } from '@jest/globals'
 import { StorageException } from '@bymax-one/nest-storage'
 import type { SignedUrlService, StorageService } from '@bymax-one/nest-storage'
 import { ErrorsDemoService, type ErrorsConnectionOptions } from './errors-demo.service.js'
+// Direct value import so the mutation runner maps this spec as a related test of
+// the trigger registry (the service reaches it only transitively, which the
+// jest test-selection heuristic does not follow).
+import { buildTriggerRegistry } from './trigger.registry.js'
 import type { ScopedStorageFactory } from '../common/scoped-storage.factory.js'
 
 /** Connection facts injected as the resolved options view. */
@@ -296,6 +300,192 @@ describe('ErrorsDemoService (unit)', () => {
       code: 'STORAGE_PART_TOO_SMALL',
       reproducible: false,
       note: expect.stringContaining('no code path'),
+    })
+  })
+
+  describe('buildTriggerRegistry (direct)', () => {
+    /** Builds the registry directly over mocked collaborators, exposing the mocks. */
+    function buildDirect() {
+      const upload = jest.fn<StorageService['upload']>()
+      const head = jest.fn<StorageService['head']>()
+      const storage = { upload, head } as unknown as StorageService
+      const getDownloadUrl = jest.fn<SignedUrlService['getDownloadUrl']>()
+      const getMultipartUploadUrls = jest.fn<SignedUrlService['getMultipartUploadUrls']>()
+      const signedUrls = { getDownloadUrl, getMultipartUploadUrls } as unknown as SignedUrlService
+      const scopedUploadFn = jest.fn<StorageService['upload']>()
+      const scopedHeadFn = jest.fn<StorageService['head']>()
+      const scopedInstance = {
+        head: scopedHeadFn,
+        upload: scopedUploadFn,
+      } as unknown as StorageService
+      const storageFactory = jest
+        .fn<ScopedStorageFactory['storage']>()
+        .mockResolvedValue(scopedInstance)
+      const scoped = { storage: storageFactory } as unknown as ScopedStorageFactory
+      const registry = buildTriggerRegistry({ storage, signedUrls, scoped, connection: CONNECTION })
+      return {
+        registry,
+        storageFactory,
+        upload,
+        head,
+        getDownloadUrl,
+        getMultipartUploadUrls,
+        scopedUploadFn,
+      }
+    }
+
+    it('maps a trigger for every shipped error code', () => {
+      /*
+       * Scenario: the registry is built directly from mocked collaborators.
+       * Rule it protects: every shipped code resolves to a callable trigger, so no
+       * code is left without a deterministic reproduction path.
+       */
+      const { registry } = buildDirect()
+      expect(Object.keys(registry).length).toBeGreaterThanOrEqual(18)
+      expect(Object.values(registry).every((trigger) => typeof trigger === 'function')).toBe(true)
+    })
+
+    it('drives each guard and pipeline trigger with its exact crafted input', async () => {
+      /*
+       * Scenario: every crafted-input trigger runs against the mocked module.
+       * Rule it protects: each trigger passes the precise key, content type, size
+       * and body that reproduces its code, so blanking any crafted literal is
+       * caught.
+       */
+      const d = buildDirect()
+      await d.registry.STORAGE_KEY_INVALID().catch(() => undefined)
+      await d.registry.STORAGE_BODY_MISSING().catch(() => undefined)
+      await d.registry.STORAGE_CONTENT_TYPE_REQUIRED().catch(() => undefined)
+      await d.registry.STORAGE_MIME_NOT_ALLOWED().catch(() => undefined)
+      await d.registry.STORAGE_SIZE_EXCEEDED().catch(() => undefined)
+      await d.registry.STORAGE_VALIDATION_FAILED().catch(() => undefined)
+      await d.registry.STORAGE_SCAN_INFECTED().catch(() => undefined)
+      const uploads = d.upload.mock.calls.map((call) => call[0])
+      expect(uploads[0]).toMatchObject({ key: 'errors-demo/../escape', contentType: 'text/plain' })
+      expect(uploads[1]).toMatchObject({ key: 'errors-demo/no-body' })
+      expect(uploads[1]?.body).toBeUndefined()
+      expect(uploads[2]).toMatchObject({ key: 'errors-demo/no-content-type', contentType: '' })
+      expect(uploads[3]).toMatchObject({
+        key: 'errors-demo/disallowed',
+        contentType: 'application/zip',
+      })
+      expect(uploads[4]).toMatchObject({
+        key: 'errors-demo/too-large.png',
+        contentType: 'image/png',
+      })
+      expect(uploads[4]?.size).toBe(1_099_511_627_776)
+      expect(uploads[5]).toMatchObject({
+        key: 'errors-demo/forged.pdf',
+        contentType: 'application/pdf',
+      })
+      expect((uploads[5]?.body as Buffer).toString('utf8')).toBe('this is not a pdf')
+      expect(uploads[6]).toMatchObject({
+        key: 'errors-demo/infected.png',
+        contentType: 'image/png',
+      })
+      expect((uploads[6]?.body as Buffer).toString('utf8')).toBe('X-DEMO-INFECTED sample payload')
+    })
+
+    it('drives the head, signed and multipart triggers with their exact crafted input', async () => {
+      /*
+       * Scenario: the head-based, signed-URL and forced-multipart triggers run.
+       * Rule it protects: each passes its precise key, bucket override, TTL, part
+       * count, content type and stream body that reproduces its code.
+       */
+      const d = buildDirect()
+      await d.registry.STORAGE_OBJECT_NOT_FOUND().catch(() => undefined)
+      await d.registry.STORAGE_BUCKET_UNDEFINED().catch(() => undefined)
+      await d.registry.STORAGE_SIGNED_URL_TTL_INVALID().catch(() => undefined)
+      await d.registry.STORAGE_INVALID_PART_COUNT().catch(() => undefined)
+      await d.registry.STORAGE_MULTIPART_ABORTED().catch(() => undefined)
+      await d.registry.STORAGE_SCAN_INCONCLUSIVE().catch(() => undefined)
+      expect(d.head.mock.calls[0]?.[0]).toMatch(/^errors-demo\/missing-/)
+      expect(d.head.mock.calls[1]?.[0]).toBe('errors-demo/bucket')
+      expect(d.head.mock.calls[1]?.[1]).toEqual({ bucket: '' })
+      expect(d.getDownloadUrl.mock.calls[0]?.[0]).toEqual({
+        key: 'errors-demo/ttl',
+        ttlSeconds: 0,
+      })
+      expect(d.getMultipartUploadUrls.mock.calls[0]?.[0]).toEqual({
+        key: 'errors-demo/parts',
+        contentType: 'text/plain',
+        parts: 0,
+      })
+      const multipartUpload = d.scopedUploadFn.mock.calls[0]?.[0]
+      expect(multipartUpload?.key).toBe('errors-demo/multipart')
+      expect(multipartUpload?.contentType).toBe('text/plain')
+      const scanUpload = d.scopedUploadFn.mock.calls[1]?.[0]
+      expect(scanUpload?.key).toBe('errors-demo/unknown.txt')
+      expect((scanUpload?.body as Buffer).toString('utf8')).toBe('X-DEMO-UNKNOWN sample payload')
+    })
+
+    it('builds the unconfigured scoped instance with path-style addressing and empty credentials', async () => {
+      /*
+       * Scenario: the not-configured trigger runs.
+       * Rule it protects: the scoped options force path-style addressing and carry
+       * blank credentials so the instance asserts unconfigured before any request.
+       */
+      const { registry, storageFactory } = buildDirect()
+      await registry.STORAGE_NOT_CONFIGURED().catch(() => undefined)
+      const options = storageFactory.mock.calls[0]?.[1]
+      expect(options?.forcePathStyle).toBe(true)
+      expect(options?.credentials).toEqual({ accessKeyId: '', secretAccessKey: '' })
+    })
+
+    it('builds the wrong-credentials scoped instance with a single attempt and path style', async () => {
+      /*
+       * Scenario: the provider-error trigger runs.
+       * Rule it protects: the scoped options cap retries at one attempt and force
+       * path-style addressing so the 403 surfaces promptly.
+       */
+      const { registry, storageFactory } = buildDirect()
+      await registry.STORAGE_PROVIDER_ERROR().catch(() => undefined)
+      const options = storageFactory.mock.calls[0]?.[1]
+      expect(options?.forcePathStyle).toBe(true)
+      expect(options?.maxAttempts).toBe(1)
+      expect(options?.credentials).toEqual({
+        accessKeyId: 'wrong-access-key',
+        secretAccessKey: 'wrong-secret-key',
+      })
+    })
+
+    it('builds the reject-unknown scoped instance with a pre-upload scanner that rejects unknowns', async () => {
+      /*
+       * Scenario: the scan-inconclusive trigger runs.
+       * Rule it protects: the scoped scanner runs pre-upload and rejects an unknown
+       * verdict with path-style addressing.
+       */
+      const { registry, storageFactory } = buildDirect()
+      await registry.STORAGE_SCAN_INCONCLUSIVE().catch(() => undefined)
+      const options = storageFactory.mock.calls[0]?.[1]
+      expect(options?.forcePathStyle).toBe(true)
+      expect(options?.scanner?.mode).toBe('pre-upload')
+      expect(options?.scanner?.rejectOnUnknown).toBe(true)
+      expect(options?.credentials).toEqual({
+        accessKeyId: 'scan-only',
+        secretAccessKey: 'scan-only',
+      })
+    })
+
+    it('returns the exact honest note for the non-reproducible codes', async () => {
+      /*
+       * Scenario: the two defined-but-unthrown codes are triggered directly.
+       * Rule it protects: both resolve to the exact explanatory note rather than a
+       * fabricated exception.
+       */
+      const { registry } = buildDirect()
+      const note =
+        'This code is defined in STORAGE_ERROR_CODES but the shipped library has no code path that throws it. See GET /errors for the reconciled explanation.'
+      expect(await registry.STORAGE_PART_TOO_SMALL()).toEqual({
+        code: 'STORAGE_PART_TOO_SMALL',
+        reproducible: false,
+        note,
+      })
+      expect(await registry.STORAGE_TIMEOUT()).toEqual({
+        code: 'STORAGE_TIMEOUT',
+        reproducible: false,
+        note,
+      })
     })
   })
 })

@@ -49,6 +49,25 @@ describe('ZodValidationPipe (unit)', () => {
     expect(body.error.issues.every((issue) => typeof issue.message === 'string')).toBe(true)
   })
 
+  it('joins a nested issue path with dots', () => {
+    /*
+     * Scenario: a nested field fails inside a nested object schema.
+     * Rule it protects: the issue path is joined with '.' (e.g. 'parent.child'),
+     * so a mutant that blanks the join separator is caught.
+     */
+    const nested = new ZodValidationPipe(z.object({ parent: z.object({ child: z.string() }) }))
+    let thrown: unknown
+    try {
+      nested.transform({ parent: { child: 123 } })
+    } catch (error) {
+      thrown = error
+    }
+    const body = (thrown as BadRequestException).getResponse() as {
+      error: { issues: { path: string }[] }
+    }
+    expect(body.error.issues[0]?.path).toBe('parent.child')
+  })
+
   it('never echoes a received value in the error body', () => {
     /*
      * Scenario: a secret-looking value fails validation.

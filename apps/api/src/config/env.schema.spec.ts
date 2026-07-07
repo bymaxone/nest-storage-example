@@ -46,6 +46,29 @@ describe('envSchema defaults', () => {
   })
 })
 
+describe('explicit string constraints', () => {
+  it('accepts multi-character values for the endpoint, region, and bucket fields', () => {
+    /*
+     * Scenario: an operator supplies explicit, multi-character values for the
+     * string fields (rather than relying on the defaults, which skip re-validation).
+     * Rule it protects: the length/URL constraints admit real values longer than a
+     * single character, so a mutant that shrinks a `.min`/`.url` constraint to
+     * `.max(1)` would reject these and is caught.
+     */
+    const parsed = envSchema.parse({
+      STORAGE_ENDPOINT: 'http://storage.example:9000',
+      STORAGE_REGION: 'eu-west-1',
+      STORAGE_BUCKET: 'primary-bucket',
+      STORAGE_ARCHIVE_BUCKET: 'archive-bucket',
+    })
+
+    expect(parsed.STORAGE_ENDPOINT).toBe('http://storage.example:9000')
+    expect(parsed.STORAGE_REGION).toBe('eu-west-1')
+    expect(parsed.STORAGE_BUCKET).toBe('primary-bucket')
+    expect(parsed.STORAGE_ARCHIVE_BUCKET).toBe('archive-bucket')
+  })
+})
+
 describe('envBoolean transform', () => {
   it.each([
     ['true', true],
@@ -161,6 +184,29 @@ describe('production credential guard', () => {
     const run = () => validateEnv({ NODE_ENV: 'production' })
     expect(run).toThrow(/STORAGE_ACCESS_KEY_ID/)
     expect(run).toThrow(/STORAGE_SECRET_ACCESS_KEY/)
+  })
+
+  it('formats a custom guard issue as "custom (message)" under the config-error prefix', () => {
+    /*
+     * Scenario: a production boot trips the dev-credential guard.
+     * Rule it protects: the aggregated report opens with the fixed
+     * "Invalid environment configuration:" prefix and renders each custom guard
+     * issue as `custom (<value-free message>)`, so the code-vs-custom branch and
+     * the literal detail text are pinned.
+     */
+    let message = ''
+    try {
+      validateEnv({ NODE_ENV: 'production' })
+    } catch (error) {
+      message = error instanceof Error ? error.message : String(error)
+    }
+    expect(message).toMatch(/^Invalid environment configuration:/)
+    expect(message).toContain(
+      'custom (STORAGE_ACCESS_KEY_ID must not use the dev default in production)',
+    )
+    expect(message).toContain(
+      'custom (STORAGE_SECRET_ACCESS_KEY must not use the dev default in production)',
+    )
   })
 
   it('passes when production supplies real credentials', () => {
