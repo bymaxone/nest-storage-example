@@ -9,7 +9,7 @@
  */
 import 'reflect-metadata'
 import { jest } from '@jest/globals'
-import { PayloadTooLargeException } from '@nestjs/common'
+import { BadRequestException, PayloadTooLargeException } from '@nestjs/common'
 import { StorageException } from '@bymax-one/nest-storage'
 import type { StorageService, ObjectMetadata } from '@bymax-one/nest-storage'
 import { VaultService } from './vault.service.js'
@@ -142,15 +142,31 @@ describe('VaultService (unit)', () => {
       expect(result.base64).toBe(buf.toString('base64'))
     })
 
-    it('throws PayloadTooLargeException when start > end', async () => {
+    it('throws BadRequestException when start > end', async () => {
       /*
        * Scenario: caller supplies an inverted range (start=100, end=0).
-       * Rule it protects: downloadBuffer() is not called for invalid ranges.
+       * Rule it protects: downloadBuffer() is not called for invalid ranges; 400 is
+       * the correct HTTP status for an invalid parameter value, not 413.
        */
       const { service, downloadBuffer } = setup()
 
       await expect(service.downloadRange('my/key', 100, 0)).rejects.toBeInstanceOf(
-        PayloadTooLargeException,
+        BadRequestException,
+      )
+      expect(downloadBuffer).not.toHaveBeenCalled()
+    })
+
+    it('throws BadRequestException when the range exceeds 50 MiB', async () => {
+      /*
+       * Scenario: caller requests a 100 MiB range (start=0, end=104857599).
+       * Rule it protects: downloadBuffer() is not called for oversized ranges; the
+       * 50 MiB cap prevents heap exhaustion before the library call.
+       */
+      const { service, downloadBuffer } = setup()
+      const FIFTY_MIB = 50 * 1024 * 1024
+
+      await expect(service.downloadRange('my/key', 0, FIFTY_MIB + 1)).rejects.toBeInstanceOf(
+        BadRequestException,
       )
       expect(downloadBuffer).not.toHaveBeenCalled()
     })

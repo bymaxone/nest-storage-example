@@ -17,21 +17,38 @@ export type UploadCategory = (typeof UPLOAD_CATEGORIES)[number]
  * separately by the `FileInterceptor` decorator; this schema covers the
  * remaining form fields.
  */
+/** Printable ASCII characters only (space through tilde). */
+const PRINTABLE_ASCII = /^[\x20-\x7E]+$/
+
 export const singleUploadBodySchema = z.object({
   /** Target category for key composition. */
   category: z.enum(UPLOAD_CATEGORIES),
-  /** Optional `Cache-Control` override for this upload. */
-  cacheControl: z.string().optional(),
+  /** Optional `Cache-Control` override for this upload. Max 256 printable ASCII chars. */
+  cacheControl: z.string().max(256).regex(PRINTABLE_ASCII).optional(),
   /**
    * Optional `Content-Disposition` override. Accepts `'inline'`,
-   * `'attachment'`, or any full header value.
+   * `'attachment'`, or any full header value. Max 512 printable ASCII chars.
    */
-  contentDisposition: z.string().optional(),
+  contentDisposition: z.string().max(512).regex(PRINTABLE_ASCII).optional(),
   /**
    * Optional `x-amz-meta-*` metadata pairs. Every key is sent as
-   * `x-amz-meta-{key}` on the stored object.
+   * `x-amz-meta-{key}` on the stored object. Keys: alphanumeric/hyphen/underscore,
+   * max 64 chars. Values: max 1024 chars. AWS enforces a 2 KB aggregate limit.
+   * Capped at 10 entries to stay well within the AWS header budget.
    */
-  metadata: z.record(z.string(), z.string()).optional(),
+  metadata: z
+    .record(
+      z
+        .string()
+        .min(1)
+        .max(64)
+        .regex(/^[a-zA-Z0-9_-]+$/),
+      z.string().max(1024),
+    )
+    .refine((m) => Object.keys(m).length <= 10, {
+      message: 'metadata must have at most 10 entries',
+    })
+    .optional(),
 })
 
 /** Parsed body type for `POST /uploads/single`. */

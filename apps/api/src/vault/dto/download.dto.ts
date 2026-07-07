@@ -10,8 +10,8 @@ import { z } from 'zod'
  * required and identifies the storage object to retrieve.
  */
 export const downloadQuerySchema = z.object({
-  /** Storage key (URL-decoded by Express before reaching the schema). */
-  key: z.string().min(1),
+  /** Storage key (URL-decoded by Express before reaching the schema). S3 limits keys to 1024 bytes. */
+  key: z.string().min(1).max(1024),
 })
 
 /** Parsed query type for download routes that accept only a key. */

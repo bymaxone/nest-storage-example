@@ -12,11 +12,14 @@
  * The library's `StorageException` propagates through the global filter.
  * @layer api/vault
  */
-import { Injectable, PayloadTooLargeException } from '@nestjs/common'
+import { Injectable, BadRequestException, PayloadTooLargeException } from '@nestjs/common'
 import type { StorageService, ObjectMetadata } from '@bymax-one/nest-storage'
 
 /** Maximum allowed preview size in bytes (10 MiB). */
 const MAX_PREVIEW_BYTES = 10 * 1024 * 1024
+
+/** Maximum allowed byte-range size in bytes (50 MiB) to prevent heap exhaustion. */
+const MAX_RANGE_BYTES = 50 * 1024 * 1024
 
 /** Response shape for range and version download endpoints. */
 export interface BufferedDownloadResult {
@@ -38,6 +41,7 @@ export class VaultService {
    *
    * @param key - The raw object key.
    * @returns The readable stream and its metadata.
+   * @throws {StorageException} Propagates from the library when the provider returns an error.
    */
   async download(
     key: string,
@@ -78,14 +82,24 @@ export class VaultService {
    * @param start - First byte offset (inclusive, zero-based).
    * @param end - Last byte offset (inclusive).
    * @returns Base64-encoded range bytes and object metadata.
-   * @throws PayloadTooLargeException when `start > end`.
+   * @throws {BadRequestException} When `start > end` (inverted range) or range exceeds 50 MiB.
+   * @throws {StorageException} Propagates from the library when the provider returns an error.
    */
   async downloadRange(key: string, start: number, end: number): Promise<BufferedDownloadResult> {
     if (start > end) {
-      throw new PayloadTooLargeException({
+      throw new BadRequestException({
         error: {
           code: 'RANGE_INVALID',
           message: `start (${start}) must be <= end (${end}).`,
+        },
+      })
+    }
+    if (end - start + 1 > MAX_RANGE_BYTES) {
+      throw new BadRequestException({
+        error: {
+          code: 'RANGE_TOO_LARGE',
+          message: `Requested range ${end - start + 1} bytes exceeds the ${MAX_RANGE_BYTES} byte limit.`,
+          maxBytes: MAX_RANGE_BYTES,
         },
       })
     }
@@ -104,6 +118,7 @@ export class VaultService {
    * @param key - The raw object key.
    * @param versionedBucket - The versioning-enabled bucket name.
    * @returns Base64-encoded object body and metadata (includes `versionId` when set).
+   * @throws {StorageException} Propagates from the library when the provider returns an error.
    */
   async downloadVersion(key: string, versionedBucket: string): Promise<BufferedDownloadResult> {
     const { buffer, metadata } = await this.storage.downloadBuffer({

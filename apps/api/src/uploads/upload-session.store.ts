@@ -60,10 +60,11 @@ export class UploadSessionStore {
   append(id: string, snapshot: ProgressSnapshot): void {
     const entry = this.sessions.get(id)
     if (entry === undefined) return
-    entry.snapshots.push(snapshot)
-    // Touch: delete + reinsert to move the entry to newest position.
+    // Touch: delete + reinsert to move the entry to newest position. Build the
+    // new snapshot list immutably to prevent aliasing through previously returned
+    // array references.
     this.sessions.delete(id)
-    this.sessions.set(id, entry)
+    this.sessions.set(id, { snapshots: [...entry.snapshots, snapshot] })
   }
 
   /**

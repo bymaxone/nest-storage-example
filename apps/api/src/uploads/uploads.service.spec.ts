@@ -385,7 +385,7 @@ describe('UploadsService (unit)', () => {
       })
 
       const key = upload.mock.calls[0]?.[0]?.key
-      expect(key).toMatch(/^idempotent\/[0-9a-f]{16}\.txt$/)
+      expect(key).toMatch(/^idempotent\/[0-9a-f]{64}\.txt$/)
     })
   })
 })

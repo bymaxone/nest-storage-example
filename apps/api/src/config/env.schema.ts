@@ -33,6 +33,9 @@ export const envSchema = z.object({
   STORAGE_BUCKET: z.string().min(1).default('vault'),
   STORAGE_ARCHIVE_BUCKET: z.string().min(1).default('vault-archive'),
   STORAGE_VERSIONED_BUCKET: z.string().min(1).default('vault-versioned'),
+  // Dev-only defaults (local MinIO factory credentials). Production deployments
+  // MUST override these via environment variables or a secrets manager — never
+  // ship with the well-known minioadmin password exposed to the network.
   STORAGE_ACCESS_KEY_ID: z.string().min(1).default('minioadmin'),
   STORAGE_SECRET_ACCESS_KEY: z.string().min(1).default('minioadmin'),
   STORAGE_FORCE_PATH_STYLE: envBoolean(true),

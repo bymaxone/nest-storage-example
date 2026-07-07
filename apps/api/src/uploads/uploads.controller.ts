@@ -23,9 +23,11 @@ import {
 } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
 import type { Request } from 'express'
+import type { UploadResult } from '@bymax-one/nest-storage'
 import { ZodValidationPipe } from '../common/zod-validation.pipe.js'
 import { UploadsService } from './uploads.service.js'
 import { UploadSessionStore } from './upload-session.store.js'
+import type { ProgressSnapshot } from './upload-session.store.js'
 import {
   singleUploadBodySchema,
   sseOverrideBodySchema,
@@ -39,6 +41,9 @@ import {
   type IdempotentUploadBody,
 } from './dto/idempotent-upload.dto.js'
 import type { MulterFile } from './uploads.service.js'
+
+/** Maximum file size accepted by multer memory storage (matches UPLOAD_MAX_SIZE_BYTES default). */
+const MULTER_MAX_FILE_BYTES = 26_214_400
 
 /** Upload controller: all `/uploads/*` routes. */
 @Controller('uploads')
@@ -61,12 +66,14 @@ export class UploadsController {
    * @returns The library `UploadResult`.
    */
   @Post('single')
-  @UseInterceptors(FileInterceptor('file', { storage: undefined }))
+  @UseInterceptors(
+    FileInterceptor('file', { storage: undefined, limits: { fileSize: MULTER_MAX_FILE_BYTES } }),
+  )
   @HttpCode(201)
   async uploadSingle(
     @UploadedFile() file: MulterFile,
     @Body(new ZodValidationPipe(singleUploadBodySchema)) body: SingleUploadBody,
-  ) {
+  ): Promise<UploadResult> {
     if (file === undefined || file === null) {
       throw new BadRequestException({ error: { code: 'VALIDATION', message: 'file is required' } })
     }
@@ -86,12 +93,14 @@ export class UploadsController {
    * @returns `{ sessionId, result }` where `result` is the `UploadResult`.
    */
   @Post('multipart')
-  @UseInterceptors(FileInterceptor('file', { storage: undefined }))
+  @UseInterceptors(
+    FileInterceptor('file', { storage: undefined, limits: { fileSize: MULTER_MAX_FILE_BYTES } }),
+  )
   @HttpCode(201)
   async uploadMultipart(
     @UploadedFile() file: MulterFile,
     @Body(new ZodValidationPipe(multipartUploadBodySchema)) body: MultipartUploadBody,
-  ) {
+  ): Promise<{ sessionId: string; result: UploadResult }> {
     if (file === undefined || file === null) {
       throw new BadRequestException({ error: { code: 'VALIDATION', message: 'file is required' } })
     }
@@ -108,10 +117,16 @@ export class UploadsController {
    * @returns The snapshot array.
    */
   @Get('sessions/:id')
-  getSession(@Param('id') id: string) {
+  getSession(@Param('id') id: string): { id: string; snapshots: ProgressSnapshot[] } {
+    // UUID v4 format guard: session IDs are always randomUUID() output; anything
+    // else is invalid and must not be echoed back to prevent information leakage.
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    if (!UUID_RE.test(id)) {
+      throw new NotFoundException({ error: { code: 'SESSION_NOT_FOUND' } })
+    }
     const snapshots = this.sessions.get(id)
     if (snapshots === null) {
-      throw new NotFoundException({ error: { code: 'SESSION_NOT_FOUND', id } })
+      throw new NotFoundException({ error: { code: 'SESSION_NOT_FOUND' } })
     }
     return { id, snapshots }
   }
@@ -131,7 +146,7 @@ export class UploadsController {
   async uploadStream(
     @Req() req: Request,
     @Query(new ZodValidationPipe(streamUploadQuerySchema)) query: StreamUploadQuery,
-  ) {
+  ): Promise<{ sessionId: string; result: UploadResult }> {
     const contentType = req.headers['content-type'] ?? 'application/octet-stream'
     const lengthHeader = req.headers['content-length']
     const contentLength = lengthHeader !== undefined ? parseInt(lengthHeader, 10) : undefined
@@ -154,7 +169,7 @@ export class UploadsController {
   @HttpCode(201)
   async uploadIdempotent(
     @Body(new ZodValidationPipe(idempotentUploadBodySchema)) body: IdempotentUploadBody,
-  ) {
+  ): Promise<{ result: UploadResult; note: string }> {
     return this.uploadsService.uploadIdempotent(body)
   }
 
@@ -170,12 +185,14 @@ export class UploadsController {
    * @returns The library `UploadResult`.
    */
   @Post('sse-override')
-  @UseInterceptors(FileInterceptor('file', { storage: undefined }))
+  @UseInterceptors(
+    FileInterceptor('file', { storage: undefined, limits: { fileSize: MULTER_MAX_FILE_BYTES } }),
+  )
   @HttpCode(201)
   async uploadWithSseOverride(
     @UploadedFile() file: MulterFile,
     @Body(new ZodValidationPipe(sseOverrideBodySchema)) body: SseOverrideBody,
-  ) {
+  ): Promise<UploadResult> {
     if (file === undefined || file === null) {
       throw new BadRequestException({ error: { code: 'VALIDATION', message: 'file is required' } })
     }

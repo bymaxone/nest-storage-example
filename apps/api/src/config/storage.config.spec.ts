@@ -87,6 +87,8 @@ describe('buildStorageOptions', () => {
      * optional fields into the options.
      */
     const env = envSchema.parse({
+      STORAGE_ACCESS_KEY_ID: 'minioadmin',
+      STORAGE_SECRET_ACCESS_KEY: 'minioadmin',
       STORAGE_CDN_BASE_URL: 'https://cdn.example.com',
       STORAGE_SSE: 'AES256',
     })

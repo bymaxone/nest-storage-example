@@ -10,6 +10,7 @@
 import { NestFactory } from '@nestjs/core'
 import { ConfigService } from '@nestjs/config'
 import type { INestApplication } from '@nestjs/common'
+import helmet from 'helmet'
 import { AppModule } from './app.module.js'
 import { StorageExceptionFilter } from './common/storage-exception.filter.js'
 import type { Env } from './config/env.schema.js'
@@ -23,6 +24,9 @@ import type { Env } from './config/env.schema.js'
  */
 export async function createApp(): Promise<INestApplication> {
   const app = await NestFactory.create(AppModule, { bufferLogs: true })
+  // Set secure HTTP response headers: X-Content-Type-Options, X-Frame-Options,
+  // Strict-Transport-Security, X-DNS-Prefetch-Control, and others.
+  app.use(helmet())
   const config = app.get<ConfigService<{ env: Env }, true>>(ConfigService)
   const env = config.get('env', { infer: true })
   app.enableCors({ origin: env.WEB_ORIGIN, credentials: true })

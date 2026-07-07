@@ -134,28 +134,43 @@ describe('UploadsController (unit)', () => {
   })
 
   describe('getSession', () => {
+    // A valid UUID v4 is required; the controller rejects non-UUID ids with 404.
+    const VALID_SESSION_UUID = '550e8400-e29b-41d4-a716-446655440000'
+
     it('returns the session snapshots for a known id', () => {
       /*
-       * Scenario: a session was created and has one snapshot.
+       * Scenario: a session was created with a valid UUID and has one snapshot.
        * Rule it protects: the controller wraps snapshots in { id, snapshots }.
        */
       const { controller, sessions } = setup()
-      sessions.create('sess-abc')
-      sessions.append('sess-abc', { loaded: 500, strategy: 'single' })
-      const result = controller.getSession('sess-abc')
+      sessions.create(VALID_SESSION_UUID)
+      sessions.append(VALID_SESSION_UUID, { loaded: 500, strategy: 'single' })
+      const result = controller.getSession(VALID_SESSION_UUID)
       expect(result).toEqual({
-        id: 'sess-abc',
+        id: VALID_SESSION_UUID,
         snapshots: [{ loaded: 500, strategy: 'single' }],
       })
     })
 
     it('throws NotFoundException for an unknown session id', () => {
       /*
-       * Scenario: session id was never created (evicted or invalid).
+       * Scenario: valid UUID format but session never created (evicted or invalid).
        * Rule it protects: unknown sessions return 404, not an empty list.
        */
       const { controller } = setup()
-      expect(() => controller.getSession('ghost')).toThrow(NotFoundException)
+      expect(() => controller.getSession('00000000-0000-4000-8000-000000000000')).toThrow(
+        NotFoundException,
+      )
+    })
+
+    it('throws NotFoundException for a non-UUID session id without echoing the raw value', () => {
+      /*
+       * Scenario: caller passes an arbitrary string (not a UUID v4).
+       * Rule it protects: invalid format is rejected before the store lookup; raw
+       * value is not reflected in the error body.
+       */
+      const { controller } = setup()
+      expect(() => controller.getSession('not-a-uuid')).toThrow(NotFoundException)
     })
   })
 

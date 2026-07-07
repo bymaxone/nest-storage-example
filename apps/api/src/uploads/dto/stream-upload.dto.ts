@@ -22,8 +22,8 @@ export const streamUploadQuerySchema = z.object({
     .union([z.literal('true'), z.literal('false')])
     .optional()
     .transform((v) => v !== 'false'),
-  /** Original filename used for extension extraction. Defaults to `'stream'`. */
-  filename: z.string().optional(),
+  /** Original filename used for extension extraction. Max 255 chars. Defaults to `'stream'`. */
+  filename: z.string().max(255).optional(),
 })
 
 /** Parsed query type for `POST /uploads/stream`. */

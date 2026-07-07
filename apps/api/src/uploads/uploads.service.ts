@@ -14,7 +14,7 @@ import type { SingleUploadBody, SseOverrideBody } from './dto/single-upload.dto.
 import type { MultipartUploadBody } from './dto/multipart-upload.dto.js'
 import type { StreamUploadQuery } from './dto/stream-upload.dto.js'
 import type { IdempotentUploadBody } from './dto/idempotent-upload.dto.js'
-import type { ProgressSnapshot, UploadSessionStore } from './upload-session.store.js'
+import type { UploadSessionStore } from './upload-session.store.js'
 
 /** File as injected by multer memory storage. */
 export interface MulterFile {
@@ -38,8 +38,8 @@ function extractExtension(originalname: string): string {
 }
 
 /**
- * Builds upload options from header fields using spread to exclude `undefined`
- * values (required by `exactOptionalPropertyTypes`).
+ * Builds upload options from header fields using conditional spread to exclude
+ * `undefined` values (required by `exactOptionalPropertyTypes`).
  *
  * @param file - The multer in-memory file.
  * @param body - Validated upload body with category and optional headers.
@@ -51,16 +51,15 @@ function buildBaseUploadOptions(
   body: SingleUploadBody,
   key: string,
 ): UploadOptions {
-  const opts: UploadOptions = {
+  return {
     key,
     body: file.buffer,
     contentType: file.mimetype,
     size: file.size,
+    ...(body.cacheControl !== undefined && { cacheControl: body.cacheControl }),
+    ...(body.contentDisposition !== undefined && { contentDisposition: body.contentDisposition }),
+    ...(body.metadata !== undefined && { metadata: body.metadata }),
   }
-  if (body.cacheControl !== undefined) opts.cacheControl = body.cacheControl
-  if (body.contentDisposition !== undefined) opts.contentDisposition = body.contentDisposition
-  if (body.metadata !== undefined) opts.metadata = body.metadata
-  return opts
 }
 
 /** Service orchestrating library upload calls for the uploads module. */
@@ -78,6 +77,7 @@ export class UploadsService {
    * @param file - The multer in-memory file.
    * @param body - Validated upload body with category and optional headers.
    * @returns The library upload result.
+   * @throws {StorageException} Propagates from the library when the provider returns an error.
    */
   async uploadSingle(file: MulterFile, body: SingleUploadBody): Promise<UploadResult> {
     const key = `${body.category}/${randomUUID()}${extractExtension(file.originalname)}`
@@ -91,12 +91,14 @@ export class UploadsService {
    * @param file - The multer in-memory file.
    * @param body - Validated body including the `serverSideEncryption` field.
    * @returns The library upload result.
+   * @throws {StorageException} Propagates from the library when the provider returns an error.
    */
   async uploadWithSseOverride(file: MulterFile, body: SseOverrideBody): Promise<UploadResult> {
     const key = `${body.category}/${randomUUID()}${extractExtension(file.originalname)}`
-    const opts = buildBaseUploadOptions(file, body, key)
-    opts.serverSideEncryption = body.serverSideEncryption
-    return this.storage.upload(opts)
+    return this.storage.upload({
+      ...buildBaseUploadOptions(file, body, key),
+      serverSideEncryption: body.serverSideEncryption,
+    })
   }
 
   /**
@@ -107,6 +109,7 @@ export class UploadsService {
    * @param file - The multer in-memory file.
    * @param body - Validated upload body with category.
    * @returns The upload result and the session ID.
+   * @throws {StorageException} Propagates from the library when the provider returns an error.
    */
   async uploadMultipart(
     file: MulterFile,
@@ -121,19 +124,19 @@ export class UploadsService {
       contentType: file.mimetype,
       size: file.size,
       onProgress: (event) => {
-        const snapshot: ProgressSnapshot = { loaded: event.loaded }
-        if (event.total !== undefined) snapshot.total = event.total
-        if (event.part !== undefined) snapshot.part = event.part
-        this.sessions.append(sessionId, snapshot)
+        this.sessions.append(sessionId, {
+          loaded: event.loaded,
+          ...(event.total !== undefined && { total: event.total }),
+          ...(event.part !== undefined && { part: event.part }),
+        })
       },
     })
     // Record a final snapshot with the resolved strategy.
-    const finalSnapshot: ProgressSnapshot = {
+    this.sessions.append(sessionId, {
       loaded: file.size,
       total: file.size,
       strategy: result.multipart ? 'multipart' : 'single',
-    }
-    this.sessions.append(sessionId, finalSnapshot)
+    })
     return { sessionId, result }
   }
 
@@ -147,6 +150,7 @@ export class UploadsService {
    * @param query - Validated query including category, knownSize, and filename.
    * @param contentLength - Byte count from `Content-Length`; undefined when absent.
    * @returns The upload result and the session ID.
+   * @throws {StorageException} Propagates from the library when the provider returns an error.
    */
   async uploadStream(
     stream: NodeJS.ReadableStream,
@@ -158,25 +162,24 @@ export class UploadsService {
     this.sessions.create(sessionId)
     const filename = query.filename ?? 'stream'
     const key = `${query.category}/${randomUUID()}${extractExtension(filename)}`
-    const opts: UploadOptions = {
+    const result = await this.storage.upload({
       key,
       body: stream,
       contentType,
       onProgress: (event) => {
-        const snapshot: ProgressSnapshot = { loaded: event.loaded }
-        if (event.total !== undefined) snapshot.total = event.total
-        if (event.part !== undefined) snapshot.part = event.part
-        this.sessions.append(sessionId, snapshot)
+        this.sessions.append(sessionId, {
+          loaded: event.loaded,
+          ...(event.total !== undefined && { total: event.total }),
+          ...(event.part !== undefined && { part: event.part }),
+        })
       },
-    }
-    if (query.knownSize && contentLength !== undefined) {
-      opts.size = contentLength
-    }
-    const result = await this.storage.upload(opts)
-    const finalSnapshot: ProgressSnapshot = { loaded: contentLength ?? 0 }
-    if (contentLength !== undefined) finalSnapshot.total = contentLength
-    finalSnapshot.strategy = result.multipart ? 'multipart' : 'single'
-    this.sessions.append(sessionId, finalSnapshot)
+      ...(query.knownSize && contentLength !== undefined && { size: contentLength }),
+    })
+    this.sessions.append(sessionId, {
+      loaded: contentLength ?? 0,
+      ...(contentLength !== undefined && { total: contentLength }),
+      strategy: result.multipart ? 'multipart' : 'single',
+    })
     return { sessionId, result }
   }
 
@@ -192,7 +195,7 @@ export class UploadsService {
   async uploadIdempotent(
     body: IdempotentUploadBody,
   ): Promise<{ result: UploadResult; note: string }> {
-    const keyHash = createHash('sha256').update(body.idempotencyKey).digest('hex').slice(0, 16)
+    const keyHash = createHash('sha256').update(body.idempotencyKey).digest('hex')
     const key = `idempotent/${keyHash}.txt`
     const contentBuffer = Buffer.from(body.content, 'utf8')
     const result = await this.storage.upload({

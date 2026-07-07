@@ -12,6 +12,7 @@ import type { Response } from 'express'
 import { ZodValidationPipe } from '../common/zod-validation.pipe.js'
 import type { Env } from '../config/env.schema.js'
 import { VaultService } from './vault.service.js'
+import type { BufferedDownloadResult } from './vault.service.js'
 import {
   downloadQuerySchema,
   rangeQuerySchema,
@@ -70,7 +71,9 @@ export class VaultController {
    * @returns `{ base64, metadata }` for the full object.
    */
   @Get('preview')
-  async preview(@Query(new ZodValidationPipe(downloadQuerySchema)) query: DownloadQuery) {
+  async preview(
+    @Query(new ZodValidationPipe(downloadQuerySchema)) query: DownloadQuery,
+  ): Promise<BufferedDownloadResult> {
     return this.vaultService.preview(query.key)
   }
 
@@ -84,7 +87,9 @@ export class VaultController {
    * @returns `{ base64, metadata }` for the requested bytes.
    */
   @Get('range')
-  async downloadRange(@Query(new ZodValidationPipe(rangeQuerySchema)) query: RangeQuery) {
+  async downloadRange(
+    @Query(new ZodValidationPipe(rangeQuerySchema)) query: RangeQuery,
+  ): Promise<BufferedDownloadResult> {
     return this.vaultService.downloadRange(query.key, query.start, query.end)
   }
 
@@ -101,7 +106,9 @@ export class VaultController {
    * @returns `{ base64, metadata, requestedVersionId }`.
    */
   @Get('version')
-  async downloadVersion(@Query(new ZodValidationPipe(versionQuerySchema)) query: VersionQuery) {
+  async downloadVersion(
+    @Query(new ZodValidationPipe(versionQuerySchema)) query: VersionQuery,
+  ): Promise<BufferedDownloadResult & { requestedVersionId: string }> {
     const result = await this.vaultService.downloadVersion(query.key, this.versionedBucket)
     return { ...result, requestedVersionId: query.versionId }
   }
