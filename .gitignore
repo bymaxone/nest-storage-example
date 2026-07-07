@@ -10,6 +10,11 @@ out/
 # Test and coverage outputs
 coverage/
 .stryker-tmp/
+reports/mutation/
+test-results/
+playwright-report/
+blob-report/
+.playwright/
 reports/
 
 # Environment files

@@ -1,6 +1,6 @@
 # Phase 9: quality-docs-readiness
 
-> **Status**: 🔄 In Progress · **Progress**: 2 / 6 tasks · **Last updated**: 2026-07-07
+> **Status**: 🔄 In Progress · **Progress**: 3 / 6 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P9)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §21, §22, Appendix B of the plan
 
@@ -34,7 +34,7 @@ CodeQL/Scorecard workflows).
 | --- | ---------------------------------------------------------- | ------- | -------- | ---- | ---------- |
 | 9.1 | Branch + api unit suite to 100/100/100/100                 | ✅ Done | P0       | L    | none       |
 | 9.2 | Web unit suite to 100/100/100/100                          | ✅ Done | P0       | L    | 9.1        |
-| 9.3 | e2e: every route, every error path, Playwright smoke       | 📋 ToDo | P0       | L    | 9.1        |
+| 9.3 | e2e: every route, every error path, Playwright smoke       | ✅ Done | P0       | L    | 9.1        |
 | 9.4 | Stryker mutation (api break 100, web break 90) + docs      | 📋 ToDo | P0       | L    | 9.2, 9.3   |
 | 9.5 | Export audit + README + go-public checklist                | 📋 ToDo | P0       | M    | 9.4        |
 | 9.6 | Phase close: audit, dashboards, PR + Copilot review, merge | 📋 ToDo | P0       | S    | 9.1-9.5    |
@@ -184,7 +184,7 @@ Completion Protocol:
 
 ### Task 9.3: Full e2e + Playwright smoke
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: L
 - **Depends on**: 9.1
@@ -197,10 +197,10 @@ and the CI jobs for both.
 
 #### Acceptance criteria
 
-- [ ] Per-feature e2e specs cover every route in the spec §11.1 catalogue at least once, including 404/400/413/415/422 paths and each Zod reject through the global pipe.
-- [ ] Testcontainers MinIO lifecycle helpers (per-file container or shared with isolation) keep specs independent and re-runnable.
-- [ ] Playwright: boot the stack (`webServer` + compose), a journey suite covering shell load, vault browse, upload with strategy chip, direct-upload confirm, error explorer render.
-- [ ] CI jobs `e2e` and `web-build` (with the Playwright smoke) added and green.
+- [x] Per-feature e2e specs cover every route in the spec §11.1 catalogue at least once, including 404/400/413/415/422 paths and each Zod reject through the global pipe.
+- [x] Testcontainers MinIO lifecycle helpers (per-file container or shared with isolation) keep specs independent and re-runnable.
+- [x] Playwright: boot the stack (`webServer` + compose), a journey suite covering shell load, vault browse, upload with strategy chip, direct-upload confirm, error explorer render.
+- [x] CI jobs `e2e` and `web-build` (with the Playwright smoke) added and green.
 
 #### Files to create / modify
 
@@ -471,5 +471,6 @@ Completion Protocol:
 
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
 
+- 9.3 ✅ 2026-07-07: route-exhaustive e2e now covers every §11.1 route. Added vault.e2e-spec (10 routes + 404/400/413 + Zod reject), uploads.e2e-spec (6 routes + missing-file 400 + session 404s), system.e2e-spec (config redaction + recipes); the full api e2e suite is 11 files / 57 tests green against Testcontainers MinIO (one container at a time, --runInBand). Added the Playwright journey smoke (5 journeys: shell, vault, upload strategy, direct-upload flow, error explorer) booting the whole stack via a globalSetup infra:up + api/web dev webServers, plus a SHA-pinned CI `playwright` job (chromium --with-deps, needs [lint, web-build]).
 - 9.2 ✅ 2026-07-07: web unit suite at 100/100/100/100 (1207 stmts, 352 branches, 129 funcs; 244 tests across 26 files). Trimmed vitest coverage excludes to the genuinely-needed set (vendored components/ui/**, the compile-only shared probe, spec files); app/** route shells stay out of the include list; all boundaries mocked.
 - 9.1 ✅ 2026-07-07: api unit suite at 100/100/100/100 (682 stmts, 269 branches, 202 funcs, 642 lines; 369 tests). Added app.factory.spec.ts (NestFactory spy) so the bootstrap seam is unit-proven; trimmed collectCoverageFrom exclusions to the documented *.module.ts / main.ts / *.d.ts only. Unit tsconfig keeps emitDecoratorMetadata off; zero ignore/suppression comments.

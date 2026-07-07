@@ -135,3 +135,28 @@ jobs:
         uses: ./.github/actions/setup
       - name: API e2e (presigned round-trips against Testcontainers MinIO)
         run: pnpm --filter api run test:e2e
+
+  # The Playwright journey smoke boots the whole stack: the compose MinIO (via
+  # the repo `infra:up`, run by the suite's globalSetup), the API dev server, and
+  # the web dev server, then walks the load-bearing dashboard journeys in one
+  # Chromium instance. Chromium is installed with its OS dependencies. A single
+  # worker keeps the run memory-safe on the runner (the library is loaded once by
+  # the API process, never fanned out).
+  playwright:
+    name: Playwright journeys
+    runs-on: ubuntu-latest
+    needs: [lint, web-build]
+    permissions:
+      contents: read
+    timeout-minutes: 20
+    env:
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Setup workspace
+        uses: ./.github/actions/setup
+      - name: Install Chromium with OS dependencies
+        run: pnpm --filter web exec playwright install --with-deps chromium
+      - name: Run the dashboard journey smoke
+        run: pnpm --filter web run test:e2e
