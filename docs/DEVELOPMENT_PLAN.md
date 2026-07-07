@@ -25,7 +25,7 @@
 
 ## 1. Progress Dashboard
 
-> **Progress:** 4 / 10 phases complete (40%) · 22 / 54 tasks
+> **Progress:** 4 / 10 phases complete (40%) · 23 / 54 tasks
 > **Active phase:** P4 listing-lifecycle
 > **Blockers:** none
 
@@ -35,7 +35,7 @@
 | P1  | minio-stack-library-link  | `phase-01-minio-stack-library-link.md`  | ✅ Done        | 5/5      | M    | 2026-07-07   |
 | P2  | api-skeleton-wiring       | `phase-02-api-skeleton-wiring.md`       | ✅ Done        | 6/6      | L    | 2026-07-07   |
 | P3  | core-object-operations    | `phase-03-core-object-operations.md`    | ✅ Done        | 5/5      | L    | 2026-07-07   |
-| P4  | listing-lifecycle         | `phase-04-listing-lifecycle.md`         | 🔄 In Progress | 0/5      | M    | 2026-07-07   |
+| P4  | listing-lifecycle         | `phase-04-listing-lifecycle.md`         | 🔄 In Progress | 1/5      | M    | 2026-07-07   |
 | P5  | signed-urls-direct-upload | `phase-05-signed-urls-direct-upload.md` | 📋 ToDo        | 0/5      | M    | 2026-07-06   |
 | P6  | validation-scanner        | `phase-06-validation-scanner.md`        | 📋 ToDo        | 0/5      | M    | 2026-07-06   |
 | P7  | tenants-advanced-errors   | `phase-07-tenants-advanced-errors.md`   | 📋 ToDo        | 0/5      | M    | 2026-07-06   |

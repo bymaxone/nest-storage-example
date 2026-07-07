@@ -1,19 +1,24 @@
 /**
- * @fileoverview Vault download endpoints. Thin controller: validates query
+ * @fileoverview Vault object-level endpoints. Thin controller: validates query
  * params with `ZodValidationPipe`, delegates to `VaultService`, and sets HTTP
  * response headers from the library's `ObjectMetadata`. Routes: stream proxy,
- * size-guarded buffer preview, byte-range (base64), and versioned retrieval
- * from the versioned bucket (spec §11.1, §12.1-§12.3).
+ * size-guarded buffer preview, byte-range (base64), versioned retrieval, head
+ * metadata, public-URL rendering, and single delete (spec §11.1, §12.1-§12.3).
  * @layer api/vault
  */
 import { pipeline } from 'node:stream/promises'
-import { Controller, Get, Query, Res } from '@nestjs/common'
+import { Controller, Delete, Get, Query, Res } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import type { Response } from 'express'
+import type { ObjectMetadata } from '@bymax-one/nest-storage'
 import { ZodValidationPipe } from '../common/zod-validation.pipe.js'
 import type { Env } from '../config/env.schema.js'
 import { VaultService } from './vault.service.js'
-import type { BufferedDownloadResult } from './vault.service.js'
+import type {
+  BufferedDownloadResult,
+  PublicUrlResponse,
+  DeleteOneResponse,
+} from './vault.service.js'
 import {
   downloadQuerySchema,
   rangeQuerySchema,
@@ -115,5 +120,64 @@ export class VaultController {
   ): Promise<BufferedDownloadResult & { requestedVersionId: string }> {
     const result = await this.vaultService.downloadVersion(query.key, this.versionedBucket)
     return { ...result, requestedVersionId: query.versionId }
+  }
+
+  /**
+   * GET /vault/object?key= - full object metadata without downloading the body.
+   *
+   * Returns the complete `ObjectMetadata` from `head()`: size, content type,
+   * etag, lastModified, storage class, custom metadata, and versionId when
+   * present on a versioned bucket (spec §11.1).
+   *
+   * @param query - Validated query with `key`.
+   * @returns The complete `ObjectMetadata` for the object.
+   * @throws Propagates `STORAGE_OBJECT_NOT_FOUND` for a missing key.
+   */
+  @Get()
+  async head(
+    @Query(new ZodValidationPipe(downloadQuerySchema)) query: DownloadQuery,
+  ): Promise<ObjectMetadata> {
+    return this.vaultService.head(query.key)
+  }
+
+  /**
+   * GET /vault/object/public-url?key= - plain and CDN public URLs.
+   *
+   * Returns `{ url, cdnUrl?, note }`. `cdnUrl` is present only when
+   * `STORAGE_CDN_BASE_URL` is configured. Both URLs are unsigned and
+   * existence-unchecked -- the response note documents this boundary
+   * (spec §11.1).
+   *
+   * @param query - Validated query with `key`.
+   * @returns `{ url, cdnUrl?, note }`.
+   */
+  @Get('public-url')
+  getPublicUrl(
+    @Query(new ZodValidationPipe(downloadQuerySchema)) query: DownloadQuery,
+  ): PublicUrlResponse {
+    const env = this.config.get('env', { infer: true })
+    return this.vaultService.getPublicUrls(
+      query.key,
+      env.STORAGE_PUBLIC_BASE_URL,
+      env.STORAGE_CDN_BASE_URL,
+      env.STORAGE_KEY_PREFIX,
+    )
+  }
+
+  /**
+   * DELETE /vault/object?key= - idempotent single object delete.
+   *
+   * The library treats a missing key as a no-op (logged as a warning). The
+   * `warned` flag is derived from a pre-delete `exists()` check so the
+   * idempotency behavior is observable to the UI (spec §11.1).
+   *
+   * @param query - Validated query with `key`.
+   * @returns `{ deleted: key, warned: boolean }`.
+   */
+  @Delete()
+  async delete(
+    @Query(new ZodValidationPipe(downloadQuerySchema)) query: DownloadQuery,
+  ): Promise<DeleteOneResponse> {
+    return this.vaultService.deleteOne(query.key)
   }
 }

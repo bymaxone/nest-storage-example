@@ -1,6 +1,6 @@
 # Phase 4: listing-lifecycle
 
-> **Status**: 🔄 In Progress · **Progress**: 0 / 5 tasks · **Last updated**: 2026-07-07
+> **Status**: 🔄 In Progress · **Progress**: 1 / 5 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P4)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §11.1 (Vault), §15
 
@@ -29,7 +29,7 @@ idempotent and bulk deletion with per-key failure rendering, server-side copy (s
 
 | ID  | Task                                                       | Status  | Priority | Size | Depends on |
 | --- | ---------------------------------------------------------- | ------- | -------- | ---- | ---------- |
-| 4.1 | Branch + listing: prefix, pagination, folders              | 📋 ToDo | P0       | M    | none       |
+| 4.1 | Branch + listing: prefix, pagination, folders              | ✅ Done | P0       | M    | none       |
 | 4.2 | Detail: head, exists, public URLs (plain + CDN)            | 📋 ToDo | P0       | S    | 4.1        |
 | 4.3 | Deletion: idempotent single + chunked bulk with failures   | 📋 ToDo | P0       | M    | 4.1        |
 | 4.4 | Copy: same-bucket rename + archive cross-bucket            | 📋 ToDo | P0       | S    | 4.1        |
@@ -39,7 +39,7 @@ idempotent and bulk deletion with per-key failure rendering, server-side copy (s
 
 ### Task 4.1: Branch + listing & folders
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: none
@@ -51,11 +51,11 @@ the seeded objects deterministically.
 
 #### Acceptance criteria
 
-- [ ] Branch `feat/phase-04-listing-lifecycle` created with `git switch -c`.
-- [ ] `GET /vault?prefix=&maxKeys=&cursor=&delimiter=` maps to `list()` and returns `{ objects, commonPrefixes, isTruncated, nextCursor }`.
-- [ ] With 25 seeded objects and `maxKeys=10`, three pages walk the set with no repeats or gaps (proven in an integration test against MinIO).
-- [ ] `delimiter='/'` aggregates category folders into `commonPrefixes`.
-- [ ] Unit tests 100% on new files.
+- [x] Branch `feat/phase-04-listing-lifecycle` created with `git switch -c`.
+- [x] `GET /vault?prefix=&maxKeys=&cursor=&delimiter=` maps to `list()` and returns `{ objects, commonPrefixes, isTruncated, nextCursor }`.
+- [x] With 25 seeded objects and `maxKeys=10`, three pages walk the set with no repeats or gaps (proven in an integration test against MinIO).
+- [x] `delimiter='/'` aggregates category folders into `commonPrefixes`.
+- [x] Unit tests 100% on new files.
 
 #### Files to create / modify
 
@@ -382,3 +382,5 @@ Completion Protocol:
 ## Completion log
 
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
+
+- 4.1 ✅ 2026-07-07: `GET /vault` paged listing on new `VaultBrowseController`; `listQuerySchema` (prefix/maxKeys/cursor/delimiter) mapping cursor↔continuationToken and nextContinuationToken↔nextCursor; shared `objectKeySchema` (non-empty, ≤1024, no control chars). Verified live against compose MinIO: `delimiter=/` aggregates `attachments/ avatars/ invoices/`, a maxKeys=2 walk pages the set with no repeats, `prefix=` filters. 100% coverage.

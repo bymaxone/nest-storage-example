@@ -9,12 +9,18 @@
  */
 import { Injectable } from '@nestjs/common'
 import { randomUUID, createHash } from 'node:crypto'
-import type { StorageService, UploadOptions, UploadResult } from '@bymax-one/nest-storage'
+// StorageService must be a value import (not `import type`): NestJS resolves the
+// constructor dependency from the emitted `design:paramtypes` metadata, which
+// requires the class to exist at runtime. A type-only import is elided and DI fails.
+import { StorageService } from '@bymax-one/nest-storage'
+import type { UploadOptions, UploadResult } from '@bymax-one/nest-storage'
 import type { SingleUploadBody, SseOverrideBody } from './dto/single-upload.dto.js'
 import type { MultipartUploadBody } from './dto/multipart-upload.dto.js'
 import type { StreamUploadQuery } from './dto/stream-upload.dto.js'
 import type { IdempotentUploadBody } from './dto/idempotent-upload.dto.js'
-import type { UploadSessionStore } from './upload-session.store.js'
+// UploadSessionStore is constructor-injected, so it must be a value import for
+// NestJS to resolve it from `design:paramtypes` metadata (see note above).
+import { UploadSessionStore } from './upload-session.store.js'
 
 /** File as injected by multer memory storage. */
 export interface MulterFile {

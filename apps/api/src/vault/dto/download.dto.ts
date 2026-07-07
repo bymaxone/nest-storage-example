@@ -4,14 +4,15 @@
  * @layer api/vault
  */
 import { z } from 'zod'
+import { objectKeySchema } from './object-key.js'
 
 /**
  * Query schema shared by most vault download routes: the object `key` is
  * required and identifies the storage object to retrieve.
  */
 export const downloadQuerySchema = z.object({
-  /** Storage key (URL-decoded by Express before reaching the schema). S3 limits keys to 1024 bytes. */
-  key: z.string().min(1).max(1024),
+  /** Storage key (URL-decoded by Express before reaching the schema); validated by the shared object-key schema. */
+  key: objectKeySchema,
 })
 
 /** Parsed query type for download routes that accept only a key. */
