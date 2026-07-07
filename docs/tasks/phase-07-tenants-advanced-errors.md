@@ -1,6 +1,6 @@
 # Phase 7: tenants-advanced-errors
 
-> **Status**: 🔄 In Progress · **Progress**: 3 / 5 tasks · **Last updated**: 2026-07-07
+> **Status**: 🔄 In Progress · **Progress**: 4 / 5 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P7)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §12.6-§12.8, §18
 
@@ -34,7 +34,7 @@ demonstrations (checksum trap, ACL honesty, timeout knobs), and the raw-client e
 | 7.1 | Branch + tenants module with isolation proof               | ✅ Done | P0       | M    | none       |
 | 7.2 | Error explorer: all 17 codes deterministic                 | ✅ Done | P0       | L    | none       |
 | 7.3 | Provider quirks: checksum trap, ACL honesty, timeout       | ✅ Done | P0       | M    | 7.2        |
-| 7.4 | Raw-client advanced ops + sync forRoot coverage            | 📋 ToDo | P1       | S    | 7.2        |
+| 7.4 | Raw-client advanced ops + sync forRoot coverage            | ✅ Done | P1       | S    | 7.2        |
 | 7.5 | Phase close: audit, dashboards, PR + Copilot review, merge | 📋 ToDo | P0       | S    | 7.1-7.4    |
 
 ## Tasks
@@ -258,7 +258,7 @@ Completion Protocol:
 
 ### Task 7.4: Raw client + sync forRoot
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P1
 - **Size**: S
 - **Depends on**: 7.2
@@ -271,9 +271,9 @@ escape hatch with its trade-off note), and the sync `forRoot` boot path covered 
 
 #### Acceptance criteria
 
-- [ ] The versioning route injects the raw `S3Client` and returns per-bucket versioning status; JSDoc + response carry the abstraction-loss trade-off note.
-- [ ] A test boots a module via sync `forRoot(inlineOptions)` and performs one round-trip, proving the sync path.
-- [ ] Unit tests 100%.
+- [x] The versioning route injects the raw `S3Client` (`BYMAX_STORAGE_S3_CLIENT`) and returns per-bucket versioning status; JSDoc + response carry the abstraction-loss trade-off note; a null raw client surfaces `STORAGE_NOT_CONFIGURED`.
+- [x] `test/sync-forroot.e2e-spec.ts` boots a module via sync `forRoot(inlineOptions)` through `@nestjs/testing` and performs an upload + head round-trip, proving the sync path; the same file exercises the real `GET /system/versioning` route.
+- [x] Unit tests 100%.
 
 #### Files to create / modify
 
@@ -389,6 +389,7 @@ Completion Protocol:
 
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
 
+- 7.4 ✅ 2026-07-07: raw-client escape hatch on the system module. `GET /system/versioning` (`VersioningController` + `VersioningService`) injects the raw `BYMAX_STORAGE_S3_CLIENT` and issues `GetBucketVersioningCommand` for the three application buckets (from the validated env), returning `{ buckets: [{ bucket, status }], tradeOffNote }` where an absent provider Status maps to `Unversioned`; a null raw client (unconfigured) raises `STORAGE_NOT_CONFIGURED`. JSDoc + the response `tradeOffNote` carry the abstraction-loss caveat (reaching past the facade couples the call to the AWS SDK and forgoes the key-prefix/error-mapping/provider-agnostic guarantees). Unit 100% (status mapping + not-configured). `test/sync-forroot.e2e-spec.ts` proves the synchronous `forRoot(inlineOptions)` boot path via `@nestjs/testing` with a real upload+head round-trip (matrix #2) and exercises the live `GET /system/versioning` route against Testcontainers MinIO.
 - 7.3 ✅ 2026-07-07: provider-quirk demos on the system module (`QuirksController` + `QuirksService`, `/system/quirks/*`). `POST /system/quirks/checksum-demo` uploads the same body twice - a scoped `WHEN_SUPPORTED` instance (built from the resolved options with the checksum mode flipped) and the running `WHEN_REQUIRED` module - and renders BOTH real outcomes side by side with a `diverged` flag; honest by design (captures the real StorageException code for display without faking a failure, and reports agreement when a newer MinIO accepts the SDK default checksums). `GET /system/quirks/acl` restates the library's documented ACL behavior (public-read -> HTTP 400 AccessControlListNotSupported on modern AWS, no-op on R2) mapped to `STORAGE_PROVIDER_ERROR`, with the bucket-policy/CDN/signed-URL alternatives. `GET /system/quirks/network` renders maxAttempts/requestTimeoutMs with attempts = retries + 1 AND the honest caveat that the shipped library resolves but does not wire requestTimeoutMs. Unit 100%; `test/quirks.e2e-spec.ts` asserts WHEN_REQUIRED always succeeds and branches skip-with-reason when the local MinIO accepts both modes.
 - 7.2 ✅ 2026-07-07: `errors-demo/` explorer (`ErrorsDemoController` + `ErrorsDemoService`) plus the reusable `common/ScopedStorageFactory` (global `ScopedStorageModule`) that lazily builds and caches misconfigured `BymaxStorageModule` instances and closes them on shutdown. `GET /errors` renders the exhaustive 18-code catalogue with status + message read from the library's own `StorageException` (no hardcoded status copy) and a per-code trigger recipe + reproducible flag. `POST /errors/:code` (Zod enum over `STORAGE_ERROR_CODES`) runs `trigger.registry.ts`: crafted inputs on the running module (KEY_INVALID `../`, BODY_MISSING, CONTENT_TYPE_REQUIRED, MIME_NOT_ALLOWED zip, SIZE_EXCEEDED, VALIDATION_FAILED forged pdf, SCAN_INFECTED marker, OBJECT_NOT_FOUND, BUCKET_UNDEFINED empty-bucket override, SIGNED_URL_TTL_INVALID, INVALID_PART_COUNT parts=0), scoped misconfigured instances (NOT_CONFIGURED empty creds, PROVIDER_ERROR wrong creds, SCAN_INCONCLUSIVE rejectOnUnknown, MULTIPART_ABORTED wrong-creds forced multipart), and the real synchronous `forRoot({})` probe (INVALID_CONFIG). Each reproducible code renders its real library envelope through the global filter (never caught-and-rewritten). RECONCILED DRIFT (docs-first vs the shipped d.ts/build): the library exports 18 codes (spec §18 lists 17, omitting `STORAGE_INVALID_PART_COUNT`); two are defined-but-unreachable and honestly flagged `reproducible: false` rather than faked - `STORAGE_PART_TOO_SMALL` (no public part-size guard; real sub-5MiB parts surface as the provider's EntityTooSmall -> PROVIDER_ERROR) and `STORAGE_TIMEOUT` (`requestTimeoutMs` is resolved in options but never wired into the S3 client request handler, so no library-issued request raises the SDK `TimeoutError` the code maps from). Unit 100% on new files; `test/errors.e2e-spec.ts` walks all 18 codes TWICE against Testcontainers MinIO (16 real envelopes + 2 honest 200 outcomes) proving determinism.
 - 7.1 ✅ 2026-07-07: `tenants/` module (`TenantsController` + `TenantsService`) composing app-level tenant keys `{tenant}/{category}/{uuid}.{ext}` under the single instance `keyPrefix`. Zod-validated slug `^[a-z0-9-]{2,32}$` (character class alone excludes `/`, `..`, and control chars). `POST /tenants/:t/upload` stores a `text/plain` body (whitelisted MIME, so the main pipeline passes) and renders both the app key and the full `{keyPrefix}/{tenant}/...` composition; `GET /tenants/:t/objects` lists strictly within `{tenant}/` (optional category, cursor, maxKeys); `DELETE /tenants/:t/objects` pages the scoped listing and deletes ONLY those keys, so the clear can never escape into a sibling tenant. Every response carries the honest app-level-prefix note (never claims library-enforced isolation). Unit 100% (service + controller + slug validation); `test/tenants.e2e-spec.ts` seeds `acme` + `globex`, proves cross-tenant listing isolation and that clearing `acme` leaves `globex` intact, and rejects a hostile slug with 400.

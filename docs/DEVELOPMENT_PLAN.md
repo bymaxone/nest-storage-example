@@ -25,7 +25,7 @@
 
 ## 1. Progress Dashboard
 
-> **Progress:** 7 / 10 phases complete (70%) · 40 / 54 tasks
+> **Progress:** 7 / 10 phases complete (70%) · 41 / 54 tasks
 > **Active phase:** P7 tenants-advanced-errors
 > **Blockers:** none
 
@@ -38,7 +38,7 @@
 | P4  | listing-lifecycle         | `phase-04-listing-lifecycle.md`         | ✅ Done        | 5/5      | M    | 2026-07-07   |
 | P5  | signed-urls-direct-upload | `phase-05-signed-urls-direct-upload.md` | ✅ Done        | 5/5      | M    | 2026-07-07   |
 | P6  | validation-scanner        | `phase-06-validation-scanner.md`        | ✅ Done        | 5/5      | M    | 2026-07-07   |
-| P7  | tenants-advanced-errors   | `phase-07-tenants-advanced-errors.md`   | 🔄 In Progress | 3/5      | M    | 2026-07-07   |
+| P7  | tenants-advanced-errors   | `phase-07-tenants-advanced-errors.md`   | 🔄 In Progress | 4/5      | M    | 2026-07-07   |
 | P8  | web-dashboard             | `phase-08-web-dashboard.md`             | 📋 ToDo        | 0/6      | L    | 2026-07-06   |
 | P9  | quality-docs-readiness    | `phase-09-quality-docs-readiness.md`    | 📋 ToDo        | 0/6      | L    | 2026-07-06   |
 

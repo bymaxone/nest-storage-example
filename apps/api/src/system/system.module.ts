@@ -10,10 +10,12 @@ import { HealthController } from './health.controller.js'
 import { SystemController } from './system.controller.js'
 import { QuirksController } from './quirks.controller.js'
 import { QuirksService } from './quirks.service.js'
+import { VersioningController } from './versioning.controller.js'
+import { VersioningService } from './versioning.service.js'
 
-/** Groups the operational (health + introspection + provider-quirk) controllers. */
+/** Groups the operational (health + introspection + quirk + versioning) controllers. */
 @Module({
-  controllers: [HealthController, SystemController, QuirksController],
-  providers: [QuirksService],
+  controllers: [HealthController, SystemController, QuirksController, VersioningController],
+  providers: [QuirksService, VersioningService],
 })
 export class SystemModule {}
