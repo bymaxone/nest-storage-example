@@ -1,0 +1,44 @@
+# OpenSSF Scorecard: measures supply-chain security best practices.
+# This workflow is guarded by a visibility check: it runs only when the repository is public.
+# id-token: write is required by the Scorecard action to publish results to the Security tab.
+
+name: Scorecard
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # Run weekly on Sunday at 04:00 UTC, offset from CodeQL to avoid resource contention
+    - cron: '0 4 * * 0'
+
+permissions:
+  contents: read
+
+jobs:
+  scorecard:
+    name: OpenSSF Scorecard
+    runs-on: ubuntu-latest
+    if: ${{ !github.event.repository.private }}
+    permissions:
+      contents: read
+      id-token: write
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+
+      - name: Run Scorecard analysis
+        uses: ossf/scorecard-action@4eaacf0543bb3f2c246792bd56e8cdeffafb205a # v2.4.3
+        with:
+          results_file: results.sarif
+          results_format: sarif
+          publish_results: true
+
+      - name: Upload Scorecard results to Security tab
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: scorecard-results
+          path: results.sarif
+          retention-days: 5

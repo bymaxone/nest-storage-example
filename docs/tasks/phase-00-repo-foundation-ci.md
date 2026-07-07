@@ -1,6 +1,6 @@
 # Phase 0: repo-foundation-ci
 
-> **Status**: 🔄 In Progress · **Progress**: 4 / 6 tasks · **Last updated**: 2026-07-07
+> **Status**: 🔄 In Progress · **Progress**: 5 / 6 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P0)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §5, §6, §22
 
@@ -33,7 +33,7 @@ automatically when it goes public.
 | 0.2 | Lint & format toolchain (ESLint 9 flat + Prettier 3)               | ✅ Done | P0       | S    | 0.1        |
 | 0.3 | Git governance (husky, commitlint, lint-staged, .gitmessage)       | ✅ Done | P0       | S    | 0.1        |
 | 0.4 | Community & meta files (LICENSE, README stub, CHANGELOG, Renovate) | ✅ Done | P1       | S    | 0.1        |
-| 0.5 | CI workflows: `ci.yml` + conditional `codeql.yml`/`scorecard.yml`  | 📋 ToDo | P0       | M    | 0.2        |
+| 0.5 | CI workflows: `ci.yml` + conditional `codeql.yml`/`scorecard.yml`  | ✅ Done | P0       | M    | 0.2        |
 | 0.6 | Phase close: audit, dashboards, PR + Copilot review, merge         | 📋 ToDo | P0       | S    | 0.1-0.5    |
 
 ## Tasks
@@ -338,7 +338,7 @@ Completion Protocol:
 
 ### Task 0.5: CI workflows (day one, public-conditional extras)
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 0.2
@@ -350,10 +350,10 @@ skip cleanly while the repository is private and activate on the public flip.
 
 #### Acceptance criteria
 
-- [ ] `.github/workflows/ci.yml`: on `pull_request` + `push` to `main`; jobs `lint`, `typecheck`, `format` (sequential steps or needs-chained jobs); pnpm caching via `pnpm/action-setup` **before** `actions/setup-node` with `cache: pnpm`; actions SHA-pinned; least-privilege `permissions`.
-- [ ] Later-phase jobs (`test:cov`, `e2e`, `web-build`, `mutation`, `export-usage`) are NOT stubbed as green no-ops; they simply do not exist yet (added by their phases).
-- [ ] `.github/workflows/codeql.yml` and `scorecard.yml` exist with `if: ${{ !github.event.repository.private }}` on their jobs.
-- [ ] `.github/dependabot.yml` or the Renovate config covers actions updates (no duplication: pick Renovate, document the choice inline).
+- [x] `.github/workflows/ci.yml`: on `pull_request` + `push` to `main`; jobs `lint`, `typecheck`, `format` (sequential steps or needs-chained jobs); pnpm caching via `pnpm/action-setup` **before** `actions/setup-node` with `cache: pnpm`; actions SHA-pinned; least-privilege `permissions`.
+- [x] Later-phase jobs (`test:cov`, `e2e`, `web-build`, `mutation`, `export-usage`) are NOT stubbed as green no-ops; they simply do not exist yet (added by their phases).
+- [x] `.github/workflows/codeql.yml` and `scorecard.yml` exist with `if: ${{ !github.event.repository.private }}` on their jobs.
+- [x] `.github/dependabot.yml` or the Renovate config covers actions updates (no duplication: pick Renovate, document the choice inline).
 - [ ] CI is green on this phase's PR.
 
 #### Files to create / modify
@@ -488,6 +488,7 @@ Completion Protocol:
 
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
 
+- 0.5 ✅ 2026-07-07: added ci.yml (lint/typecheck/format jobs, SHA-pinned, pnpm cache), codeql.yml and scorecard.yml both visibility-gated; Renovate handles actions updates
 - 0.4 ✅ 2026-07-07: added MIT LICENSE, README stub with docs table and quick start, CHANGELOG with Keep a Changelog format, and Renovate config with weekend schedule and grouped updates
 - 0.3 ✅ 2026-07-07: added husky v9 hooks (pre-commit/commit-msg), commitlint with config-conventional, lint-staged with eslint+prettier on staged files, and .gitmessage template
 - 0.2 ✅ 2026-07-07: added ESLint 9 flat config with recommendedTypeChecked, banned imports, test relaxations, Prettier 3 with project settings, and .prettierignore
