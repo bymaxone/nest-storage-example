@@ -17,6 +17,7 @@ import { VaultModule } from './vault/vault.module.js'
 import { SignedModule } from './signed/signed.module.js'
 import { ValidationLabModule } from './validation-lab/validation-lab.module.js'
 import { ScannerLabModule } from './scanner-lab/scanner-lab.module.js'
+import { TenantsModule } from './tenants/tenants.module.js'
 import type { Env } from './config/env.schema.js'
 
 /** Root module of the nest-storage-example API. */
@@ -40,6 +41,7 @@ import type { Env } from './config/env.schema.js'
     SignedModule,
     ValidationLabModule,
     ScannerLabModule,
+    TenantsModule,
   ],
   controllers: [AppController],
 })

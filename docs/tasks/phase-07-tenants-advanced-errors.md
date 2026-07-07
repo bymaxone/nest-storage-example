@@ -1,6 +1,6 @@
 # Phase 7: tenants-advanced-errors
 
-> **Status**: 🔄 In Progress · **Progress**: 0 / 5 tasks · **Last updated**: 2026-07-07
+> **Status**: 🔄 In Progress · **Progress**: 1 / 5 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P7)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §12.6-§12.8, §18
 
@@ -31,7 +31,7 @@ demonstrations (checksum trap, ACL honesty, timeout knobs), and the raw-client e
 
 | ID  | Task                                                       | Status  | Priority | Size | Depends on |
 | --- | ---------------------------------------------------------- | ------- | -------- | ---- | ---------- |
-| 7.1 | Branch + tenants module with isolation proof               | 📋 ToDo | P0       | M    | none       |
+| 7.1 | Branch + tenants module with isolation proof               | ✅ Done | P0       | M    | none       |
 | 7.2 | Error explorer: all 17 codes deterministic                 | 📋 ToDo | P0       | L    | none       |
 | 7.3 | Provider quirks: checksum trap, ACL honesty, timeout       | 📋 ToDo | P0       | M    | 7.2        |
 | 7.4 | Raw-client advanced ops + sync forRoot coverage            | 📋 ToDo | P1       | S    | 7.2        |
@@ -41,7 +41,7 @@ demonstrations (checksum trap, ACL honesty, timeout knobs), and the raw-client e
 
 ### Task 7.1: Branch + tenants module
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: none
@@ -53,11 +53,11 @@ listing, per-tenant clearing via `list()` + `deleteMany()`, and the isolation pr
 
 #### Acceptance criteria
 
-- [ ] Branch `feat/phase-07-tenants-advanced-errors` created with `git switch -c`.
-- [ ] `POST /tenants/:t/upload`, `GET /tenants/:t/objects`, `DELETE /tenants/:t/objects` operate strictly inside the tenant prefix (Zod-validated slug).
-- [ ] Isolation proof: clearing tenant `acme` leaves tenant `globex` objects intact (integration-asserted); responses render the full key composition so the layering is visible.
-- [ ] JSDoc + response `note` restate the honest design: one `keyPrefix` per instance, tenants are app-level prefixes.
-- [ ] Unit tests 100% on new files.
+- [x] Branch `feat/phase-07-tenants-advanced-errors` created with `git switch -c`.
+- [x] `POST /tenants/:t/upload`, `GET /tenants/:t/objects`, `DELETE /tenants/:t/objects` operate strictly inside the tenant prefix (Zod-validated slug).
+- [x] Isolation proof: clearing tenant `acme` leaves tenant `globex` objects intact (integration-asserted); responses render the full key composition so the layering is visible.
+- [x] JSDoc + response `note` restate the honest design: one `keyPrefix` per instance, tenants are app-level prefixes.
+- [x] Unit tests 100% on new files.
 
 #### Files to create / modify
 
@@ -388,3 +388,5 @@ Completion Protocol:
 ## Completion log
 
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
+
+- 7.1 ✅ 2026-07-07: `tenants/` module (`TenantsController` + `TenantsService`) composing app-level tenant keys `{tenant}/{category}/{uuid}.{ext}` under the single instance `keyPrefix`. Zod-validated slug `^[a-z0-9-]{2,32}$` (character class alone excludes `/`, `..`, and control chars). `POST /tenants/:t/upload` stores a `text/plain` body (whitelisted MIME, so the main pipeline passes) and renders both the app key and the full `{keyPrefix}/{tenant}/...` composition; `GET /tenants/:t/objects` lists strictly within `{tenant}/` (optional category, cursor, maxKeys); `DELETE /tenants/:t/objects` pages the scoped listing and deletes ONLY those keys, so the clear can never escape into a sibling tenant. Every response carries the honest app-level-prefix note (never claims library-enforced isolation). Unit 100% (service + controller + slug validation); `test/tenants.e2e-spec.ts` seeds `acme` + `globex`, proves cross-tenant listing isolation and that clearing `acme` leaves `globex` intact, and rejects a hostile slug with 400.
