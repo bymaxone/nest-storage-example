@@ -1,6 +1,6 @@
 # Phase 4: listing-lifecycle
 
-> **Status**: 🔄 In Progress · **Progress**: 1 / 5 tasks · **Last updated**: 2026-07-07
+> **Status**: 🔄 In Progress · **Progress**: 2 / 5 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P4)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §11.1 (Vault), §15
 
@@ -30,7 +30,7 @@ idempotent and bulk deletion with per-key failure rendering, server-side copy (s
 | ID  | Task                                                       | Status  | Priority | Size | Depends on |
 | --- | ---------------------------------------------------------- | ------- | -------- | ---- | ---------- |
 | 4.1 | Branch + listing: prefix, pagination, folders              | ✅ Done | P0       | M    | none       |
-| 4.2 | Detail: head, exists, public URLs (plain + CDN)            | 📋 ToDo | P0       | S    | 4.1        |
+| 4.2 | Detail: head, exists, public URLs (plain + CDN)            | ✅ Done | P0       | S    | 4.1        |
 | 4.3 | Deletion: idempotent single + chunked bulk with failures   | 📋 ToDo | P0       | M    | 4.1        |
 | 4.4 | Copy: same-bucket rename + archive cross-bucket            | 📋 ToDo | P0       | S    | 4.1        |
 | 4.5 | Phase close: audit, dashboards, PR + Copilot review, merge | 📋 ToDo | P0       | S    | 4.1-4.4    |
@@ -112,7 +112,7 @@ Completion Protocol:
 
 ### Task 4.2: Detail, exists, public URLs
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 4.1
@@ -124,10 +124,10 @@ plain and CDN forms.
 
 #### Acceptance criteria
 
-- [ ] `GET /vault/object?key=` returns the complete `ObjectMetadata` (headers, x-amz-meta, storageClass, versionId when present); missing key → 404 envelope.
-- [ ] `GET /vault/object/public-url?key=` returns `{ url, cdnUrl? }`: `cdnUrl` present only when `STORAGE_CDN_BASE_URL` is set, with a note that the URL is unsigned and unvalidated.
-- [ ] `exists()` exposed internally for the copy precheck (4.4) with unit coverage for true/false.
-- [ ] Unit tests 100% on new files.
+- [x] `GET /vault/object?key=` returns the complete `ObjectMetadata` (headers, x-amz-meta, storageClass, versionId when present); missing key → 404 envelope.
+- [x] `GET /vault/object/public-url?key=` returns `{ url, cdnUrl? }`: `cdnUrl` present only when `STORAGE_CDN_BASE_URL` is set, with a note that the URL is unsigned and unvalidated.
+- [x] `exists()` exposed internally for the copy precheck (4.4) with unit coverage for true/false.
+- [x] Unit tests 100% on new files.
 
 #### Files to create / modify
 
@@ -383,4 +383,5 @@ Completion Protocol:
 
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
 
+- 4.2 ✅ 2026-07-07: `GET /vault/object` head pass-through and `GET /vault/object/public-url` (plain URL always, `cdnUrl` only when `STORAGE_CDN_BASE_URL` set, plus an unsigned/unvalidated note); `exists()` service seam for the copy precheck. Routes live on the object-level `VaultController`. Verified live against MinIO: head returns full metadata, public-url builds the unsigned URL. 100% coverage.
 - 4.1 ✅ 2026-07-07: `GET /vault` paged listing on new `VaultBrowseController`; `listQuerySchema` (prefix/maxKeys/cursor/delimiter) mapping cursor↔continuationToken and nextContinuationToken↔nextCursor; shared `objectKeySchema` (non-empty, ≤1024, no control chars). Verified live against compose MinIO: `delimiter=/` aggregates `attachments/ avatars/ invoices/`, a maxKeys=2 walk pages the set with no repeats, `prefix=` filters. 100% coverage.
