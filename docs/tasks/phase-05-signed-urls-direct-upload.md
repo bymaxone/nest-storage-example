@@ -1,6 +1,6 @@
 # Phase 5: signed-urls-direct-upload
 
-> **Status**: 🔄 In Progress · **Progress**: 2 / 5 tasks · **Last updated**: 2026-07-07
+> **Status**: 🔄 In Progress · **Progress**: 3 / 5 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P5)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §12.4, §12.5, §17
 
@@ -33,7 +33,7 @@ PUT/GET against MinIO with the issued URLs. Matrix rows 11, 40-46.
 | --- | ----------------------------------------------------------- | ------- | -------- | ---- | ---------- |
 | 5.1 | Branch + signed GET URLs: overrides, clamp, invalid TTL     | ✅ Done | P0       | M    | none       |
 | 5.2 | Signed PUT + confirm pattern (head now, scanner seam)       | ✅ Done | P0       | M    | 5.1        |
-| 5.3 | Presigned multipart: parts, complete, abort                 | 📋 ToDo | P0       | M    | 5.2        |
+| 5.3 | Presigned multipart: parts, complete, abort                 | ✅ Done | P0       | M    | 5.2        |
 | 5.4 | Real-fetch e2e: PUT/GET/multipart round-trips against MinIO | 📋 ToDo | P0       | M    | 5.3        |
 | 5.5 | Phase close: audit, dashboards, PR + Copilot review, merge  | 📋 ToDo | P0       | S    | 5.1-5.4    |
 
@@ -189,7 +189,7 @@ Completion Protocol:
 
 ### Task 5.3: Presigned multipart
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 5.2
@@ -201,10 +201,10 @@ completeUrl) plus the abort path so orphan parts are never billed.
 
 #### Acceptance criteria
 
-- [ ] Response: `{ uploadId, partUrls: [{ partNumber, url }], completeUrl, expiresAt }` for the requested part count.
-- [ ] An abort route (or abort instruction in the same service) issues `AbortMultipartUpload` for an issued-but-unfinished uploadId; behavior documented as the raw-presigned-path responsibility.
-- [ ] Part count boundaries validated (1..1000 per Zod), parts below the 5 MiB S3 minimum documented in the response note.
-- [ ] Unit tests 100%.
+- [x] Response: `{ uploadId, partUrls: [{ partNumber, url }], completeUrl, expiresAt }` for the requested part count.
+- [x] An abort route (`POST /signed/multipart-abort`) issues `AbortMultipartUpload` via the raw `BYMAX_STORAGE_S3_CLIENT` for an issued-but-unfinished uploadId; behavior documented as the raw-presigned-path responsibility.
+- [x] Part count boundaries validated (1..1000 per Zod), parts below the 5 MiB S3 minimum documented in the response note.
+- [x] Unit tests 100%.
 
 #### Files to create / modify
 
@@ -393,5 +393,6 @@ Completion Protocol:
 
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
 
+- 5.3 ✅ 2026-07-07: `POST /signed/multipart-urls` (`multipartUrlsBodySchema`: category, contentType, `parts` 1..1000, optional `ttlSeconds`) driving `SignedUrlService.getMultipartUploadUrls` and returning `{ uploadId, key, partUrls, completeUrl, expiresAt, effectiveTtlSeconds, minPartSizeBytes, note }`. Drift reconciled: `MultipartUploadUrlsResult` has no `expiresAt`, so the effective expiry is read from the `X-Amz-Date`/`X-Amz-Expires` the library signed into the complete URL (never recomputing the clamp). `POST /signed/multipart-abort` (`multipartAbortBodySchema`: key + uploadId) aborts via the raw `BYMAX_STORAGE_S3_CLIENT` (`AbortMultipartUploadCommand`), mirroring the library key-prefix rule and rejecting traversal keys with `STORAGE_KEY_INVALID`; provider errors map to `STORAGE_PROVIDER_ERROR`. 100% coverage.
 - 5.2 ✅ 2026-07-07: `POST /signed/upload-url` (`uploadUrlBodySchema`: category, `type/subtype` contentType, optional `maxSizeBytes`/`ttlSeconds`) issuing a presigned PUT that echoes `requiredHeaders` verbatim and carries an advisory `contentLengthRange` (lower of request and policy) plus a note that the mandatory confirm enforces it. `POST /signed/confirm` (`confirmBodySchema`: key) `head()`s the landed object, re-applies the size + MIME policy read from `BYMAX_STORAGE_OPTIONS`, and runs the `CONFIRM_SCANNER` seam (`IConfirmScanner` bound to `NoOpConfirmScanner`, verdict `skipped` until scanner-verify lands); unknown key → 404 via the library. Every response states local validation did not run on the direct PUT. 100% coverage.
 - 5.1 ✅ 2026-07-07: `POST /signed/download-url` (`downloadUrlBodySchema`: shared `objectKeySchema`, integer `ttlSeconds` that forwards non-positive values to the library, printable-ASCII response overrides) issuing a presigned GET via `SignedUrlService.getDownloadUrl`. Response renders requested-vs-effective TTL with `clamped`/`maxTtlSeconds`; the effective TTL is derived from the library's returned `expiresAt`, never by recomputing the clamp. `ttlSeconds <= 0` propagates `STORAGE_SIGNED_URL_TTL_INVALID` via the filter. Signed module wired into `AppModule`. 100% coverage.
