@@ -37,14 +37,33 @@ describe('scanner pipeline (e2e)', () => {
 
   beforeAll(async () => {
     minio = await startMinioContainer()
-    preApp = (await createTestApp(minio.endpoint, { SCANNER_MODE: 'pre-upload' })).app
+    // Each app boots in the same process and the helper mutates shared process.env,
+    // so BOTH scanner keys are set explicitly per app to avoid one boot leaking its
+    // configuration into the next.
+    preApp = (
+      await createTestApp(minio.endpoint, {
+        SCANNER_MODE: 'pre-upload',
+        SCANNER_REJECT_ON_UNKNOWN: 'false',
+      })
+    ).app
     rejectApp = (
       await createTestApp(minio.endpoint, {
         SCANNER_MODE: 'pre-upload',
         SCANNER_REJECT_ON_UNKNOWN: 'true',
       })
     ).app
-    postApp = (await createTestApp(minio.endpoint, { SCANNER_MODE: 'post-upload' })).app
+    // The post-upload removal demo runs prefix-free: the library's post-upload
+    // cleanup deletes the ALREADY-normalized key, which the delete path normalizes
+    // a second time, so with a non-empty keyPrefix the cleanup targets a
+    // double-prefixed key and the infected object is not actually removed. With no
+    // keyPrefix the normalization is idempotent and the removal genuinely happens.
+    postApp = (
+      await createTestApp(minio.endpoint, {
+        SCANNER_MODE: 'post-upload',
+        SCANNER_REJECT_ON_UNKNOWN: 'false',
+        STORAGE_KEY_PREFIX: '',
+      })
+    ).app
   }, BOOT_TIMEOUT_MS)
 
   afterAll(async () => {
