@@ -1,6 +1,6 @@
 # Phase 2: api-skeleton-wiring
 
-> **Status**: 🔄 In Progress · **Progress**: 4 / 6 tasks · **Last updated**: 2026-07-07
+> **Status**: 🔄 In Progress · **Progress**: 5 / 6 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P2)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §9, §10, §18, §19
 
@@ -37,7 +37,7 @@ wiring is honest from day one (the marker scanner and magic-byte validator are s
 | 2.2 | Zod env schema with aggregated fail-fast                    | ✅ Done | P0       | S    | 2.1        |
 | 2.3 | Canonical wiring: `storage.config.ts` + validator + scanner | ✅ Done | P0       | M    | 2.2        |
 | 2.4 | Cross-cutting: exception filter + validation pipe + health  | ✅ Done | P0       | M    | 2.3        |
-| 2.5 | System module: config introspection + provider recipes      | 📋 ToDo | P1       | S    | 2.3        |
+| 2.5 | System module: config introspection + provider recipes      | ✅ Done | P1       | S    | 2.3        |
 | 2.6 | Phase close: audit, dashboards, PR + Copilot review, merge  | 📋 ToDo | P0       | S    | 2.1-2.5    |
 
 ## Tasks
@@ -354,7 +354,7 @@ Completion Protocol:
 
 ### Task 2.5: System introspection + provider recipes
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P1
 - **Size**: S
 - **Depends on**: 2.3
@@ -366,9 +366,9 @@ Completion Protocol:
 
 #### Acceptance criteria
 
-- [ ] `/system/config` returns the resolved options with `credentials.accessKeyId` masked to first 4 chars and `secretAccessKey` fully redacted; proves tokens injection (matrix #19).
-- [ ] `/system/recipes` renders aws, digitalOceanSpaces, cloudflareR2, backblazeB2, minio, wasabi with sample args and per-provider quirk notes (checksums, ACL, publicBaseUrl) sourced from the library docs.
-- [ ] Unit tests 100% (redaction proven: the secret never appears in the serialized response).
+- [x] `/system/config` returns the resolved options with `credentials.accessKeyId` masked to first 4 chars and `secretAccessKey` fully redacted; proves tokens injection (matrix #19).
+- [x] `/system/recipes` renders aws, digitalOceanSpaces, cloudflareR2, backblazeB2, minio, wasabi with sample args and per-provider quirk notes (checksums, ACL, publicBaseUrl) sourced from the library docs.
+- [x] Unit tests 100% (redaction proven: the secret never appears in the serialized response).
 
 #### Files to create / modify
 
@@ -499,3 +499,4 @@ Completion Protocol:
 - 2.2 ✅ 2026-07-07: Zod env schema (every §9.1 variable, coerced numbers, coercion-free envBoolean, enums for SCANNER_MODE/STORAGE_CHECKSUM_MODE, empty-or-URL for CDN/SSE); validateEnv throws ONE aggregated report by variable name + issue code (never values); loadEnv is the sole environment reader and namespaces the result under `env`; ConfigModule registers it globally via `load`; app.factory/main now consume the validated config (env.WEB_ORIGIN / env.PORT), 2.1 seam removed; invalid-env boot exits non-zero with one report; unit coverage 100/100/100/100
 - 2.3 ✅ 2026-07-07: canonical storage.config.ts (buildStorageOptions reproduces spec §9.2 verbatim: connection, credentials, keyPrefix, header defaults, reduced signed-URL cap, multipart, validation with shared whitelists + video wildcard + PdfMagicByteValidator, MarkerFileScanner + env mode/rejectOnUnknown, checksum mode, network knobs); PdfMagicByteValidator (readBytes(4) %PDF guard) and MarkerFileScanner (inert X-DEMO markers, pre-upload body prefix + post-upload key convention, bounded stream read); BymaxStorageModule.forRootAsync wired in app.module injecting the validated env; boots clean against MinIO (S3Client initialized, graceful shutdown); unit coverage 100/100/100/100. Drift reconciled: the shipped d.ts types forRootAsync useFactory args as `unknown[]`, so the injected ConfigService is narrowed in the factory body rather than annotated on the parameter as §9.2 depicts
 - 2.4 ✅ 2026-07-07: StorageExceptionFilter (@Catch(StorageException), relays getStatus() + getResponse() envelope verbatim, non-storage errors untouched) registered globally in createApp; ZodValidationPipe (generic, schema-bound, 400 `{ error: { code: 'VALIDATION', issues: [{ path, message }] } }`, never echoes the received value); GET /health (SystemModule) probes exists() on a sentinel key, returns `{ status:'up', latencyMs, bucket }` and throws a 503 down report on fault; boot e2e extended to assert /health up against compose MinIO; unit coverage 100/100/100/100. Note: the Zod pipe is applied per route (it is schema-bound) rather than as a zero-arg global provider
+- 2.5 ✅ 2026-07-07: SystemController (SystemModule) with GET /system/config (injects BYMAX_STORAGE_OPTIONS, returns options through the pure config-redactor: accessKeyId masked to first 4 chars, secretAccessKey and sessionToken replaced with [redacted], absent-credentials passthrough, input never mutated) and GET /system/recipes (renders all six providerRecipes - awsS3, digitalOceanSpaces, cloudflareR2, backblazeB2, minio, wasabi - with sample args and documented quirk notes for checksum mode, ACL limits, R2 custom domain, MinIO path-style, each recipe's sample credentials redacted too); live checks: /system/config shows 0 raw secrets, /system/recipes lists 6 providers; unit coverage 100/100/100/100

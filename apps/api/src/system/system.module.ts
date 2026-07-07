@@ -7,9 +7,10 @@
  */
 import { Module } from '@nestjs/common'
 import { HealthController } from './health.controller.js'
+import { SystemController } from './system.controller.js'
 
 /** Groups the operational (health + introspection) controllers. */
 @Module({
-  controllers: [HealthController],
+  controllers: [HealthController, SystemController],
 })
 export class SystemModule {}
