@@ -15,12 +15,12 @@
 | P2    | `phase-02-api-skeleton-wiring.md`       | 6/6       | ✅ Done | NestJS 11 skeleton, Zod env, canonical `forRootAsync`, filter, health, recipes                       |
 | P3    | `phase-03-core-object-operations.md`    | 5/5       | ✅ Done | uploads (single/multipart/stream/progress/idempotency/SSE) + downloads (stream/buffer/range/version) |
 | P4    | `phase-04-listing-lifecycle.md`         | 5/5       | ✅ Done | list/folders/pagination, head/exists, delete/deleteMany, copy, public URLs                           |
-| P5    | `phase-05-signed-urls-direct-upload.md` | 1/5       | 🔄      | presigned GET/PUT/multipart, TTL clamp, direct upload + confirm                                      |
+| P5    | `phase-05-signed-urls-direct-upload.md` | 2/5       | 🔄      | presigned GET/PUT/multipart, TTL clamp, direct upload + confirm                                      |
 | P6    | `phase-06-validation-scanner.md`        | 0/5       | 📋 ToDo | MIME/size/magic-byte validation + marker scanner (modes, rejectOnUnknown)                            |
 | P7    | `phase-07-tenants-advanced-errors.md`   | 0/5       | 📋 ToDo | tenant prefixes, raw S3Client ops, all 17 error codes, provider quirks                               |
 | P8    | `phase-08-web-dashboard.md`             | 0/6       | 📋 ToDo | Next.js 16 dashboard, verbatim design system, all pages                                              |
 | P9    | `phase-09-quality-docs-readiness.md`    | 0/6       | 📋 ToDo | 100% unit coverage, full e2e, Stryker, export audit, README, public-flip checklist                   |
-|       | **Total**                               | **28/54** | 🔄      |                                                                                                      |
+|       | **Total**                               | **29/54** | 🔄      |                                                                                                      |
 
 ## Task-file anatomy
 
