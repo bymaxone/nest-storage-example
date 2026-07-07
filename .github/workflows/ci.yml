@@ -70,6 +70,48 @@ jobs:
       - name: API unit coverage
         run: pnpm test:cov:api
 
+  # The web unit tier runs the dashboard's Vitest coverage on its own runner.
+  # The suite caps its worker pool at maxWorkers '50%' in vitest.config.ts and
+  # runs as a separate job from the API unit tier, so the locally linked library
+  # is never duplicated across two test runners at once (memory-safe on small
+  # runners). The consumed @bymax-one/nest-storage library is provisioned by the
+  # shared composite.
+  web-tests:
+    name: Web tests
+    runs-on: ubuntu-latest
+    needs: lint
+    permissions:
+      contents: read
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Setup workspace
+        uses: ./.github/actions/setup
+      - name: Web unit coverage
+        run: pnpm test:cov:web
+
+  # The web build tier compiles the Next.js production bundle. It proves the
+  # dashboard builds against the shared-subpath library import and that no
+  # NestJS/AWS-SDK code leaks into the client bundle. NEXT_PUBLIC_API_URL is the
+  # only build-time env the bundle needs; it is a non-secret endpoint.
+  web-build:
+    name: Web build
+    runs-on: ubuntu-latest
+    needs: lint
+    permissions:
+      contents: read
+    timeout-minutes: 15
+    env:
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Setup workspace
+        uses: ./.github/actions/setup
+      - name: Build the web app
+        run: pnpm --filter web build
+
   # The API e2e tier boots a real MinIO through Testcontainers (no compose,
   # no services block) and performs the presigned round-trips with plain fetch.
   # GitHub-hosted runners ship a Docker daemon, so Testcontainers pulls and boots

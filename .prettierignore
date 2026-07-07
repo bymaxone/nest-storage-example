@@ -4,3 +4,4 @@ dist/
 coverage/
 .stryker-tmp/
 .claude/
+next-env.d.ts
