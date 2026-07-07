@@ -166,6 +166,9 @@ export class UploadsService {
   ): Promise<{ sessionId: string; result: UploadResult }> {
     const sessionId = randomUUID()
     this.sessions.create(sessionId)
+    // Stryker disable next-line StringLiteral: equivalent mutant. This fallback name
+    // is consumed only by extractExtension below, and it has no extension; an empty
+    // fallback yields the same (extension-less) key, so the literal is unobservable.
     const filename = query.filename ?? 'stream'
     const key = `${query.category}/${randomUUID()}${extractExtension(filename)}`
     // Track the last reported byte count so the final snapshot reflects the real

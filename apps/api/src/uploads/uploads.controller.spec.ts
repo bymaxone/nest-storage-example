@@ -103,8 +103,15 @@ describe('UploadsController (unit)', () => {
        * body is exactly { error: { code: 'VALIDATION', message: 'file is required' } }.
        */
       const { controller, uploadSingle } = setup()
+      // Both undefined and null are rejected (each `===` operand is exercised),
+      // killing a mutant that drops the null half of the guard.
       await expect(
         controller.uploadSingle(undefined as unknown as MulterFile, { category: 'avatars' }),
+      ).rejects.toMatchObject({
+        response: { error: { code: 'VALIDATION', message: 'file is required' } },
+      })
+      await expect(
+        controller.uploadSingle(null as unknown as MulterFile, { category: 'avatars' }),
       ).rejects.toMatchObject({
         response: { error: { code: 'VALIDATION', message: 'file is required' } },
       })
@@ -132,8 +139,14 @@ describe('UploadsController (unit)', () => {
        * VALIDATION envelope.
        */
       const { controller, uploadMultipart } = setup()
+      // Both undefined and null are rejected, exercising each `===` operand.
       await expect(
         controller.uploadMultipart(undefined as unknown as MulterFile, { category: 'media' }),
+      ).rejects.toMatchObject({
+        response: { error: { code: 'VALIDATION', message: 'file is required' } },
+      })
+      await expect(
+        controller.uploadMultipart(null as unknown as MulterFile, { category: 'media' }),
       ).rejects.toMatchObject({
         response: { error: { code: 'VALIDATION', message: 'file is required' } },
       })
@@ -199,15 +212,32 @@ describe('UploadsController (unit)', () => {
       }
     })
 
-    it('rejects a UUID carrying an extra prefix or suffix (anchored match)', () => {
+    it('rejects a UUID carrying an extra prefix or suffix even when a session exists under it', () => {
       /*
-       * Scenario: a valid UUID is padded with leading and trailing characters.
+       * Scenario: sessions are PLANTED under the padded keys, then queried.
        * Rule it protects: the UUID guard is anchored at both ends, so a value that
-       * merely contains a UUID is still rejected (kills a dropped ^ or $ anchor).
+       * merely contains a UUID is rejected BEFORE the store lookup. Planting the
+       * session removes the not-found fallback, so a dropped ^ or $ anchor would let
+       * the padded id resolve and return the session instead of throwing.
        */
-      const { controller } = setup()
+      const { controller, sessions } = setup()
+      sessions.create(`x${VALID_SESSION_UUID}`)
+      sessions.create(`${VALID_SESSION_UUID}x`)
       expect(() => controller.getSession(`x${VALID_SESSION_UUID}`)).toThrow(NotFoundException)
       expect(() => controller.getSession(`${VALID_SESSION_UUID}x`)).toThrow(NotFoundException)
+    })
+
+    it('rejects a non-UUID id before the store lookup even when a session exists under it', () => {
+      /*
+       * Scenario: a session is PLANTED under a non-UUID key, then queried.
+       * Rule it protects: the format guard rejects the invalid id BEFORE the store
+       * lookup. With the session planted the not-found fallback cannot mask a removed
+       * guard, so dropping the format check would return the planted session.
+       */
+      const { controller, sessions } = setup()
+      sessions.create('not-a-uuid')
+      sessions.append('not-a-uuid', { loaded: 1, strategy: 'single' })
+      expect(() => controller.getSession('not-a-uuid')).toThrow(NotFoundException)
     })
   })
 
@@ -384,8 +414,17 @@ describe('UploadsController (unit)', () => {
        * Rule it protects: the guard fires before the service call.
        */
       const { controller, uploadWithSseOverride } = setup()
+      // Both undefined and null are rejected, exercising each `===` operand.
       await expect(
         controller.uploadWithSseOverride(undefined as unknown as MulterFile, {
+          category: 'avatars',
+          serverSideEncryption: 'NONE',
+        }),
+      ).rejects.toMatchObject({
+        response: { error: { code: 'VALIDATION', message: 'file is required' } },
+      })
+      await expect(
+        controller.uploadWithSseOverride(null as unknown as MulterFile, {
           category: 'avatars',
           serverSideEncryption: 'NONE',
         }),

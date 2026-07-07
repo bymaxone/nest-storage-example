@@ -45,6 +45,34 @@ function setup(options: ScannerLabPolicyOptions = { scanner: { mode: 'pre-upload
 }
 
 describe('ScannerLabService (unit)', () => {
+  it('scans the body under the fixed diagnostic-probe identity and uploads as text/plain', async () => {
+    /*
+     * Scenario: clean content is submitted; the scan input and the storage upload
+     * call are inspected directly.
+     * Rule it protects: the probe scan input carries the exact diagnostic-probe key,
+     * the scanner-lab bucket, and a text/plain content type, and the object is stored
+     * as text/plain. Blanking any of those literals is caught.
+     */
+    const upload = jest.fn<StorageService['upload']>()
+    const exists = jest.fn<StorageService['exists']>()
+    const storage = { upload, exists } as unknown as StorageService
+    const scanner = new MarkerFileScanner()
+    const scanSpy = jest.spyOn(scanner, 'scan')
+    upload.mockImplementation((options) => Promise.resolve(makeUploadResult(options.key)))
+    const service = new ScannerLabService(storage, scanner, { scanner: { mode: 'pre-upload' } })
+
+    await service.upload({ content: 'harmless text', keySeed: 'probe-seed' })
+
+    expect(scanSpy).toHaveBeenCalledWith({
+      mode: 'pre-upload',
+      body: Buffer.from('harmless text', 'utf8'),
+      key: 'scanner-lab/diagnostic-probe',
+      bucket: 'scanner-lab',
+      contentType: 'text/plain',
+    })
+    expect(upload.mock.calls[0]?.[0]?.contentType).toBe('text/plain')
+  })
+
   it('uploads clean content under a plain key with a clean verdict', async () => {
     /*
      * Scenario: content with no marker is submitted.

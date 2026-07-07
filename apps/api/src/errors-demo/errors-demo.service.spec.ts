@@ -331,6 +331,7 @@ describe('ErrorsDemoService (unit)', () => {
         getDownloadUrl,
         getMultipartUploadUrls,
         scopedUploadFn,
+        scopedHeadFn,
       }
     }
 
@@ -362,17 +363,22 @@ describe('ErrorsDemoService (unit)', () => {
       await d.registry.STORAGE_SCAN_INFECTED().catch(() => undefined)
       const uploads = d.upload.mock.calls.map((call) => call[0])
       expect(uploads[0]).toMatchObject({ key: 'errors-demo/../escape', contentType: 'text/plain' })
+      // The filler bodies are a non-empty single byte 'x'; blanking them is caught.
+      expect((uploads[0]?.body as Buffer).toString('utf8')).toBe('x')
       expect(uploads[1]).toMatchObject({ key: 'errors-demo/no-body' })
       expect(uploads[1]?.body).toBeUndefined()
       expect(uploads[2]).toMatchObject({ key: 'errors-demo/no-content-type', contentType: '' })
+      expect((uploads[2]?.body as Buffer).toString('utf8')).toBe('x')
       expect(uploads[3]).toMatchObject({
         key: 'errors-demo/disallowed',
         contentType: 'application/zip',
       })
+      expect((uploads[3]?.body as Buffer).toString('utf8')).toBe('x')
       expect(uploads[4]).toMatchObject({
         key: 'errors-demo/too-large.png',
         contentType: 'image/png',
       })
+      expect((uploads[4]?.body as Buffer).toString('utf8')).toBe('x')
       expect(uploads[4]?.size).toBe(1_099_511_627_776)
       expect(uploads[5]).toMatchObject({
         key: 'errors-demo/forged.pdf',
@@ -414,8 +420,16 @@ describe('ErrorsDemoService (unit)', () => {
       const multipartUpload = d.scopedUploadFn.mock.calls[0]?.[0]
       expect(multipartUpload?.key).toBe('errors-demo/multipart')
       expect(multipartUpload?.contentType).toBe('text/plain')
+      // The forced-multipart body is a stream carrying exactly one 'chunk'; a mutant
+      // that empties the chunk array or blanks the chunk string yields a different body.
+      const streamChunks: Buffer[] = []
+      for await (const part of multipartUpload?.body as AsyncIterable<Buffer | string>) {
+        streamChunks.push(typeof part === 'string' ? Buffer.from(part) : part)
+      }
+      expect(Buffer.concat(streamChunks).toString('utf8')).toBe('chunk')
       const scanUpload = d.scopedUploadFn.mock.calls[1]?.[0]
       expect(scanUpload?.key).toBe('errors-demo/unknown.txt')
+      expect(scanUpload?.contentType).toBe('text/plain')
       expect((scanUpload?.body as Buffer).toString('utf8')).toBe('X-DEMO-UNKNOWN sample payload')
     })
 
@@ -425,11 +439,13 @@ describe('ErrorsDemoService (unit)', () => {
        * Rule it protects: the scoped options force path-style addressing and carry
        * blank credentials so the instance asserts unconfigured before any request.
        */
-      const { registry, storageFactory } = buildDirect()
+      const { registry, storageFactory, scopedHeadFn } = buildDirect()
       await registry.STORAGE_NOT_CONFIGURED().catch(() => undefined)
       const options = storageFactory.mock.calls[0]?.[1]
       expect(options?.forcePathStyle).toBe(true)
       expect(options?.credentials).toEqual({ accessKeyId: '', secretAccessKey: '' })
+      // The unconfigured instance is probed with a fixed key; blanking it is caught.
+      expect(scopedHeadFn.mock.calls[0]?.[0]).toBe('errors-demo/probe')
     })
 
     it('builds the wrong-credentials scoped instance with a single attempt and path style', async () => {
@@ -438,11 +454,13 @@ describe('ErrorsDemoService (unit)', () => {
        * Rule it protects: the scoped options cap retries at one attempt and force
        * path-style addressing so the 403 surfaces promptly.
        */
-      const { registry, storageFactory } = buildDirect()
+      const { registry, storageFactory, scopedHeadFn } = buildDirect()
       await registry.STORAGE_PROVIDER_ERROR().catch(() => undefined)
       const options = storageFactory.mock.calls[0]?.[1]
       expect(options?.forcePathStyle).toBe(true)
       expect(options?.maxAttempts).toBe(1)
+      // The wrong-credentials instance is probed with a fixed key; blanking it is caught.
+      expect(scopedHeadFn.mock.calls[0]?.[0]).toBe('errors-demo/probe')
       expect(options?.credentials).toEqual({
         accessKeyId: 'wrong-access-key',
         secretAccessKey: 'wrong-secret-key',

@@ -103,7 +103,9 @@ describe('redactStorageOptions (unit)', () => {
      * emitted as undefined.
      */
     const redacted = redactStorageOptions({ ...base, scanner: { impl: new DemoScanner() } })
-    expect(redacted.scanner).toEqual({ impl: 'DemoScanner' })
+    // toStrictEqual (not toEqual): an absent optional field must be OMITTED, never
+    // rendered as `{ key: undefined }`, so a mutant that always spreads it is caught.
+    expect(redacted.scanner).toStrictEqual({ impl: 'DemoScanner' })
   })
 
   it('renders custom validators by name with the whitelist and size cap', () => {
@@ -134,7 +136,9 @@ describe('redactStorageOptions (unit)', () => {
      * emitting undefined fields.
      */
     const redacted = redactStorageOptions({ ...base, validation: {} })
-    expect(redacted.validation).toEqual({})
+    // toStrictEqual (not toEqual): absent whitelist and size cap must be OMITTED,
+    // not rendered as present-with-undefined, so a mutant that always spreads is caught.
+    expect(redacted.validation).toStrictEqual({})
   })
 
   it('masks a short access key id without a negative repeat count', () => {

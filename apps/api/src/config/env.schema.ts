@@ -101,7 +101,11 @@ export function validateEnv(config: Record<string, unknown>): Env {
     return parsed.data
   }
   const lines = parsed.error.issues.map((issue) => {
-    const name = issue.path.length > 0 ? issue.path.join('.') : '(root)'
+    // Stryker disable next-line StringLiteral: the environment schema is flat, so
+    // every Zod issue path is a single segment (a variable name) or empty. The join
+    // separator is never applied between two segments, so its value is unobservable.
+    const joinedPath = issue.path.join('.')
+    const name = issue.path.length > 0 ? joinedPath : '(root)'
     // Custom guards carry a static, value-free message worth surfacing; all
     // other issues are reported by code only to avoid echoing any input.
     const detail = issue.code === 'custom' ? `${issue.code} (${issue.message})` : issue.code

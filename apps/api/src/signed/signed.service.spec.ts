@@ -452,6 +452,11 @@ describe('SignedService (unit)', () => {
       const cases = [
         'https://minio.local/vault/key?X-Amz-Date=notadate&X-Amz-Expires=300',
         'https://minio.local/vault/key?X-Amz-Date=20260707T100000Z&X-Amz-Expires=abc',
+        // A date wrapped in extra characters must fail the anchored match end to end,
+        // so a leading or trailing character is rejected rather than partially parsed
+        // (kills a dropped ^ or $ anchor in the SigV4 date pattern).
+        'https://minio.local/vault/key?X-Amz-Date=x20260707T100000Z&X-Amz-Expires=300',
+        'https://minio.local/vault/key?X-Amz-Date=20260707T100000Zx&X-Amz-Expires=300',
       ]
       for (const url of cases) {
         const error = (() => {

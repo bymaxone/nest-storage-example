@@ -267,6 +267,10 @@ describe('isMimeAllowed', () => {
      */
     expect(isMimeAllowed('video/mp4', ['video/*'])).toBe(true)
     expect(isMimeAllowed('image/png', ['image/png'])).toBe(true)
+    // An EXACT entry must match exactly, not as a prefix: a type that merely shares
+    // the entry's leading characters is refused. This kills a mutant that treats a
+    // non-wildcard entry as a `type/*` wildcard (forcing the prefix branch).
+    expect(isMimeAllowed('image/pngxyz', ['image/png'])).toBe(false)
   })
 
   it('anchors a type/* wildcard at the full prefix, not the first character', () => {

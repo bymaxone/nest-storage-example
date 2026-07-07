@@ -77,7 +77,10 @@ export class MarkerFileScanner implements IFileScanner {
     for await (const chunk of body as AsyncIterable<Buffer | string>) {
       const buffer = typeof chunk === 'string' ? Buffer.from(chunk) : chunk
       const remaining = MAX_SCAN_BYTES - total
-      const slice = buffer.length > remaining ? buffer.subarray(0, remaining) : buffer
+      // `subarray` clamps its end index to the buffer length, so slicing to the
+      // remaining budget both truncates an oversized chunk AND returns a small chunk
+      // whole - no length comparison is needed.
+      const slice = buffer.subarray(0, remaining)
       chunks.push(slice)
       total += slice.length
       if (total >= MAX_SCAN_BYTES) {

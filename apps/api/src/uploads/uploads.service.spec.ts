@@ -324,7 +324,9 @@ describe('UploadsService (unit)', () => {
       expect(snapshots).toHaveLength(3)
       expect(snapshots?.[0]).toMatchObject({ loaded: 512, total: 1024, part: 1 })
       expect(snapshots?.[1]).toMatchObject({ loaded: 1024, total: 1024, part: 2 })
-      expect(snapshots?.[2]).toMatchObject({ strategy: 'multipart' })
+      // The final snapshot carries the known total too (contentLength was 1024), so a
+      // mutant that drops the conditional `total` field from the final append is caught.
+      expect(snapshots?.[2]).toMatchObject({ loaded: 1024, total: 1024, strategy: 'multipart' })
     })
 
     it('carries the last onProgress loaded value into the final snapshot for unknown-size streams', async () => {

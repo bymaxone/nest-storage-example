@@ -87,7 +87,10 @@ describe('ValidationLabService (unit)', () => {
     const res: ValidationUploadResult = await service.upload(makeFile())
     expect(upload).toHaveBeenCalledTimes(1)
     const call = upload.mock.calls[0]?.[0]
-    expect(call?.key).toMatch(/^validation-lab\/.+\.png$/)
+    // The key is `validation-lab/<uuid><ext>`: only the uuid (hex + dashes) may
+    // precede the extension. A mutant that appends the whole filename instead of
+    // just its extension (leaking `sample`) fails this hex-only anchor.
+    expect(call?.key).toMatch(/^validation-lab\/[0-9a-f-]+\.png$/)
     expect(call?.contentType).toBe('image/png')
     expect(call?.size).toBe(64)
     expect(res.rules).toEqual({

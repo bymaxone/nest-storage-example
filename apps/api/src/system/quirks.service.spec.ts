@@ -120,6 +120,25 @@ describe('QuirksService (unit)', () => {
     await service.checksumDemo()
     expect(scopedFactory.mock.calls[0]?.[1]?.maxAttempts).toBe(3)
     expect(scopedFactory.mock.calls[0]?.[1]?.requestTimeoutMs).toBe(30_000)
+    // The scoped instance is registered under a fixed diagnostic label.
+    expect(scopedFactory.mock.calls[0]?.[0]).toBe('checksum-when-supported')
+    // The probe uploads a fixed text/plain body through the scoped instance; blanking
+    // the probe body or its content type is caught.
+    expect(scopedUpload.mock.calls[0]?.[0]?.body).toEqual(Buffer.from('checksum probe body'))
+    expect(scopedUpload.mock.calls[0]?.[0]?.contentType).toBe('text/plain')
+  })
+
+  it('omits the session token from the scoped instance when the resolved credentials carry none', async () => {
+    /*
+     * Scenario: the resolved credentials have no STS session token (the default).
+     * Rule it protects: the scoped credentials OMIT sessionToken rather than carrying
+     * it as present-with-undefined, so a mutant that always spreads the token is caught.
+     */
+    const { service, upload, scopedUpload, scopedFactory } = setup()
+    scopedUpload.mockImplementation((o) => Promise.resolve(uploadResult(o.key)))
+    upload.mockImplementation((o) => Promise.resolve(uploadResult(o.key)))
+    await service.checksumDemo()
+    expect(scopedFactory.mock.calls[0]?.[1]?.credentials).not.toHaveProperty('sessionToken')
   })
 
   it('reports agreement when the local provider accepts both modes', async () => {

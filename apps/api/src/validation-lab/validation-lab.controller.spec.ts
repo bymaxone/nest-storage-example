@@ -71,7 +71,12 @@ describe('ValidationLabController (unit)', () => {
      * Rule it protects: a missing file is a 400 bad request, never forwarded.
      */
     const { controller, upload } = setup()
+    // Both undefined and null are rejected: the guard tests each with its own `===`,
+    // so exercising both operands kills a mutant that drops the null check.
     await expect(controller.upload(undefined as unknown as MulterFile)).rejects.toMatchObject({
+      response: { error: { code: 'VALIDATION', message: 'file is required' } },
+    })
+    await expect(controller.upload(null as unknown as MulterFile)).rejects.toMatchObject({
       response: { error: { code: 'VALIDATION', message: 'file is required' } },
     })
     expect(upload).not.toHaveBeenCalled()
