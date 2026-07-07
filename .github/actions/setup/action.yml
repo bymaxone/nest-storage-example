@@ -7,17 +7,22 @@ description: >-
 runs:
   using: composite
   steps:
-    # No `version:` key: the pnpm version is derived from the root package.json
-    # `packageManager` field, so the two never drift (a hard-coded pin here would
-    # risk ERR_PNPM_BAD_PM_VERSION).
-    - name: Set up pnpm
-      uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
-
     - name: Set up Node.js
       uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
       with:
         node-version: 24
-        cache: pnpm
+
+    # pnpm is provided by Node's bundled corepack rather than a third-party action,
+    # so the workflow uses only GitHub-owned actions (satisfying the org policy that
+    # permits only GitHub-owned and verified actions). The version is taken from each
+    # package.json `packageManager` field, so it never drifts from the repo pin.
+    - name: Enable pnpm via corepack
+      shell: bash
+      env:
+        COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'
+      run: |
+        corepack enable
+        pnpm --version
 
     # The apps consume @bymax-one/nest-storage via `file:../../../nest-storage`, a
     # sibling of the repo checkout, so the lockfile cannot resolve until the library
