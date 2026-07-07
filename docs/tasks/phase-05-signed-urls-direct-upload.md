@@ -1,6 +1,6 @@
 # Phase 5: signed-urls-direct-upload
 
-> **Status**: 🔄 In Progress · **Progress**: 0 / 5 tasks · **Last updated**: 2026-07-07
+> **Status**: 🔄 In Progress · **Progress**: 1 / 5 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P5)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §12.4, §12.5, §17
 
@@ -31,7 +31,7 @@ PUT/GET against MinIO with the issued URLs. Matrix rows 11, 40-46.
 
 | ID  | Task                                                        | Status  | Priority | Size | Depends on |
 | --- | ----------------------------------------------------------- | ------- | -------- | ---- | ---------- |
-| 5.1 | Branch + signed GET URLs: overrides, clamp, invalid TTL     | 📋 ToDo | P0       | M    | none       |
+| 5.1 | Branch + signed GET URLs: overrides, clamp, invalid TTL     | ✅ Done | P0       | M    | none       |
 | 5.2 | Signed PUT + confirm pattern (head now, scanner seam)       | 📋 ToDo | P0       | M    | 5.1        |
 | 5.3 | Presigned multipart: parts, complete, abort                 | 📋 ToDo | P0       | M    | 5.2        |
 | 5.4 | Real-fetch e2e: PUT/GET/multipart round-trips against MinIO | 📋 ToDo | P0       | M    | 5.3        |
@@ -41,7 +41,7 @@ PUT/GET against MinIO with the issued URLs. Matrix rows 11, 40-46.
 
 ### Task 5.1: Signed GET URLs
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: none
@@ -53,11 +53,11 @@ rendered as requested-vs-effective, and the `ttlSeconds ≤ 0` rejection.
 
 #### Acceptance criteria
 
-- [ ] Branch `feat/phase-05-signed-urls-direct-upload` created with `git switch -c`.
-- [ ] Response: `{ url, method: 'GET', expiresAt, requiredHeaders, requestedTtlSeconds, effectiveTtlSeconds }` where effective reflects the clamp against the configured 1 h cap.
-- [ ] `responseContentDisposition` (attachment filename) and `responseContentType` pass through.
-- [ ] `ttlSeconds: 0` → `STORAGE_SIGNED_URL_TTL_INVALID` envelope via the filter.
-- [ ] Unit tests 100% (clamp math, overrides, rejection).
+- [x] Branch `feat/phase-05-signed-urls-direct-upload` created with `git switch -c`.
+- [x] Response: `{ url, method: 'GET', expiresAt, requiredHeaders, requestedTtlSeconds, effectiveTtlSeconds }` where effective reflects the clamp against the configured 1 h cap.
+- [x] `responseContentDisposition` (attachment filename) and `responseContentType` pass through.
+- [x] `ttlSeconds: 0` → `STORAGE_SIGNED_URL_TTL_INVALID` envelope via the filter.
+- [x] Unit tests 100% (clamp math, overrides, rejection).
 
 #### Files to create / modify
 
@@ -392,3 +392,5 @@ Completion Protocol:
 ## Completion log
 
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
+
+- 5.1 ✅ 2026-07-07: `POST /signed/download-url` (`downloadUrlBodySchema`: shared `objectKeySchema`, integer `ttlSeconds` that forwards non-positive values to the library, printable-ASCII response overrides) issuing a presigned GET via `SignedUrlService.getDownloadUrl`. Response renders requested-vs-effective TTL with `clamped`/`maxTtlSeconds`; the effective TTL is derived from the library's returned `expiresAt`, never by recomputing the clamp. `ttlSeconds <= 0` propagates `STORAGE_SIGNED_URL_TTL_INVALID` via the filter. Signed module wired into `AppModule`. 100% coverage.

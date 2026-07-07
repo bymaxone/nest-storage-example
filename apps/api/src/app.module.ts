@@ -14,6 +14,7 @@ import { AppController } from './app.controller.js'
 import { SystemModule } from './system/system.module.js'
 import { UploadsModule } from './uploads/uploads.module.js'
 import { VaultModule } from './vault/vault.module.js'
+import { SignedModule } from './signed/signed.module.js'
 import type { Env } from './config/env.schema.js'
 
 /** Root module of the nest-storage-example API. */
@@ -34,6 +35,7 @@ import type { Env } from './config/env.schema.js'
     SystemModule,
     UploadsModule,
     VaultModule,
+    SignedModule,
   ],
   controllers: [AppController],
 })
