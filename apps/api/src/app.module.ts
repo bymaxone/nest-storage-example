@@ -12,6 +12,8 @@ import { ConfigModule } from './config/config.module.js'
 import { buildStorageOptions } from './config/storage.config.js'
 import { AppController } from './app.controller.js'
 import { SystemModule } from './system/system.module.js'
+import { UploadsModule } from './uploads/uploads.module.js'
+import { VaultModule } from './vault/vault.module.js'
 import type { Env } from './config/env.schema.js'
 
 /** Root module of the nest-storage-example API. */
@@ -30,6 +32,8 @@ import type { Env } from './config/env.schema.js'
       },
     }),
     SystemModule,
+    UploadsModule,
+    VaultModule,
   ],
   controllers: [AppController],
 })
