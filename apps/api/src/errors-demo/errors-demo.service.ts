@@ -2,7 +2,8 @@
  * @fileoverview Error-explorer service. Owns the deterministic trigger registry
  * and the exhaustive catalogue. `trigger()` runs a code's real library call so
  * the untouched envelope flows to the global filter (or returns the honest
- * outcome for the one defined-but-unthrown code); `catalogue()` renders every
+ * outcome for the defined-but-unthrown codes `STORAGE_PART_TOO_SMALL` and
+ * `STORAGE_TIMEOUT`); `catalogue()` renders every
  * shipped code with its library-mapped status, message, and trigger recipe.
  * @layer api/errors-demo
  */
@@ -54,8 +55,9 @@ export class ErrorsDemoService {
 
   /**
    * Reproduces one error code. A reproducible code throws its real
-   * `StorageException` (relayed by the global filter); the single
-   * defined-but-unthrown code resolves to an explanatory outcome.
+   * `StorageException` (relayed by the global filter); the defined-but-unthrown
+   * codes (`STORAGE_PART_TOO_SMALL` and `STORAGE_TIMEOUT`) resolve to an
+   * explanatory outcome.
    *
    * @param code - The validated storage error code.
    * @returns The explanatory outcome for a non-reproducible code; otherwise throws.

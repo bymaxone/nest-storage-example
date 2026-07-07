@@ -1,8 +1,9 @@
 /**
  * @fileoverview Provider-quirk demonstrations: the three S3-compatibility traps
- * the library documents. The checksum demo uploads the same body twice — once
+ * the library documents. The checksum demo uploads the same body twice: once
  * through a scoped `WHEN_SUPPORTED` instance and once through the running module's
- * `WHEN_REQUIRED` instance — and reports BOTH real outcomes side by side, honest
+ * instance (running its configured checksum mode), reporting BOTH real outcomes
+ * side by side, honest
  * about the fact that whether MinIO rejects the SDK default checksums is
  * version-dependent. The ACL card restates the library's documented guidance, and
  * the network card renders the retry/timeout knobs (including the honest note that
@@ -47,7 +48,7 @@ export interface ChecksumModeOutcome {
 export interface ChecksumDemoView {
   /** Outcome of the SDK-default (`WHEN_SUPPORTED`) upload against the provider. */
   supportedMode: ChecksumModeOutcome
-  /** Outcome of the recipe-tuned (`WHEN_REQUIRED`) upload. */
+  /** Outcome of the running module's upload, labelled with its configured checksum mode. */
   requiredMode: ChecksumModeOutcome
   /** True when the two modes diverged (the trap the recipes protect against). */
   diverged: boolean
@@ -94,8 +95,9 @@ export class QuirksService {
 
   /**
    * Uploads the same body through a scoped `WHEN_SUPPORTED` instance and through
-   * the running `WHEN_REQUIRED` module, reporting both real outcomes so the
-   * checksum trap is visible without pretending either mode always fails.
+   * the running module (labelled with its configured checksum mode), reporting
+   * both real outcomes so the checksum trap is visible without pretending either
+   * mode always fails.
    *
    * @returns Both mode outcomes, whether they diverged, and the guidance.
    */
@@ -105,7 +107,10 @@ export class QuirksService {
       this.whenSupportedOptions(),
     )
     const supportedMode = await this.runUpload((o) => instance.upload(o), 'WHEN_SUPPORTED')
-    const requiredMode = await this.runUpload((o) => this.storage.upload(o), 'WHEN_REQUIRED')
+    const requiredMode = await this.runUpload(
+      (o) => this.storage.upload(o),
+      this.options.requestChecksumCalculation,
+    )
     return {
       supportedMode,
       requiredMode,
@@ -172,7 +177,11 @@ export class QuirksService {
     }
   }
 
-  /** Builds scoped options identical to the running module but with WHEN_SUPPORTED. */
+  /**
+   * Builds scoped options that match the running module (including the resolved
+   * retry and timeout knobs) except for the checksum mode under demonstration,
+   * which is forced to `WHEN_SUPPORTED`.
+   */
   private whenSupportedOptions(): BymaxStorageModuleOptions {
     return {
       endpoint: this.options.endpoint,
@@ -186,6 +195,8 @@ export class QuirksService {
           ? { sessionToken: this.options.credentials.sessionToken }
           : {}),
       },
+      maxAttempts: this.options.maxAttempts,
+      requestTimeoutMs: this.options.requestTimeoutMs,
       requestChecksumCalculation: 'WHEN_SUPPORTED',
       responseChecksumValidation: 'WHEN_SUPPORTED',
     }

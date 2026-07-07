@@ -3,8 +3,8 @@
  *
  * Asserts the catalogue is exhaustive over the shipped 18 codes, that every
  * status/message is read from the library's own StorageException (spot-checked
- * against known mappings), and that only STORAGE_PART_TOO_SMALL is flagged
- * non-reproducible (the documented drift).
+ * against known mappings), and that STORAGE_PART_TOO_SMALL and STORAGE_TIMEOUT
+ * are the codes flagged non-reproducible (the documented drift).
  *
  * @module errors-demo/error-catalogue.spec
  */

@@ -3,8 +3,10 @@
  *
  * Mocks the running storage, the scoped factory, and the resolved options. Covers
  * the checksum demo when the two modes diverge and when they agree (the honest
- * version-dependent case), the non-StorageException rethrow, and the static ACL
- * and network cards including the requestTimeoutMs caveat.
+ * version-dependent case), that the running module is labelled from the resolved
+ * checksum mode (default and non-default), that the scoped instance forwards the
+ * resolved retry and timeout knobs, the non-StorageException rethrow, and the
+ * static ACL and network cards including the requestTimeoutMs caveat.
  *
  * @module system/quirks.service.spec
  */
@@ -69,8 +71,47 @@ describe('QuirksService (unit)', () => {
     expect(view.supportedMode.ok).toBe(false)
     expect(view.supportedMode.detail).toContain('STORAGE_PROVIDER_ERROR')
     expect(view.requiredMode.ok).toBe(true)
+    expect(view.requiredMode.mode).toBe('WHEN_REQUIRED')
     expect(view.diverged).toBe(true)
     expect(scopedFactory.mock.calls[0]?.[1]?.requestChecksumCalculation).toBe('WHEN_SUPPORTED')
+  })
+
+  it('labels the running module from the resolved checksum mode on a WHEN_SUPPORTED deployment', async () => {
+    /*
+     * Scenario: the module is deployed with STORAGE_CHECKSUM_MODE=WHEN_SUPPORTED.
+     * Rule it protects: the running-module outcome is labelled from the resolved
+     * option, not a hard-coded WHEN_REQUIRED, so the report stays accurate.
+     */
+    const upload = jest.fn<StorageService['upload']>((o) => Promise.resolve(uploadResult(o.key)))
+    const storage = { upload } as unknown as StorageService
+    const scopedUpload = jest.fn<StorageService['upload']>((o) =>
+      Promise.resolve(uploadResult(o.key)),
+    )
+    const scopedStorage = { upload: scopedUpload } as unknown as StorageService
+    const scoped = {
+      storage: jest.fn<ScopedStorageFactory['storage']>().mockResolvedValue(scopedStorage),
+    } as unknown as ScopedStorageFactory
+    const supportedDeployment: QuirksResolvedOptions = {
+      ...OPTIONS,
+      requestChecksumCalculation: 'WHEN_SUPPORTED',
+    }
+    const service = new QuirksService(storage, scoped, supportedDeployment)
+    const view = await service.checksumDemo()
+    expect(view.requiredMode.mode).toBe('WHEN_SUPPORTED')
+  })
+
+  it('forwards the resolved retry and timeout knobs into the scoped instance', async () => {
+    /*
+     * Scenario: the checksum demo spins up a scoped WHEN_SUPPORTED instance.
+     * Rule it protects: the scoped instance matches the running module (maxAttempts
+     * and requestTimeoutMs) except for the checksum mode under demonstration.
+     */
+    const { service, upload, scopedUpload, scopedFactory } = setup()
+    scopedUpload.mockImplementation((o) => Promise.resolve(uploadResult(o.key)))
+    upload.mockImplementation((o) => Promise.resolve(uploadResult(o.key)))
+    await service.checksumDemo()
+    expect(scopedFactory.mock.calls[0]?.[1]?.maxAttempts).toBe(3)
+    expect(scopedFactory.mock.calls[0]?.[1]?.requestTimeoutMs).toBe(30_000)
   })
 
   it('reports agreement when the local provider accepts both modes', async () => {

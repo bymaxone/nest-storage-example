@@ -3,8 +3,9 @@
  * Each trigger reproduces its code through a REAL library call — crafted inputs
  * on the running module, or a scoped misconfigured instance — so the code always
  * arises on demand and its untouched envelope reaches the global filter. No app
- * code fabricates a `StorageException`; the one non-reproducible code (documented
- * in the catalogue) returns an honest explanation instead of a faked throw.
+ * code fabricates a `StorageException`; the two non-reproducible codes
+ * (`STORAGE_PART_TOO_SMALL` and `STORAGE_TIMEOUT`, documented in the catalogue)
+ * return an honest explanation instead of a faked throw.
  * @layer api/errors-demo
  */
 import { randomUUID } from 'node:crypto'

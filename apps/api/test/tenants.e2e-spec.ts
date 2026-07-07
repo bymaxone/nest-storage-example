@@ -96,10 +96,13 @@ describe('tenant isolation (e2e)', () => {
 
   it('rejects a hostile tenant slug before composing a key', async () => {
     /*
-     * Scenario: a slug carrying a path separator is submitted.
-     * Rule it protects: the Zod slug validation returns 400 so a traversal attempt
-     * never reaches key composition.
+     * Scenario: a slug carrying a URL-encoded path separator (%2F) is submitted, so
+     * the request still matches the :slug route param but decodes to `acme/globex`.
+     * Rule it protects: the Zod slug schema (^[a-z0-9-]{2,32}$) rejects the slash and
+     * returns 400, so a traversal attempt never reaches key composition. The dotted
+     * `acme..globex` variant is exercised too as a second traversal shape.
      */
+    await request(app.getHttpServer()).get('/tenants/acme%2Fglobex/objects').expect(400)
     await request(app.getHttpServer()).get('/tenants/acme..globex/objects').expect(400)
   })
 })

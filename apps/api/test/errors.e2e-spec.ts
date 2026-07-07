@@ -4,7 +4,8 @@
  * Fetches the catalogue, then walks every shipped code through
  * `POST /errors/:code`: a reproducible code returns its library-mapped status and
  * the untouched `{ error: { code } }` envelope (relayed by the global filter), and
- * the one non-reproducible code returns the honest 200 explanation. The walk runs
+ * the two non-reproducible codes (`STORAGE_PART_TOO_SMALL` and `STORAGE_TIMEOUT`)
+ * return the honest 200 explanation. The walk runs
  * twice to prove the triggers are deterministic (no reliance on provider luck).
  *
  * @module test/errors.e2e-spec

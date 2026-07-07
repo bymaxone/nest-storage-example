@@ -3,8 +3,9 @@
  * the exhaustive catalogue; `POST /errors/:code` validates the code against the
  * shipped `STORAGE_ERROR_CODES` and runs its deterministic trigger. A reproducible
  * code throws its real `StorageException`, which the global filter renders with the
- * library's own status and envelope; the one non-reproducible code returns an
- * honest 200 explanation (spec §18).
+ * library's own status and envelope; the two non-reproducible codes
+ * (`STORAGE_PART_TOO_SMALL` and `STORAGE_TIMEOUT`) return an honest 200
+ * explanation (spec §18).
  * @layer api/errors-demo
  */
 import { Controller, Get, HttpCode, Param, Post } from '@nestjs/common'
