@@ -56,6 +56,31 @@ function maskUrl(url: string): string {
   }
 }
 
+/** Raster image types safe to render inline as a data URI (no script surface). */
+const RASTER_IMAGE_TYPES = new Set([
+  'image/png',
+  'image/jpeg',
+  'image/gif',
+  'image/webp',
+  'image/avif',
+])
+
+/**
+ * Returns whether a server-provided URL is safe to place in an anchor `href`,
+ * rejecting non-http(s) schemes such as `javascript:`.
+ *
+ * @param url - The URL string to validate.
+ * @returns `true` only for `http:` and `https:` URLs.
+ */
+function isSafeHref(url: string): boolean {
+  try {
+    const { protocol } = new URL(url)
+    return protocol === 'https:' || protocol === 'http:'
+  } catch {
+    return false
+  }
+}
+
 /** Copies text to clipboard and shows a toast. */
 async function copyToClipboard(text: string, label: string) {
   try {
@@ -82,7 +107,7 @@ export function KeyDetailDrawer({ objectKey, onClose }: KeyDetailDrawerProps) {
   // preview query is enabled solely for these, so the `<img>` below always
   // has a concrete content type without needing a runtime fallback.
   const imageContentType =
-    meta.data && meta.data.contentType.startsWith('image/') ? meta.data.contentType : null
+    meta.data && RASTER_IMAGE_TYPES.has(meta.data.contentType) ? meta.data.contentType : null
   const isImage = imageContentType !== null
 
   const preview = useQuery<BufferedResult>({
@@ -236,15 +261,17 @@ export function KeyDetailDrawer({ objectKey, onClose }: KeyDetailDrawerProps) {
                     >
                       <Copy className="h-3.5 w-3.5" />
                     </button>
-                    <a
-                      href={publicUrl.data.publicUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      aria-label="Open public URL in new tab"
-                      className="rounded p-1 text-white/40 hover:text-white/80"
-                    >
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </a>
+                    {isSafeHref(publicUrl.data.publicUrl) && (
+                      <a
+                        href={publicUrl.data.publicUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        aria-label="Open public URL in new tab"
+                        className="rounded p-1 text-white/40 hover:text-white/80"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    )}
                   </div>
                 </div>
               )}

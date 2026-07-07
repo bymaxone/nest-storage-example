@@ -51,14 +51,16 @@ function makeMeta(overrides: Partial<ObjectMetadata> = {}): ObjectMetadata {
 }
 
 /** Routes apiGet by path to the supplied fixtures. */
-function routeApiGet(meta: ObjectMetadata): void {
+function routeApiGet(
+  meta: ObjectMetadata,
+  publicUrl = 'http://localhost:9000/vault/docs/report.pdf',
+): void {
   apiGetMock.mockImplementation((path: string) => {
     if (path.startsWith('/vault/object/preview'))
       return Promise.resolve({ base64: SAMPLE_B64, metadata: meta })
     if (path.startsWith('/vault/object/range'))
       return Promise.resolve({ base64: SAMPLE_B64, metadata: meta })
-    if (path.startsWith('/vault/object/public-url'))
-      return Promise.resolve({ publicUrl: 'http://localhost:9000/vault/docs/report.pdf' })
+    if (path.startsWith('/vault/object/public-url')) return Promise.resolve({ publicUrl })
     return Promise.resolve(meta)
   })
 }
@@ -191,6 +193,37 @@ describe('KeyDetailDrawer — URLs tab', () => {
     await screen.findByText('Public URL')
     await userEvent.click(screen.getByRole('button', { name: /copy public url/i }))
     await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith('Public URL copied'))
+  })
+
+  it('renders the open-in-new-tab anchor for an http(s) public URL', async () => {
+    // Scenario: a well-formed https/http public URL.
+    // Rule it protects: the safe-scheme guard admits http(s) so the anchor renders.
+    routeApiGet(makeMeta())
+    renderDrawer()
+    await userEvent.click(screen.getByRole('tab', { name: 'URLs' }))
+    await screen.findByText('Public URL')
+    expect(screen.getByRole('link', { name: /open public url/i })).toBeInTheDocument()
+  })
+
+  it('hides the anchor when the public URL uses a non-http scheme', async () => {
+    // Scenario: a hostile backend returns a javascript: URL.
+    // Rule it protects: the safe-scheme guard rejects it, so no anchor is rendered
+    // and the javascript: URL can never reach an href.
+    routeApiGet(makeMeta(), 'javascript:alert(1)')
+    renderDrawer()
+    await userEvent.click(screen.getByRole('tab', { name: 'URLs' }))
+    await screen.findByText('Public URL')
+    expect(screen.queryByRole('link', { name: /open public url/i })).not.toBeInTheDocument()
+  })
+
+  it('hides the anchor when the public URL is unparseable', async () => {
+    // Scenario: the URL string fails to parse (the guard's catch path).
+    // Rule it protects: a malformed value is treated as unsafe, not rendered.
+    routeApiGet(makeMeta(), 'not a valid url')
+    renderDrawer()
+    await userEvent.click(screen.getByRole('tab', { name: 'URLs' }))
+    await screen.findByText('Public URL')
+    expect(screen.queryByRole('link', { name: /open public url/i })).not.toBeInTheDocument()
   })
 
   it('surfaces a clipboard failure as an error toast', async () => {
