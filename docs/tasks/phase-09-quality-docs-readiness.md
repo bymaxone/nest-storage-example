@@ -1,6 +1,6 @@
 # Phase 9: quality-docs-readiness
 
-> **Status**: 🔄 In Progress · **Progress**: 0 / 6 tasks · **Last updated**: 2026-07-07
+> **Status**: 🔄 In Progress · **Progress**: 1 / 6 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P9)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §21, §22, Appendix B of the plan
 
@@ -32,7 +32,7 @@ CodeQL/Scorecard workflows).
 
 | ID  | Task                                                       | Status  | Priority | Size | Depends on |
 | --- | ---------------------------------------------------------- | ------- | -------- | ---- | ---------- |
-| 9.1 | Branch + api unit suite to 100/100/100/100                 | 📋 ToDo | P0       | L    | none       |
+| 9.1 | Branch + api unit suite to 100/100/100/100                 | ✅ Done | P0       | L    | none       |
 | 9.2 | Web unit suite to 100/100/100/100                          | 📋 ToDo | P0       | L    | 9.1        |
 | 9.3 | e2e: every route, every error path, Playwright smoke       | 📋 ToDo | P0       | L    | 9.1        |
 | 9.4 | Stryker mutation (api break 100, web break 90) + docs      | 📋 ToDo | P0       | L    | 9.2, 9.3   |
@@ -43,7 +43,7 @@ CodeQL/Scorecard workflows).
 
 ### Task 9.1: API unit suite to 100%
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: L
 - **Depends on**: none
@@ -55,10 +55,10 @@ with the decorator-metadata phantom-branch trap handled structurally.
 
 #### Acceptance criteria
 
-- [ ] Branch `feat/phase-09-quality-docs-readiness` created with `git switch -c`.
-- [ ] `apps/api/tsconfig.spec.json` compiles the unit project with `emitDecoratorMetadata: false`; the e2e project keeps metadata on.
-- [ ] `pnpm --filter api test:cov` reports 100/100/100/100 with zero `.skip`/`.todo` and zero ignore comments; `collectCoverageFrom` exclusions limited to `*.module.ts`, `main.ts`, `*.d.ts` (documented).
-- [ ] Provably-dead defensive branches removed from source, each removal a reviewed commit.
+- [x] Branch `feat/phase-09-quality-docs-readiness` created with `git switch -c`.
+- [x] `apps/api/tsconfig.spec.json` compiles the unit project with `emitDecoratorMetadata: false`; the e2e project keeps metadata on.
+- [x] `pnpm --filter api test:cov` reports 100/100/100/100 with zero `.skip`/`.todo` and zero ignore comments; `collectCoverageFrom` exclusions limited to `*.module.ts`, `main.ts`, `*.d.ts` (documented).
+- [x] Provably-dead defensive branches removed from source, each removal a reviewed commit.
 
 #### Files to create / modify
 
@@ -470,3 +470,5 @@ Completion Protocol:
 ## Completion log
 
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
+
+- 9.1 ✅ 2026-07-07: api unit suite at 100/100/100/100 (682 stmts, 269 branches, 202 funcs, 642 lines; 369 tests). Added app.factory.spec.ts (NestFactory spy) so the bootstrap seam is unit-proven; trimmed collectCoverageFrom exclusions to the documented *.module.ts / main.ts / *.d.ts only. Unit tsconfig keeps emitDecoratorMetadata off; zero ignore/suppression comments.
