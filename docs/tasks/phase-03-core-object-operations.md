@@ -28,13 +28,13 @@ byte range, versionId). Matrix rows 10, 12, 15, 20-31.
 
 ## Task index
 
-| ID  | Task                                                        | Status  | Priority | Size | Depends on |
-| --- | ------------------------------------------------------------ | ------- | -------- | ---- | ---------- |
-| 3.1 | Branch + uploads module: single-shot + headers + SSE override| 📋 ToDo | P0       | M    | none       |
-| 3.2 | Multipart + progress session store + stream strategies       | 📋 ToDo | P0       | L    | 3.1        |
-| 3.3 | Idempotent upload demo                                       | 📋 ToDo | P0       | S    | 3.1        |
-| 3.4 | Vault downloads: stream, buffer preview, range, versionId    | 📋 ToDo | P0       | M    | 3.1        |
-| 3.5 | Phase close: audit, dashboards, PR + Copilot review, merge   | 📋 ToDo | P0       | S    | 3.1-3.4    |
+| ID  | Task                                                          | Status  | Priority | Size | Depends on |
+| --- | ------------------------------------------------------------- | ------- | -------- | ---- | ---------- |
+| 3.1 | Branch + uploads module: single-shot + headers + SSE override | 📋 ToDo | P0       | M    | none       |
+| 3.2 | Multipart + progress session store + stream strategies        | 📋 ToDo | P0       | L    | 3.1        |
+| 3.3 | Idempotent upload demo                                        | 📋 ToDo | P0       | S    | 3.1        |
+| 3.4 | Vault downloads: stream, buffer preview, range, versionId     | 📋 ToDo | P0       | M    | 3.1        |
+| 3.5 | Phase close: audit, dashboards, PR + Copilot review, merge    | 📋 ToDo | P0       | S    | 3.1-3.4    |
 
 ## Tasks
 
@@ -65,7 +65,7 @@ Buffer), automatic-header round-trip, `x-amz-meta` metadata, and `POST /uploads/
 
 #### Agent prompt
 
-````
+```
 You are a senior NestJS engineer implementing file upload endpoints.
 
 PROJECT: nest-storage-example, reference app for @bymax-one/nest-storage. NestJS 11, multer memory
@@ -110,7 +110,7 @@ Completion Protocol:
 2. Update the P3 row in docs/DEVELOPMENT_PLAN.md §1 and the docs/tasks/README.md mirror.
 3. Append `- 3.1 ✅ YYYY-MM-DD: <summary>` to the Completion log.
 4. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -140,7 +140,7 @@ forcing multipart.
 
 #### Agent prompt
 
-````
+```
 You are a senior NestJS engineer implementing multipart and streaming uploads with live progress.
 
 PROJECT: nest-storage-example. The library decides single-shot vs multipart from
@@ -186,7 +186,7 @@ Completion Protocol:
 2. Update the P3 row in docs/DEVELOPMENT_PLAN.md §1 and the docs/tasks/README.md mirror.
 3. Append `- 3.2 ✅ YYYY-MM-DD: <summary>` to the Completion log.
 4. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -214,7 +214,7 @@ Completion Protocol:
 
 #### Agent prompt
 
-````
+```
 You are a senior NestJS engineer demonstrating idempotent uploads.
 
 PROJECT: nest-storage-example. The library dedupes uploads by idempotencyKey in an in-memory LRU
@@ -254,7 +254,7 @@ Completion Protocol:
 2. Update the P3 row in docs/DEVELOPMENT_PLAN.md §1 and the docs/tasks/README.md mirror.
 3. Append `- 3.3 ✅ YYYY-MM-DD: <summary>` to the Completion log.
 4. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -284,7 +284,7 @@ download for the hex panel, and `versionId` download against the versioned bucke
 
 #### Agent prompt
 
-````
+```
 You are a senior NestJS engineer implementing storage read paths.
 
 PROJECT: nest-storage-example. StorageService.download() returns { stream, metadata } (the v3
@@ -326,7 +326,7 @@ Completion Protocol:
 2. Update the P3 row in docs/DEVELOPMENT_PLAN.md §1 and the docs/tasks/README.md mirror.
 3. Append `- 3.4 ✅ YYYY-MM-DD: <summary>` to the Completion log.
 4. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -353,7 +353,7 @@ Audit the phase Definition of Done, sync dashboards, PR + GitHub Copilot review,
 
 #### Agent prompt
 
-````
+```
 You are a senior release engineer closing a development phase.
 
 PROJECT: nest-storage-example. Repo: github.com/bymaxone/nest-storage-example.
@@ -392,7 +392,7 @@ Completion Protocol:
 2. Update plan §1 + README mirror.
 3. Append `- 3.5 ✅ YYYY-MM-DD: phase merged in PR #<n>`.
 4. Commit dashboards on main: `docs(plan): mark P3 complete`.
-````
+```
 
 ## Completion log
 

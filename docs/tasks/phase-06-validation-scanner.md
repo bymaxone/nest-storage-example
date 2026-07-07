@@ -28,13 +28,13 @@ seam. Matrix rows 13, 14, 47-53.
 
 ## Task index
 
-| ID  | Task                                                        | Status  | Priority | Size | Depends on |
+| ID  | Task                                                         | Status  | Priority | Size | Depends on |
 | --- | ------------------------------------------------------------ | ------- | -------- | ---- | ---------- |
-| 6.1 | Branch + validation lab: MIME wildcard + size cap paths       | 📋 ToDo | P0       | M    | none       |
-| 6.2 | Magic-byte forgery demo (declared PDF, fake bytes)            | 📋 ToDo | P0       | S    | 6.1        |
-| 6.3 | Scanner lab: verdicts, modes, rejectOnUnknown, removal proof  | 📋 ToDo | P0       | M    | 6.1        |
-| 6.4 | Confirm-scanner wiring + config introspection                 | 📋 ToDo | P0       | S    | 6.3        |
-| 6.5 | Phase close: audit, dashboards, PR + Copilot review, merge    | 📋 ToDo | P0       | S    | 6.1-6.4    |
+| 6.1 | Branch + validation lab: MIME wildcard + size cap paths      | 📋 ToDo | P0       | M    | none       |
+| 6.2 | Magic-byte forgery demo (declared PDF, fake bytes)           | 📋 ToDo | P0       | S    | 6.1        |
+| 6.3 | Scanner lab: verdicts, modes, rejectOnUnknown, removal proof | 📋 ToDo | P0       | M    | 6.1        |
+| 6.4 | Confirm-scanner wiring + config introspection                | 📋 ToDo | P0       | S    | 6.3        |
+| 6.5 | Phase close: audit, dashboards, PR + Copilot review, merge   | 📋 ToDo | P0       | S    | 6.1-6.4    |
 
 ## Tasks
 
@@ -65,7 +65,7 @@ the active whitelist and cap from the shared constants.
 
 #### Agent prompt
 
-````
+```
 You are a senior NestJS engineer building an upload-validation laboratory.
 
 PROJECT: nest-storage-example, reference app for @bymax-one/nest-storage. The library's
@@ -112,7 +112,7 @@ Completion Protocol:
 2. Update the P6 row in docs/DEVELOPMENT_PLAN.md §1 and the docs/tasks/README.md mirror.
 3. Append `- 6.1 ✅ YYYY-MM-DD: <summary>` to the Completion log.
 4. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -141,7 +141,7 @@ The custom-validator path: a text file declared as `application/pdf` is rejected
 
 #### Agent prompt
 
-````
+```
 You are a senior NestJS engineer demonstrating content-sniffing validation.
 
 PROJECT: nest-storage-example. PdfMagicByteValidator (implemented in P2) uses ctx.readBytes(4) and
@@ -181,7 +181,7 @@ Completion Protocol:
 2. Update the P6 row in docs/DEVELOPMENT_PLAN.md §1 and the docs/tasks/README.md mirror.
 3. Append `- 6.2 ✅ YYYY-MM-DD: <summary>` to the Completion log.
 4. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -211,7 +211,7 @@ rejection vs post-upload removal with an `exists()` proof), and both `rejectOnUn
 
 #### Agent prompt
 
-````
+```
 You are a senior NestJS engineer building a virus-scan-hook laboratory.
 
 PROJECT: nest-storage-example. MarkerFileScanner (P2) returns deterministic verdicts from content
@@ -257,7 +257,7 @@ Completion Protocol:
 2. Update the P6 row in docs/DEVELOPMENT_PLAN.md §1 and the docs/tasks/README.md mirror.
 3. Append `- 6.3 ✅ YYYY-MM-DD: <summary>` to the Completion log.
 4. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -285,7 +285,7 @@ closing the direct-upload verification loop.
 
 #### Agent prompt
 
-````
+```
 You are a senior NestJS engineer closing a security verification loop.
 
 PROJECT: nest-storage-example. Direct uploads bypass local validation (documented boundary); the
@@ -327,7 +327,7 @@ Completion Protocol:
 2. Update the P6 row in docs/DEVELOPMENT_PLAN.md §1 and the docs/tasks/README.md mirror.
 3. Append `- 6.4 ✅ YYYY-MM-DD: <summary>` to the Completion log.
 4. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -353,7 +353,7 @@ Audit the phase Definition of Done, sync dashboards, PR + GitHub Copilot review,
 
 #### Agent prompt
 
-````
+```
 You are a senior release engineer closing a development phase.
 
 PROJECT: nest-storage-example. Repo: github.com/bymaxone/nest-storage-example.
@@ -389,7 +389,7 @@ Completion Protocol:
 2. Update plan §1 + README mirror.
 3. Append `- 6.5 ✅ YYYY-MM-DD: phase merged in PR #<n>`.
 4. Commit dashboards on main: `docs(plan): mark P6 complete`.
-````
+```
 
 ## Completion log
 

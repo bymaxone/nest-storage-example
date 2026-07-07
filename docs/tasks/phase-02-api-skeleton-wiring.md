@@ -32,13 +32,13 @@ wiring is honest from day one (the marker scanner and magic-byte validator are s
 ## Task index
 
 | ID  | Task                                                        | Status  | Priority | Size | Depends on |
-| --- | ------------------------------------------------------------ | ------- | -------- | ---- | ---------- |
-| 2.1 | Branch + Nest app shell (`main.ts`, module, boot)            | 📋 ToDo | P0       | M    | none       |
-| 2.2 | Zod env schema with aggregated fail-fast                     | 📋 ToDo | P0       | S    | 2.1        |
-| 2.3 | Canonical wiring: `storage.config.ts` + validator + scanner  | 📋 ToDo | P0       | M    | 2.2        |
-| 2.4 | Cross-cutting: exception filter + validation pipe + health   | 📋 ToDo | P0       | M    | 2.3        |
-| 2.5 | System module: config introspection + provider recipes       | 📋 ToDo | P1       | S    | 2.3        |
-| 2.6 | Phase close: audit, dashboards, PR + Copilot review, merge   | 📋 ToDo | P0       | S    | 2.1-2.5    |
+| --- | ----------------------------------------------------------- | ------- | -------- | ---- | ---------- |
+| 2.1 | Branch + Nest app shell (`main.ts`, module, boot)           | 📋 ToDo | P0       | M    | none       |
+| 2.2 | Zod env schema with aggregated fail-fast                    | 📋 ToDo | P0       | S    | 2.1        |
+| 2.3 | Canonical wiring: `storage.config.ts` + validator + scanner | 📋 ToDo | P0       | M    | 2.2        |
+| 2.4 | Cross-cutting: exception filter + validation pipe + health  | 📋 ToDo | P0       | M    | 2.3        |
+| 2.5 | System module: config introspection + provider recipes      | 📋 ToDo | P1       | S    | 2.3        |
+| 2.6 | Phase close: audit, dashboards, PR + Copilot review, merge  | 📋 ToDo | P0       | S    | 2.1-2.5    |
 
 ## Tasks
 
@@ -69,7 +69,7 @@ workers, and a boot smoke test via a `createApp()` seam.
 
 #### Agent prompt
 
-````
+```
 You are a senior NestJS engineer.
 
 PROJECT: nest-storage-example, reference app for @bymax-one/nest-storage. NestJS 11 on Node >= 24,
@@ -117,7 +117,7 @@ Completion Protocol:
 2. Update the P2 row in docs/DEVELOPMENT_PLAN.md §1 and the docs/tasks/README.md mirror.
 3. Append `- 2.1 ✅ YYYY-MM-DD: <summary>` to the Completion log.
 4. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -146,7 +146,7 @@ fail-fast report that never echoes values, typed `Env` export consumed via `@nes
 
 #### Agent prompt
 
-````
+```
 You are a senior NestJS engineer specializing in configuration safety.
 
 PROJECT: nest-storage-example. All environment access flows through one Zod schema validated at
@@ -191,7 +191,7 @@ Completion Protocol:
 2. Update the P2 row in docs/DEVELOPMENT_PLAN.md §1 and the docs/tasks/README.md mirror.
 3. Append `- 2.2 ✅ YYYY-MM-DD: <summary>` to the Completion log.
 4. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -220,7 +220,7 @@ Completion Protocol:
 
 #### Agent prompt
 
-````
+```
 You are a senior NestJS engineer wiring a storage library the way production services should.
 
 PROJECT: nest-storage-example. The canonical forRootAsync wiring (spec §9.2) is THE copy-paste
@@ -271,7 +271,7 @@ Completion Protocol:
 2. Update the P2 row in docs/DEVELOPMENT_PLAN.md §1 and the docs/tasks/README.md mirror.
 3. Append `- 2.3 ✅ YYYY-MM-DD: <summary>` to the Completion log.
 4. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -300,7 +300,7 @@ The cross-cutting HTTP layer: `StorageExceptionFilter` passing the library envel
 
 #### Agent prompt
 
-````
+```
 You are a senior NestJS engineer building cross-cutting HTTP infrastructure.
 
 PROJECT: nest-storage-example. The library throws StorageException (an HttpException carrying
@@ -348,7 +348,7 @@ Completion Protocol:
 2. Update the P2 row in docs/DEVELOPMENT_PLAN.md §1 and the docs/tasks/README.md mirror.
 3. Append `- 2.4 ✅ YYYY-MM-DD: <summary>` to the Completion log.
 4. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -376,7 +376,7 @@ Completion Protocol:
 
 #### Agent prompt
 
-````
+```
 You are a senior NestJS engineer building operational introspection endpoints.
 
 PROJECT: nest-storage-example. The system surface proves what the module actually runs with
@@ -421,7 +421,7 @@ Completion Protocol:
 2. Update the P2 row in docs/DEVELOPMENT_PLAN.md §1 and the docs/tasks/README.md mirror.
 3. Append `- 2.5 ✅ YYYY-MM-DD: <summary>` to the Completion log.
 4. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -449,7 +449,7 @@ address findings, merge with CI green.
 
 #### Agent prompt
 
-````
+```
 You are a senior release engineer closing a development phase.
 
 PROJECT: nest-storage-example. Repo: github.com/bymaxone/nest-storage-example.
@@ -489,7 +489,7 @@ Completion Protocol:
 2. Update plan §1 + README mirror.
 3. Append `- 2.6 ✅ YYYY-MM-DD: phase merged in PR #<n>`.
 4. Commit dashboards on main: `docs(plan): mark P2 complete`.
-````
+```
 
 ## Completion log
 

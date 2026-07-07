@@ -29,13 +29,13 @@ typed subpath probes. At the end of the phase there is still no application logi
 
 ## Task index
 
-| ID  | Task                                                       | Status  | Priority | Size | Depends on |
-| --- | ----------------------------------------------------------- | ------- | -------- | ---- | ---------- |
-| 1.1 | Branch + docker-compose MinIO + bucket bootstrap script      | 📋 ToDo | P0       | M    | none       |
-| 1.2 | Env examples + infra scripts verified                        | 📋 ToDo | P0       | S    | 1.1        |
-| 1.3 | `apps/api` package: library link + peers + dual-subpath probe| 📋 ToDo | P0       | S    | 1.1        |
-| 1.4 | `apps/web` package: library link + `./shared`-only probe     | 📋 ToDo | P0       | S    | 1.1        |
-| 1.5 | Phase close: audit, dashboards, PR + Copilot review, merge   | 📋 ToDo | P0       | S    | 1.1-1.4    |
+| ID  | Task                                                          | Status  | Priority | Size | Depends on |
+| --- | ------------------------------------------------------------- | ------- | -------- | ---- | ---------- |
+| 1.1 | Branch + docker-compose MinIO + bucket bootstrap script       | 📋 ToDo | P0       | M    | none       |
+| 1.2 | Env examples + infra scripts verified                         | 📋 ToDo | P0       | S    | 1.1        |
+| 1.3 | `apps/api` package: library link + peers + dual-subpath probe | 📋 ToDo | P0       | S    | 1.1        |
+| 1.4 | `apps/web` package: library link + `./shared`-only probe      | 📋 ToDo | P0       | S    | 1.1        |
+| 1.5 | Phase close: audit, dashboards, PR + Copilot review, merge    | 📋 ToDo | P0       | S    | 1.1-1.4    |
 
 ## Tasks
 
@@ -64,7 +64,7 @@ Compose file with MinIO and a one-shot `mc`-based setup service creating `vault`
 
 #### Agent prompt
 
-````
+```
 You are a senior infrastructure engineer.
 
 PROJECT: nest-storage-example, reference app for @bymax-one/nest-storage. Local S3-compatible
@@ -112,7 +112,7 @@ Completion Protocol:
 4. Update the P1 row in docs/DEVELOPMENT_PLAN.md §1 and mirror in docs/tasks/README.md.
 5. Append to the Completion log: `- 1.1 ✅ YYYY-MM-DD: <summary>`.
 6. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -140,7 +140,7 @@ against the compose file.
 
 #### Agent prompt
 
-````
+```
 You are a senior backend engineer documenting configuration.
 
 PROJECT: nest-storage-example. MinIO stack from Task 1.1 is up.
@@ -183,7 +183,7 @@ Completion Protocol:
 4. Update the P1 row in docs/DEVELOPMENT_PLAN.md §1 and mirror in docs/tasks/README.md.
 5. Append to the Completion log: `- 1.2 ✅ YYYY-MM-DD: <summary>`.
 6. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -211,7 +211,7 @@ importing from both `.` and `./shared`.
 
 #### Agent prompt
 
-````
+```
 You are a senior TypeScript / NestJS engineer wiring a reference app to consume an unpublished library.
 
 PROJECT: nest-storage-example. The library @bymax-one/nest-storage lives as a sibling checkout at
@@ -263,7 +263,7 @@ Completion Protocol:
 4. Update the P1 row in docs/DEVELOPMENT_PLAN.md §1 and mirror in docs/tasks/README.md.
 5. Append to the Completion log: `- 1.3 ✅ YYYY-MM-DD: <summary>`.
 6. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -291,7 +291,7 @@ browser-path proof (matrix #59).
 
 #### Agent prompt
 
-````
+```
 You are a senior TypeScript / Next.js engineer proving a zero-dependency browser import path.
 
 PROJECT: nest-storage-example. @bymax-one/nest-storage ships `./shared` as a zero-dependency
@@ -336,7 +336,7 @@ Completion Protocol:
 4. Update the P1 row in docs/DEVELOPMENT_PLAN.md §1 and mirror in docs/tasks/README.md.
 5. Append to the Completion log: `- 1.4 ✅ YYYY-MM-DD: <summary>`.
 6. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -364,7 +364,7 @@ address findings, merge with CI green.
 
 #### Agent prompt
 
-````
+```
 You are a senior release engineer closing a development phase.
 
 PROJECT: nest-storage-example. Repo: github.com/bymaxone/nest-storage-example.
@@ -405,7 +405,7 @@ Completion Protocol:
 2. Update plan §1 + README mirror.
 3. Append `- 1.5 ✅ YYYY-MM-DD: phase merged in PR #<n>` to the Completion log.
 4. Commit dashboards on main: `docs(plan): mark P1 complete`.
-````
+```
 
 ## Completion log
 

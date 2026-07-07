@@ -31,13 +31,13 @@ CodeQL/Scorecard workflows).
 ## Task index
 
 | ID  | Task                                                       | Status  | Priority | Size | Depends on |
-| --- | ----------------------------------------------------------- | ------- | -------- | ---- | ---------- |
-| 9.1 | Branch + api unit suite to 100/100/100/100                   | 📋 ToDo | P0       | L    | none       |
-| 9.2 | Web unit suite to 100/100/100/100                            | 📋 ToDo | P0       | L    | 9.1        |
-| 9.3 | e2e: every route, every error path, Playwright smoke         | 📋 ToDo | P0       | L    | 9.1        |
-| 9.4 | Stryker mutation (api break 100, web break 90) + docs        | 📋 ToDo | P0       | L    | 9.2, 9.3   |
-| 9.5 | Export audit + README + go-public checklist                  | 📋 ToDo | P0       | M    | 9.4        |
-| 9.6 | Phase close: audit, dashboards, PR + Copilot review, merge   | 📋 ToDo | P0       | S    | 9.1-9.5    |
+| --- | ---------------------------------------------------------- | ------- | -------- | ---- | ---------- |
+| 9.1 | Branch + api unit suite to 100/100/100/100                 | 📋 ToDo | P0       | L    | none       |
+| 9.2 | Web unit suite to 100/100/100/100                          | 📋 ToDo | P0       | L    | 9.1        |
+| 9.3 | e2e: every route, every error path, Playwright smoke       | 📋 ToDo | P0       | L    | 9.1        |
+| 9.4 | Stryker mutation (api break 100, web break 90) + docs      | 📋 ToDo | P0       | L    | 9.2, 9.3   |
+| 9.5 | Export audit + README + go-public checklist                | 📋 ToDo | P0       | M    | 9.4        |
+| 9.6 | Phase close: audit, dashboards, PR + Copilot review, merge | 📋 ToDo | P0       | S    | 9.1-9.5    |
 
 ## Tasks
 
@@ -66,7 +66,7 @@ with the decorator-metadata phantom-branch trap handled structurally.
 
 #### Agent prompt
 
-````
+```
 You are a senior test engineer driving a NestJS codebase to true 100% unit coverage.
 
 PROJECT: nest-storage-example. Every service, controller, pipe, filter, store, validator, scanner,
@@ -109,7 +109,7 @@ Completion Protocol:
 2. Update the P9 row in docs/DEVELOPMENT_PLAN.md §1 and the docs/tasks/README.md mirror.
 3. Append `- 9.1 ✅ YYYY-MM-DD: <summary>` to the Completion log.
 4. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -137,7 +137,7 @@ shadcn `components/ui/**` and route shells excluded by documented convention.
 
 #### Agent prompt
 
-````
+```
 You are a senior frontend test engineer driving a Next.js dashboard to 100% unit coverage.
 
 PROJECT: nest-storage-example. lib/** (client, direct-upload, status), hooks/**, and
@@ -178,7 +178,7 @@ Completion Protocol:
 2. Update the P9 row in docs/DEVELOPMENT_PLAN.md §1 and the docs/tasks/README.md mirror.
 3. Append `- 9.2 ✅ YYYY-MM-DD: <summary>` to the Completion log.
 4. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -208,7 +208,7 @@ and the CI jobs for both.
 
 #### Agent prompt
 
-````
+```
 You are a senior test engineer building exhaustive end-to-end coverage.
 
 PROJECT: nest-storage-example. Every HTTP route and every documented error path must be proven
@@ -252,7 +252,7 @@ Completion Protocol:
 2. Update the P9 row in docs/DEVELOPMENT_PLAN.md §1 and the docs/tasks/README.md mirror.
 3. Append `- 9.3 ✅ YYYY-MM-DD: <summary>` to the Completion log.
 4. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -281,7 +281,7 @@ Mutation testing as the final layer: api at `break: 100` (zero survivors), web a
 
 #### Agent prompt
 
-````
+```
 You are a senior test engineer running a mutation-hardening session.
 
 PROJECT: nest-storage-example. Mutation is the assertiveness gate on top of 100% coverage: api
@@ -324,7 +324,7 @@ Completion Protocol:
 2. Update the P9 row in docs/DEVELOPMENT_PLAN.md §1 and the docs/tasks/README.md mirror.
 3. Append `- 9.4 ✅ YYYY-MM-DD: <summary>` to the Completion log.
 4. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -353,7 +353,7 @@ in the sibling house style, and the go-public checklist.
 
 #### Agent prompt
 
-````
+```
 You are a senior open-source maintainer finishing a reference repository.
 
 PROJECT: nest-storage-example. The export audit turns the Feature Coverage Matrix into a CI gate;
@@ -397,7 +397,7 @@ Completion Protocol:
 2. Update the P9 row in docs/DEVELOPMENT_PLAN.md §1 and the docs/tasks/README.md mirror.
 3. Append `- 9.5 ✅ YYYY-MM-DD: <summary>` to the Completion log.
 4. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -425,7 +425,7 @@ GitHub Copilot review, merge with the full CI matrix green.
 
 #### Agent prompt
 
-````
+```
 You are a senior release engineer closing the final phase of a roadmap.
 
 PROJECT: nest-storage-example. Repo: github.com/bymaxone/nest-storage-example.
@@ -465,7 +465,7 @@ Completion Protocol:
 2. Update plan §1 + README mirror (roadmap complete).
 3. Append `- 9.6 ✅ YYYY-MM-DD: roadmap complete, PR #<n>`.
 4. Commit dashboards on main.
-````
+```
 
 ## Completion log
 

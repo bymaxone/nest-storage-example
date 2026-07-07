@@ -30,12 +30,12 @@ PUT/GET against MinIO with the issued URLs. Matrix rows 11, 40-46.
 ## Task index
 
 | ID  | Task                                                        | Status  | Priority | Size | Depends on |
-| --- | ------------------------------------------------------------ | ------- | -------- | ---- | ---------- |
-| 5.1 | Branch + signed GET URLs: overrides, clamp, invalid TTL       | 📋 ToDo | P0       | M    | none       |
-| 5.2 | Signed PUT + confirm pattern (head now, scanner seam)         | 📋 ToDo | P0       | M    | 5.1        |
-| 5.3 | Presigned multipart: parts, complete, abort                   | 📋 ToDo | P0       | M    | 5.2        |
-| 5.4 | Real-fetch e2e: PUT/GET/multipart round-trips against MinIO   | 📋 ToDo | P0       | M    | 5.3        |
-| 5.5 | Phase close: audit, dashboards, PR + Copilot review, merge    | 📋 ToDo | P0       | S    | 5.1-5.4    |
+| --- | ----------------------------------------------------------- | ------- | -------- | ---- | ---------- |
+| 5.1 | Branch + signed GET URLs: overrides, clamp, invalid TTL     | 📋 ToDo | P0       | M    | none       |
+| 5.2 | Signed PUT + confirm pattern (head now, scanner seam)       | 📋 ToDo | P0       | M    | 5.1        |
+| 5.3 | Presigned multipart: parts, complete, abort                 | 📋 ToDo | P0       | M    | 5.2        |
+| 5.4 | Real-fetch e2e: PUT/GET/multipart round-trips against MinIO | 📋 ToDo | P0       | M    | 5.3        |
+| 5.5 | Phase close: audit, dashboards, PR + Copilot review, merge  | 📋 ToDo | P0       | S    | 5.1-5.4    |
 
 ## Tasks
 
@@ -65,7 +65,7 @@ rendered as requested-vs-effective, and the `ttlSeconds ≤ 0` rejection.
 
 #### Agent prompt
 
-````
+```
 You are a senior NestJS engineer implementing presigned download URLs.
 
 PROJECT: nest-storage-example, reference app for @bymax-one/nest-storage. SignedUrlService
@@ -109,7 +109,7 @@ Completion Protocol:
 2. Update the P5 row in docs/DEVELOPMENT_PLAN.md §1 and the docs/tasks/README.md mirror.
 3. Append `- 5.1 ✅ YYYY-MM-DD: <summary>` to the Completion log.
 4. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -139,7 +139,7 @@ and content-type check now, with an explicit, documented seam where the P6 scann
 
 #### Agent prompt
 
-````
+```
 You are a senior NestJS engineer implementing direct-upload issuance and verification.
 
 PROJECT: nest-storage-example. getUploadUrl() signs contentType and applies a Content-Length-Range
@@ -183,7 +183,7 @@ Completion Protocol:
 2. Update the P5 row in docs/DEVELOPMENT_PLAN.md §1 and the docs/tasks/README.md mirror.
 3. Append `- 5.2 ✅ YYYY-MM-DD: <summary>` to the Completion log.
 4. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -212,7 +212,7 @@ completeUrl) plus the abort path so orphan parts are never billed.
 
 #### Agent prompt
 
-````
+```
 You are a senior NestJS engineer implementing presigned multipart uploads.
 
 PROJECT: nest-storage-example. getMultipartUploadUrls() returns uploadId + per-part URLs +
@@ -255,7 +255,7 @@ Completion Protocol:
 2. Update the P5 row in docs/DEVELOPMENT_PLAN.md §1 and the docs/tasks/README.md mirror.
 3. Append `- 5.3 ✅ YYYY-MM-DD: <summary>` to the Completion log.
 4. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -286,7 +286,7 @@ split/PUT/complete plus an aborted variant.
 
 #### Agent prompt
 
-````
+```
 You are a senior test engineer proving presigned flows end to end.
 
 PROJECT: nest-storage-example. The issued URLs must work for a real client: plain fetch PUT/GET
@@ -325,7 +325,7 @@ Completion Protocol:
 2. Update the P5 row in docs/DEVELOPMENT_PLAN.md §1 and the docs/tasks/README.md mirror.
 3. Append `- 5.4 ✅ YYYY-MM-DD: <summary>` to the Completion log.
 4. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -351,7 +351,7 @@ Audit the phase Definition of Done, sync dashboards, PR + GitHub Copilot review,
 
 #### Agent prompt
 
-````
+```
 You are a senior release engineer closing a development phase.
 
 PROJECT: nest-storage-example. Repo: github.com/bymaxone/nest-storage-example.
@@ -387,7 +387,7 @@ Completion Protocol:
 2. Update plan §1 + README mirror.
 3. Append `- 5.5 ✅ YYYY-MM-DD: phase merged in PR #<n>`.
 4. Commit dashboards on main: `docs(plan): mark P5 complete`.
-````
+```
 
 ## Completion log
 
