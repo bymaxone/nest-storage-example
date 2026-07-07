@@ -1,6 +1,6 @@
 # Phase 6: validation-scanner
 
-> **Status**: 🔄 In Progress · **Progress**: 1 / 5 tasks · **Last updated**: 2026-07-07
+> **Status**: 🔄 In Progress · **Progress**: 2 / 5 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P6)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §16
 
@@ -31,7 +31,7 @@ seam. Matrix rows 13, 14, 47-53.
 | ID  | Task                                                         | Status  | Priority | Size | Depends on |
 | --- | ------------------------------------------------------------ | ------- | -------- | ---- | ---------- |
 | 6.1 | Branch + validation lab: MIME wildcard + size cap paths      | ✅ Done | P0       | M    | none       |
-| 6.2 | Magic-byte forgery demo (declared PDF, fake bytes)           | 📋 ToDo | P0       | S    | 6.1        |
+| 6.2 | Magic-byte forgery demo (declared PDF, fake bytes)           | ✅ Done | P0       | S    | 6.1        |
 | 6.3 | Scanner lab: verdicts, modes, rejectOnUnknown, removal proof | 📋 ToDo | P0       | M    | 6.1        |
 | 6.4 | Confirm-scanner wiring + config introspection                | 📋 ToDo | P0       | S    | 6.3        |
 | 6.5 | Phase close: audit, dashboards, PR + Copilot review, merge   | 📋 ToDo | P0       | S    | 6.1-6.4    |
@@ -118,7 +118,7 @@ Completion Protocol:
 
 ### Task 6.2: Magic-byte forgery demo
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 6.1
@@ -130,10 +130,10 @@ The custom-validator path: a text file declared as `application/pdf` is rejected
 
 #### Acceptance criteria
 
-- [ ] Forged PDF → 400 `STORAGE_VALIDATION_FAILED` with `details.reason` naming the magic-byte mismatch and `details.validator: 'pdf-magic-byte'` (or the library's documented detail shape).
-- [ ] Genuine `%PDF-1.7` prefix body passes the same route.
-- [ ] The lab response for the pass case includes which validators ran (from the rules endpoint data).
-- [ ] Unit + integration coverage 100% on touched files.
+- [x] Forged PDF → 400 `STORAGE_VALIDATION_FAILED` with `details.reason` naming the magic-byte mismatch and `details.validator: 'pdf-magic-byte'` (or the library's documented detail shape).
+- [x] Genuine `%PDF-1.7` prefix body passes the same route.
+- [x] The lab response for the pass case includes which validators ran (from the rules endpoint data).
+- [x] Unit + integration coverage 100% on touched files.
 
 #### Files to create / modify
 
@@ -395,4 +395,5 @@ Completion Protocol:
 
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
 
+- 6.2 ✅ 2026-07-07: added the magic-byte forgery demonstration on the same `POST /validation/upload` route. `pdf-samples.ts` fixture builders: `forgedPdf()` (plain text declared `application/pdf`, no `%PDF` prefix) and `genuinePdf()` (real `%PDF-1.7` signature), both marker-free to isolate the content-sniffing stage. The e2e drives both through the real pipeline against MinIO: the forged body maps to 400 `STORAGE_VALIDATION_FAILED` with `details.validator: 'pdf-magic-byte'` and a reason string; the genuine body passes and the response names the validators that ran. Fixture unit tests at 100%.
 - 6.1 ✅ 2026-07-07: `validation-lab/` module (`MulterModule` memory storage, deliberately NO `fileSize` cap so the library is the size gate), `ValidationLabController` (`POST /validation/upload` thin pass-through, `GET /validation/rules`), and `ValidationLabService` pushing the file straight into `StorageService.upload` under `validation-lab/` keys with no app-side prechecks. Rules rendered from the `BYMAX_STORAGE_OPTIONS` token (`validation-policy.ts` narrow view): whitelist, `maxSizeBytes`, and custom-validator names. Failures propagate the library envelopes (415 MIME, 413 size, 400 validation) untouched via the global filter. Unit 100/100/100/100; `test/validation.e2e-spec.ts` proves MIME 415, size 413, PNG pass, and the rules render against Testcontainers MinIO.

@@ -3,10 +3,12 @@
  *
  * Drives `POST /validation/upload` through the real library pipeline with no
  * app-side prechecks, proving each stage fails independently with its documented
- * envelope: a disallowed MIME is 415 `STORAGE_MIME_NOT_ALLOWED` and an oversized
- * body is 413 `STORAGE_SIZE_EXCEEDED`. A whitelisted PNG within the cap passes,
- * and `GET /validation/rules` renders the active whitelist, size cap, and
- * validator names from the resolved options token.
+ * envelope: a disallowed MIME is 415 `STORAGE_MIME_NOT_ALLOWED`, an oversized
+ * body is 413 `STORAGE_SIZE_EXCEEDED`, and a forged PDF is 400
+ * `STORAGE_VALIDATION_FAILED` with the validator reason in `details`. A
+ * whitelisted PNG within the cap and a genuine `%PDF` body pass, and
+ * `GET /validation/rules` renders the active whitelist, size cap, and validator
+ * names from the resolved options token.
  *
  * @module test/validation.e2e-spec
  */
@@ -15,6 +17,7 @@ import request from 'supertest'
 import type { INestApplication } from '@nestjs/common'
 import { startMinioContainer, type StartedMinio } from './helpers/minio-container.js'
 import { createTestApp } from './helpers/test-app.js'
+import { forgedPdf, genuinePdf } from '../src/validation-lab/pdf-samples.js'
 
 /** Size policy applied to this suite so the oversized case uses tiny bodies. */
 const MAX_SIZE_BYTES = 1024
@@ -96,5 +99,39 @@ describe('validation pipeline (e2e)', () => {
     expect(res.body.mimeWhitelist).toContain('video/*')
     expect(res.body.maxSizeBytes).toBe(MAX_SIZE_BYTES)
     expect(res.body.customValidators).toEqual(['pdf-magic-byte'])
+  })
+
+  it('rejects a forged PDF with the 400 validation envelope', async () => {
+    /*
+     * Scenario: a text body declared as application/pdf reaches the magic-byte validator.
+     * Rule it protects: the custom validator rejection maps to 400 STORAGE_VALIDATION_FAILED
+     * with the validator name and reason in details.
+     */
+    const forged = forgedPdf()
+    const res = await request(app.getHttpServer())
+      .post('/validation/upload')
+      .attach('file', forged.buffer, { filename: forged.filename, contentType: forged.contentType })
+      .expect(400)
+    expect(res.body.error.code).toBe('STORAGE_VALIDATION_FAILED')
+    expect(res.body.error.details.validator).toBe('pdf-magic-byte')
+    expect(typeof res.body.error.details.reason).toBe('string')
+  })
+
+  it('accepts a genuine %PDF body through the same route', async () => {
+    /*
+     * Scenario: a body whose leading bytes are the real %PDF signature is uploaded.
+     * Rule it protects: the magic-byte validator passes a genuine PDF, so it is stored
+     * and the response names the validators that ran.
+     */
+    const genuine = genuinePdf()
+    const res = await request(app.getHttpServer())
+      .post('/validation/upload')
+      .attach('file', genuine.buffer, {
+        filename: genuine.filename,
+        contentType: genuine.contentType,
+      })
+      .expect(201)
+    expect(res.body.result.contentType).toBe('application/pdf')
+    expect(res.body.rules.customValidators).toEqual(['pdf-magic-byte'])
   })
 })
