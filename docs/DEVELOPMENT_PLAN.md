@@ -25,7 +25,7 @@
 
 ## 1. Progress Dashboard
 
-> **Progress:** 6 / 10 phases complete (60%) · 32 / 54 tasks
+> **Progress:** 6 / 10 phases complete (60%) · 33 / 54 tasks
 > **Active phase:** P6 validation-scanner
 > **Blockers:** none
 
@@ -37,7 +37,7 @@
 | P3  | core-object-operations    | `phase-03-core-object-operations.md`    | ✅ Done        | 5/5      | L    | 2026-07-07   |
 | P4  | listing-lifecycle         | `phase-04-listing-lifecycle.md`         | ✅ Done        | 5/5      | M    | 2026-07-07   |
 | P5  | signed-urls-direct-upload | `phase-05-signed-urls-direct-upload.md` | ✅ Done        | 5/5      | M    | 2026-07-07   |
-| P6  | validation-scanner        | `phase-06-validation-scanner.md`        | 🔄 In Progress | 0/5      | M    | 2026-07-07   |
+| P6  | validation-scanner        | `phase-06-validation-scanner.md`        | 🔄 In Progress | 1/5      | M    | 2026-07-07   |
 | P7  | tenants-advanced-errors   | `phase-07-tenants-advanced-errors.md`   | 📋 ToDo        | 0/5      | M    | 2026-07-06   |
 | P8  | web-dashboard             | `phase-08-web-dashboard.md`             | 📋 ToDo        | 0/6      | L    | 2026-07-06   |
 | P9  | quality-docs-readiness    | `phase-09-quality-docs-readiness.md`    | 📋 ToDo        | 0/6      | L    | 2026-07-06   |

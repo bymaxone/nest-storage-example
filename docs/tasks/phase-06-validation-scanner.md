@@ -1,6 +1,6 @@
 # Phase 6: validation-scanner
 
-> **Status**: 🔄 In Progress · **Progress**: 0 / 5 tasks · **Last updated**: 2026-07-07
+> **Status**: 🔄 In Progress · **Progress**: 1 / 5 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P6)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §16
 
@@ -30,7 +30,7 @@ seam. Matrix rows 13, 14, 47-53.
 
 | ID  | Task                                                         | Status  | Priority | Size | Depends on |
 | --- | ------------------------------------------------------------ | ------- | -------- | ---- | ---------- |
-| 6.1 | Branch + validation lab: MIME wildcard + size cap paths      | 📋 ToDo | P0       | M    | none       |
+| 6.1 | Branch + validation lab: MIME wildcard + size cap paths      | ✅ Done | P0       | M    | none       |
 | 6.2 | Magic-byte forgery demo (declared PDF, fake bytes)           | 📋 ToDo | P0       | S    | 6.1        |
 | 6.3 | Scanner lab: verdicts, modes, rejectOnUnknown, removal proof | 📋 ToDo | P0       | M    | 6.1        |
 | 6.4 | Confirm-scanner wiring + config introspection                | 📋 ToDo | P0       | S    | 6.3        |
@@ -40,7 +40,7 @@ seam. Matrix rows 13, 14, 47-53.
 
 ### Task 6.1: Branch + validation lab (MIME + size)
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: none
@@ -53,11 +53,11 @@ the active whitelist and cap from the shared constants.
 
 #### Acceptance criteria
 
-- [ ] Branch `feat/phase-06-validation-scanner` created with `git switch -c`.
-- [ ] `image/png` (whitelisted) passes; `video/mp4` passes via the `video/*` wildcard; `application/zip` → 415 `STORAGE_MIME_NOT_ALLOWED`.
-- [ ] A body above `UPLOAD_MAX_SIZE_BYTES` → 413 `STORAGE_SIZE_EXCEEDED`.
-- [ ] `GET /validation/rules` renders the exact whitelist + cap the module runs with (from the resolved options token, not re-declared).
-- [ ] Unit tests 100% on new files.
+- [x] Branch `feat/phase-06-validation-scanner` created with `git switch -c`.
+- [x] `image/png` (whitelisted) passes; `video/mp4` passes via the `video/*` wildcard; `application/zip` → 415 `STORAGE_MIME_NOT_ALLOWED`.
+- [x] A body above `UPLOAD_MAX_SIZE_BYTES` → 413 `STORAGE_SIZE_EXCEEDED`.
+- [x] `GET /validation/rules` renders the exact whitelist + cap the module runs with (from the resolved options token, not re-declared).
+- [x] Unit tests 100% on new files.
 
 #### Files to create / modify
 
@@ -394,3 +394,5 @@ Completion Protocol:
 ## Completion log
 
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
+
+- 6.1 ✅ 2026-07-07: `validation-lab/` module (`MulterModule` memory storage, deliberately NO `fileSize` cap so the library is the size gate), `ValidationLabController` (`POST /validation/upload` thin pass-through, `GET /validation/rules`), and `ValidationLabService` pushing the file straight into `StorageService.upload` under `validation-lab/` keys with no app-side prechecks. Rules rendered from the `BYMAX_STORAGE_OPTIONS` token (`validation-policy.ts` narrow view): whitelist, `maxSizeBytes`, and custom-validator names. Failures propagate the library envelopes (415 MIME, 413 size, 400 validation) untouched via the global filter. Unit 100/100/100/100; `test/validation.e2e-spec.ts` proves MIME 415, size 413, PNG pass, and the rules render against Testcontainers MinIO.
