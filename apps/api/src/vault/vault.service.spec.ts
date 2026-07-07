@@ -73,19 +73,22 @@ describe('VaultService (unit)', () => {
   })
 
   describe('preview', () => {
-    it('returns base64-encoded buffer for an object within the size limit', async () => {
+    it('returns base64-encoded buffer and the metadata from the download result', async () => {
       /*
-       * Scenario: 1 KiB object (under 10 MiB limit).
-       * Rule it protects: head() guards size; downloadBuffer() fetches the body.
+       * Scenario: 1 KiB object (under 10 MiB limit); head() and downloadBuffer()
+       * report distinct metadata objects.
+       * Rule it protects: head() guards size, but the returned metadata comes from
+       * downloadBuffer() so it reflects the bytes actually returned (no stale head).
        */
       const { service, head, downloadBuffer } = setup()
-      const metadata = makeMetadata({ size: 1024 })
-      head.mockResolvedValue(metadata)
-      downloadBuffer.mockResolvedValue({ buffer: Buffer.from('abc'), metadata })
+      const headMetadata = makeMetadata({ size: 1024, etag: '"head-etag"' })
+      const downloadMetadata = makeMetadata({ size: 1024, etag: '"download-etag"' })
+      head.mockResolvedValue(headMetadata)
+      downloadBuffer.mockResolvedValue({ buffer: Buffer.from('abc'), metadata: downloadMetadata })
 
       const result = await service.preview('avatars/uuid.png')
       expect(result.base64).toBe(Buffer.from('abc').toString('base64'))
-      expect(result.metadata).toBe(metadata)
+      expect(result.metadata).toBe(downloadMetadata)
     })
 
     it('throws PayloadTooLargeException without downloading when size > 10 MiB', async () => {
@@ -156,17 +159,17 @@ describe('VaultService (unit)', () => {
       expect(downloadBuffer).not.toHaveBeenCalled()
     })
 
-    it('throws BadRequestException when the range exceeds 50 MiB', async () => {
+    it('throws PayloadTooLargeException when the range exceeds 50 MiB', async () => {
       /*
-       * Scenario: caller requests a 100 MiB range (start=0, end=104857599).
-       * Rule it protects: downloadBuffer() is not called for oversized ranges; the
-       * 50 MiB cap prevents heap exhaustion before the library call.
+       * Scenario: caller requests a range larger than 50 MiB (start=0, end past cap).
+       * Rule it protects: downloadBuffer() is not called for oversized ranges; a
+       * size-limit breach is a 413, distinct from the 400 inverted-range case.
        */
       const { service, downloadBuffer } = setup()
       const FIFTY_MIB = 50 * 1024 * 1024
 
       await expect(service.downloadRange('my/key', 0, FIFTY_MIB + 1)).rejects.toBeInstanceOf(
-        BadRequestException,
+        PayloadTooLargeException,
       )
       expect(downloadBuffer).not.toHaveBeenCalled()
     })

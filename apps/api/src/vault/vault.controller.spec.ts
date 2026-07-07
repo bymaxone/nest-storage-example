@@ -9,6 +9,7 @@
  * @module vault/vault.controller.spec
  */
 import 'reflect-metadata'
+import { Readable, Writable } from 'node:stream'
 import { jest } from '@jest/globals'
 import { RequestMethod } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
@@ -38,14 +39,26 @@ function makeMetadata(overrides: Partial<ObjectMetadata> = {}): ObjectMetadata {
   }
 }
 
-/** Minimal Express response mock with header tracking. Returns the spy separately to avoid unbound-method lint. */
+/**
+ * Real Writable response double with header tracking. `pipeline` requires a
+ * genuine writable stream as its destination, so this collects written chunks
+ * while exposing a `setHeader` spy. Returns the spy separately to avoid
+ * unbound-method lint.
+ */
 function makeResponse() {
   const headers: Record<string, string | number> = {}
+  const received: Buffer[] = []
   const setHeader = jest.fn((key: string, value: string | number) => {
     headers[key] = value
   })
-  const res = { setHeader, headers } as unknown as Response
-  return { res, setHeader }
+  const writable = new Writable({
+    write(chunk: Buffer, _encoding, callback): void {
+      received.push(Buffer.from(chunk))
+      callback()
+    },
+  })
+  const res = Object.assign(writable, { setHeader }) as unknown as Response
+  return { res, setHeader, received }
 }
 
 /**
@@ -94,22 +107,23 @@ function setup() {
 
 describe('VaultController (unit)', () => {
   describe('download (stream)', () => {
-    it('sets Content-Type and Content-Length headers then pipes the stream', async () => {
+    it('sets Content-Type and Content-Length headers then streams the body', async () => {
       /*
        * Scenario: stream download of a 512-byte PNG.
-       * Rule it protects: metadata headers are set BEFORE piping.
+       * Rule it protects: metadata headers are set BEFORE streaming, and the body
+       * is piped through to the response via pipeline().
        */
       const { controller, download } = setup()
-      const stream = { pipe: jest.fn() } as unknown as NodeJS.ReadableStream & { pipe: jest.Mock }
+      const stream = Readable.from([Buffer.from('body-bytes')])
       const metadata = makeMetadata()
       download.mockResolvedValue({ stream, metadata })
-      const { res, setHeader } = makeResponse()
+      const { res, setHeader, received } = makeResponse()
 
       await controller.download({ key: 'avatars/uuid.png' }, res)
 
       expect(setHeader).toHaveBeenCalledWith('Content-Type', 'image/png')
       expect(setHeader).toHaveBeenCalledWith('Content-Length', 512)
-      expect(stream.pipe).toHaveBeenCalledWith(res)
+      expect(Buffer.concat(received).toString()).toBe('body-bytes')
     })
 
     it('sets Content-Disposition when metadata provides it', async () => {
@@ -118,7 +132,7 @@ describe('VaultController (unit)', () => {
        * Rule it protects: the header is forwarded to the response.
        */
       const { controller, download } = setup()
-      const stream = { pipe: jest.fn() } as unknown as NodeJS.ReadableStream
+      const stream = Readable.from([Buffer.from('x')])
       download.mockResolvedValue({
         stream,
         metadata: makeMetadata({ contentDisposition: 'attachment; filename="uuid.png"' }),
@@ -139,7 +153,7 @@ describe('VaultController (unit)', () => {
        * Rule it protects: the Cache-Control header is forwarded to the response.
        */
       const { controller, download } = setup()
-      const stream = { pipe: jest.fn() } as unknown as NodeJS.ReadableStream
+      const stream = Readable.from([Buffer.from('x')])
       download.mockResolvedValue({
         stream,
         metadata: makeMetadata({ cacheControl: 'public, max-age=3600' }),
@@ -149,6 +163,26 @@ describe('VaultController (unit)', () => {
       await controller.download({ key: 'avatars/uuid.png' }, res)
 
       expect(setHeader).toHaveBeenCalledWith('Cache-Control', 'public, max-age=3600')
+    })
+
+    it('rejects when the source stream errors mid-transfer', async () => {
+      /*
+       * Scenario: the library stream emits an error after headers were set.
+       * Rule it protects: pipeline() surfaces the stream error as a rejected
+       * promise (reaching the global filter) instead of crashing the process.
+       */
+      const { controller, download } = setup()
+      const stream = new Readable({
+        read(): void {
+          this.destroy(new Error('stream boom'))
+        },
+      })
+      download.mockResolvedValue({ stream, metadata: makeMetadata() })
+      const { res } = makeResponse()
+
+      await expect(controller.download({ key: 'avatars/uuid.png' }, res)).rejects.toThrow(
+        'stream boom',
+      )
     })
 
     it('propagates StorageException for a missing key', async () => {

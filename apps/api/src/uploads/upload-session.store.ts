@@ -69,14 +69,19 @@ export class UploadSessionStore {
 
   /**
    * Returns the snapshot list for a session, or `null` when the session is
-   * unknown (never created or already evicted).
+   * unknown (never created or already evicted). A hit refreshes LRU recency
+   * (delete + reinsert to the newest position) so an actively-polled idle
+   * session is not evicted while new sessions are created.
    *
    * @param id - The session identifier.
    * @returns The snapshot array, or `null`.
    */
   get(id: string): ProgressSnapshot[] | null {
     const entry = this.sessions.get(id)
-    return entry !== undefined ? entry.snapshots : null
+    if (entry === undefined) return null
+    this.sessions.delete(id)
+    this.sessions.set(id, entry)
+    return entry.snapshots
   }
 
   /**

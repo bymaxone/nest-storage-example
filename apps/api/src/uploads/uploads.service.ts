@@ -162,11 +162,15 @@ export class UploadsService {
     this.sessions.create(sessionId)
     const filename = query.filename ?? 'stream'
     const key = `${query.category}/${randomUUID()}${extractExtension(filename)}`
+    // Track the last reported byte count so the final snapshot reflects the real
+    // progress rather than resetting to 0 for unknown-size streams.
+    let lastLoaded = 0
     const result = await this.storage.upload({
       key,
       body: stream,
       contentType,
       onProgress: (event) => {
+        lastLoaded = event.loaded
         this.sessions.append(sessionId, {
           loaded: event.loaded,
           ...(event.total !== undefined && { total: event.total }),
@@ -176,7 +180,7 @@ export class UploadsService {
       ...(query.knownSize && contentLength !== undefined && { size: contentLength }),
     })
     this.sessions.append(sessionId, {
-      loaded: contentLength ?? 0,
+      loaded: lastLoaded,
       ...(contentLength !== undefined && { total: contentLength }),
       strategy: result.multipart ? 'multipart' : 'single',
     })

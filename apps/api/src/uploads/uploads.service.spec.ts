@@ -299,10 +299,11 @@ describe('UploadsService (unit)', () => {
       expect(snapshots?.[2]).toMatchObject({ strategy: 'multipart' })
     })
 
-    it('handles onProgress without total/part and records a final snapshot without total when contentLength is absent', async () => {
+    it('carries the last onProgress loaded value into the final snapshot for unknown-size streams', async () => {
       /*
        * Scenario: unknown-size stream (no Content-Length); onProgress fires without total/part.
-       * Rule it protects: the snapshot and final entry handle undefined gracefully.
+       * Rule it protects: the final snapshot reports the last observed loaded count
+       * (128), not 0, so it does not look like a regression after real progress.
        */
       const { service, upload, sessions } = setup()
       const result = makeResult({ multipart: true })
@@ -326,7 +327,7 @@ describe('UploadsService (unit)', () => {
       expect(firstSnap?.part).toBeUndefined()
       const finalSnap = snapshots?.[snapshots.length - 1]
       expect(finalSnap?.total).toBeUndefined()
-      expect(finalSnap?.loaded).toBe(0)
+      expect(finalSnap?.loaded).toBe(128)
     })
   })
 

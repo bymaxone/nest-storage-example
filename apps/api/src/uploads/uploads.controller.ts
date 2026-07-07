@@ -149,8 +149,10 @@ export class UploadsController {
   ): Promise<{ sessionId: string; result: UploadResult }> {
     const contentType = req.headers['content-type'] ?? 'application/octet-stream'
     const lengthHeader = req.headers['content-length']
-    const contentLength = lengthHeader !== undefined ? parseInt(lengthHeader, 10) : undefined
-    const size = !isNaN(contentLength ?? NaN) ? contentLength : undefined
+    // Only forward a Content-Length that is a finite, non-negative integer as the
+    // size hint; a negative, fractional, or NaN value is treated as unknown size.
+    const parsedLength = lengthHeader !== undefined ? Number(lengthHeader) : NaN
+    const size = Number.isInteger(parsedLength) && parsedLength >= 0 ? parsedLength : undefined
     return this.uploadsService.uploadStream(req, contentType, query, size)
   }
 

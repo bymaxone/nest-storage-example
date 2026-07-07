@@ -219,6 +219,24 @@ describe('UploadsController (unit)', () => {
       expect(sizeArg).toBeUndefined()
     })
 
+    it('treats a negative or non-integer Content-Length as unknown size', async () => {
+      /*
+       * Scenario: a malformed Content-Length header ('-1') reaches the handler.
+       * Rule it protects: only a finite, non-negative integer is forwarded as the
+       * size hint; a negative value is dropped rather than passed through.
+       */
+      const { controller, uploadStream } = setup()
+      uploadStream.mockResolvedValue({ sessionId: 's5', result: makeResult() })
+      const req = {
+        headers: { 'content-type': 'application/octet-stream', 'content-length': '-1' },
+      } as unknown as Request
+
+      await controller.uploadStream(req, { category: 'attachments', knownSize: true })
+
+      const [, , , sizeArg] = uploadStream.mock.calls[0] ?? []
+      expect(sizeArg).toBeUndefined()
+    })
+
     it('defaults content-type to application/octet-stream when header is absent', async () => {
       /*
        * Scenario: stream request has no Content-Type header.

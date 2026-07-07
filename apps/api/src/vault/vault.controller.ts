@@ -6,6 +6,7 @@
  * from the versioned bucket (spec §11.1, §12.1-§12.3).
  * @layer api/vault
  */
+import { pipeline } from 'node:stream/promises'
 import { Controller, Get, Query, Res } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import type { Response } from 'express'
@@ -37,11 +38,14 @@ export class VaultController {
   /**
    * GET /vault/object/download?key= - stream an object with metadata headers.
    *
-   * Pipes the library stream directly to the response. Headers are set from
-   * `ObjectMetadata` before piping begins (spec §11.1, §12.1).
+   * Streams the library body to the response with `pipeline`, which propagates
+   * stream errors (rejecting this handler so the global filter runs) and tears
+   * both streams down on client disconnect. Headers are set from `ObjectMetadata`
+   * before streaming begins (spec §11.1, §12.1).
    *
    * @param query - Validated query with `key`.
-   * @param res - The Express response used for header-setting and piping.
+   * @param res - The Express response used for header-setting and streaming.
+   * @throws Propagates any error emitted by the source stream.
    */
   @Get('download')
   async download(
@@ -57,7 +61,7 @@ export class VaultController {
     if (metadata.cacheControl !== undefined) {
       res.setHeader('Cache-Control', metadata.cacheControl)
     }
-    stream.pipe(res)
+    await pipeline(stream, res)
   }
 
   /**

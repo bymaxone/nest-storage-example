@@ -52,25 +52,27 @@ export class VaultService {
   /**
    * Materializes an object into memory after a size guard. Objects larger than
    * 10 MiB are refused with 413 BEFORE downloading -- the guard uses a `head()`
-   * call so no bytes are transferred unnecessarily.
+   * call so no bytes are transferred unnecessarily. The returned metadata comes
+   * from the `downloadBuffer()` result (not the earlier `head()`), so it reflects
+   * the bytes actually returned even if the object changed between the two calls.
    *
    * @param key - The raw object key.
-   * @returns The base64-encoded body and object metadata.
+   * @returns The base64-encoded body and the metadata from the download result.
    * @throws PayloadTooLargeException when the object exceeds 10 MiB.
    */
   async preview(key: string): Promise<BufferedDownloadResult> {
-    const metadata = await this.storage.head(key)
-    if (metadata.size > MAX_PREVIEW_BYTES) {
+    const headMetadata = await this.storage.head(key)
+    if (headMetadata.size > MAX_PREVIEW_BYTES) {
       throw new PayloadTooLargeException({
         error: {
           code: 'PREVIEW_SIZE_EXCEEDED',
-          message: `Object size ${metadata.size} exceeds the 10 MiB preview limit.`,
+          message: `Object size ${headMetadata.size} exceeds the 10 MiB preview limit.`,
           limit: MAX_PREVIEW_BYTES,
-          actual: metadata.size,
+          actual: headMetadata.size,
         },
       })
     }
-    const { buffer } = await this.storage.downloadBuffer({ key })
+    const { buffer, metadata } = await this.storage.downloadBuffer({ key })
     return { base64: buffer.toString('base64'), metadata }
   }
 
@@ -82,7 +84,8 @@ export class VaultService {
    * @param start - First byte offset (inclusive, zero-based).
    * @param end - Last byte offset (inclusive).
    * @returns Base64-encoded range bytes and object metadata.
-   * @throws {BadRequestException} When `start > end` (inverted range) or range exceeds 50 MiB.
+   * @throws {BadRequestException} When `start > end` (an inverted range is an invalid request shape, 400).
+   * @throws {PayloadTooLargeException} When the requested range exceeds 50 MiB (a size-limit breach, 413).
    * @throws {StorageException} Propagates from the library when the provider returns an error.
    */
   async downloadRange(key: string, start: number, end: number): Promise<BufferedDownloadResult> {
@@ -95,7 +98,7 @@ export class VaultService {
       })
     }
     if (end - start + 1 > MAX_RANGE_BYTES) {
-      throw new BadRequestException({
+      throw new PayloadTooLargeException({
         error: {
           code: 'RANGE_TOO_LARGE',
           message: `Requested range ${end - start + 1} bytes exceeds the ${MAX_RANGE_BYTES} byte limit.`,

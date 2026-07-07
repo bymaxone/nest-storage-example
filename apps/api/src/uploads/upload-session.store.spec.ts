@@ -107,6 +107,29 @@ describe('UploadSessionStore (unit)', () => {
       expect(store.get('old-b')).toBeNull()
       expect(store.get('old-a')).not.toBeNull()
     })
+
+    it('refreshes recency on get() so a polled idle session survives eviction', () => {
+      /*
+       * Scenario: sessions read-a and read-b created; read-a is polled via get()
+       * (no append), then the store is filled to the cap and pushed one over.
+       * Rule it protects: get() moves read-a to newest, so read-b (oldest
+       * untouched) is evicted first while the actively-polled read-a survives.
+       */
+      const store = makeStore()
+      store.create('read-a')
+      store.create('read-b')
+      // Poll read-a via get() only (no append): this must refresh its recency.
+      expect(store.get('read-a')).toEqual([])
+      // Fill to the cap so read-b becomes the oldest eviction candidate.
+      for (let i = 0; i < 98; i++) {
+        store.create(`fill-${i}`)
+      }
+      expect(store.size()).toBe(100)
+      // One more creation evicts read-b (oldest), not read-a (recently polled).
+      store.create('read-trigger')
+      expect(store.get('read-b')).toBeNull()
+      expect(store.get('read-a')).not.toBeNull()
+    })
   })
 
   describe('size', () => {
