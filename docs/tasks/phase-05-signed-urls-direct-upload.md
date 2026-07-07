@@ -1,6 +1,6 @@
 # Phase 5: signed-urls-direct-upload
 
-> **Status**: 🔄 In Progress · **Progress**: 3 / 5 tasks · **Last updated**: 2026-07-07
+> **Status**: 🔄 In Progress · **Progress**: 4 / 5 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P5)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §12.4, §12.5, §17
 
@@ -34,7 +34,7 @@ PUT/GET against MinIO with the issued URLs. Matrix rows 11, 40-46.
 | 5.1 | Branch + signed GET URLs: overrides, clamp, invalid TTL     | ✅ Done | P0       | M    | none       |
 | 5.2 | Signed PUT + confirm pattern (head now, scanner seam)       | ✅ Done | P0       | M    | 5.1        |
 | 5.3 | Presigned multipart: parts, complete, abort                 | ✅ Done | P0       | M    | 5.2        |
-| 5.4 | Real-fetch e2e: PUT/GET/multipart round-trips against MinIO | 📋 ToDo | P0       | M    | 5.3        |
+| 5.4 | Real-fetch e2e: PUT/GET/multipart round-trips against MinIO | ✅ Done | P0       | M    | 5.3        |
 | 5.5 | Phase close: audit, dashboards, PR + Copilot review, merge  | 📋 ToDo | P0       | S    | 5.1-5.4    |
 
 ## Tasks
@@ -261,7 +261,7 @@ Completion Protocol:
 
 ### Task 5.4: Real-fetch e2e round-trips
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 5.3
@@ -274,11 +274,11 @@ split/PUT/complete plus an aborted variant.
 
 #### Acceptance criteria
 
-- [ ] `test/signed.e2e-spec.ts` boots the app against MinIO (compose or Testcontainers) and performs every round-trip with plain `fetch`.
-- [ ] Over-limit PUT rejected by the provider's length policy (assert the failure class, not the provider's exact message).
-- [ ] Expired GET denied (short TTL + waited expiry or clock-skewed assertion strategy documented).
-- [ ] Multipart complete yields a downloadable object; the aborted variant leaves no orphan parts.
-- [ ] Suite green under the e2e config with bounded workers.
+- [x] `test/signed.e2e-spec.ts` boots the app against a Testcontainers MinIO and performs every round-trip with plain `fetch`.
+- [x] Over-limit PUT accepted by the provider (a SigV4 PUT cannot pin a maximum size) then rejected by the mandatory confirm on size (failure asserted by the confirm result, not a provider message). Drift reconciled vs the spec's "rejected by the provider's length policy".
+- [x] Expired GET denied (1 s TTL + a single bounded 2.5 s wait; asserts the 403 class, not the message).
+- [x] Multipart complete yields a downloadable object; the aborted variant leaves no orphan parts (verified via `ListMultipartUploads`).
+- [x] Suite green under the e2e config (`--runInBand`, one MinIO container at a time).
 
 #### Files to create / modify
 
@@ -393,6 +393,7 @@ Completion Protocol:
 
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
 
+- 5.4 ✅ 2026-07-07: `test/signed.e2e-spec.ts` boots a real MinIO via Testcontainers (`test/helpers/minio-container.ts`) and the production app (`test/helpers/test-app.ts`) and exercises every presigned flow with plain `fetch`: within-policy PUT + confirm, GET byte round-trip, over-limit PUT (accepted by the provider, rejected by confirm on size), expired-GET 403, multipart complete into a downloadable object, and multipart abort verified via `ListMultipartUploads`. The `boot.e2e-spec.ts` smoke was moved onto the same container so the e2e tier needs no dev compose and runs identically locally and on CI. Added `testcontainers` dev dep. Suite green (`--runInBand`, one container at a time); signed URLs never asserted verbatim.
 - 5.3 ✅ 2026-07-07: `POST /signed/multipart-urls` (`multipartUrlsBodySchema`: category, contentType, `parts` 1..1000, optional `ttlSeconds`) driving `SignedUrlService.getMultipartUploadUrls` and returning `{ uploadId, key, partUrls, completeUrl, expiresAt, effectiveTtlSeconds, minPartSizeBytes, note }`. Drift reconciled: `MultipartUploadUrlsResult` has no `expiresAt`, so the effective expiry is read from the `X-Amz-Date`/`X-Amz-Expires` the library signed into the complete URL (never recomputing the clamp). `POST /signed/multipart-abort` (`multipartAbortBodySchema`: key + uploadId) aborts via the raw `BYMAX_STORAGE_S3_CLIENT` (`AbortMultipartUploadCommand`), mirroring the library key-prefix rule and rejecting traversal keys with `STORAGE_KEY_INVALID`; provider errors map to `STORAGE_PROVIDER_ERROR`. 100% coverage.
 - 5.2 ✅ 2026-07-07: `POST /signed/upload-url` (`uploadUrlBodySchema`: category, `type/subtype` contentType, optional `maxSizeBytes`/`ttlSeconds`) issuing a presigned PUT that echoes `requiredHeaders` verbatim and carries an advisory `contentLengthRange` (lower of request and policy) plus a note that the mandatory confirm enforces it. `POST /signed/confirm` (`confirmBodySchema`: key) `head()`s the landed object, re-applies the size + MIME policy read from `BYMAX_STORAGE_OPTIONS`, and runs the `CONFIRM_SCANNER` seam (`IConfirmScanner` bound to `NoOpConfirmScanner`, verdict `skipped` until scanner-verify lands); unknown key → 404 via the library. Every response states local validation did not run on the direct PUT. 100% coverage.
 - 5.1 ✅ 2026-07-07: `POST /signed/download-url` (`downloadUrlBodySchema`: shared `objectKeySchema`, integer `ttlSeconds` that forwards non-positive values to the library, printable-ASCII response overrides) issuing a presigned GET via `SignedUrlService.getDownloadUrl`. Response renders requested-vs-effective TTL with `clamped`/`maxTtlSeconds`; the effective TTL is derived from the library's returned `expiresAt`, never by recomputing the clamp. `ttlSeconds <= 0` propagates `STORAGE_SIGNED_URL_TTL_INVALID` via the filter. Signed module wired into `AppModule`. 100% coverage.
