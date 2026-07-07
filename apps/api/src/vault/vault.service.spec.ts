@@ -470,6 +470,24 @@ describe('VaultService (unit)', () => {
       const result = service.getPublicUrls('docs/file.pdf', 'http://localhost:9000/vault', '', '')
       expect(result.url).toBe('http://localhost:9000/vault/docs/file.pdf')
     })
+
+    it('url-encodes keys with spaces and reserved characters per segment', () => {
+      /*
+       * Scenario: a key contains a space and a reserved character but keeps its
+       * `/` folder separators.
+       * Rule it protects: each path segment is percent-encoded (spaces become
+       * %20) while the `/` separators are preserved, yielding a valid URL.
+       */
+      const { service } = setup()
+      const result = service.getPublicUrls(
+        'my folder/a+b c.png',
+        'http://localhost:9000/vault',
+        'https://cdn.example.com',
+        'tenant one',
+      )
+      expect(result.url).toBe('http://localhost:9000/vault/tenant%20one/my%20folder/a%2Bb%20c.png')
+      expect(result.cdnUrl).toBe('https://cdn.example.com/tenant%20one/my%20folder/a%2Bb%20c.png')
+    })
   })
 
   describe('deleteOne', () => {

@@ -285,8 +285,11 @@ export class VaultService {
   ): PublicUrlResponse {
     const base = publicBase.replace(/\/$/, '')
     const fullKey = keyPrefix ? `${keyPrefix}/${key}` : key
-    const url = `${base}/${fullKey}`
-    const cdnUrl = cdnBase ? `${cdnBase.replace(/\/$/, '')}/${fullKey}` : undefined
+    // Encode each path segment (preserving the `/` separators) so keys with
+    // spaces or reserved characters produce a valid URL for clients and CDNs.
+    const encodedPath = fullKey.split('/').map(encodeURIComponent).join('/')
+    const url = `${base}/${encodedPath}`
+    const cdnUrl = cdnBase ? `${cdnBase.replace(/\/$/, '')}/${encodedPath}` : undefined
     return {
       url,
       ...(cdnUrl !== undefined ? { cdnUrl } : {}),
