@@ -69,3 +69,27 @@ jobs:
         uses: ./.github/actions/setup
       - name: API unit coverage
         run: pnpm test:cov:api
+
+  # The API e2e tier boots a real MinIO through Testcontainers (no compose,
+  # no services block) and performs the presigned round-trips with plain fetch.
+  # GitHub-hosted runners ship a Docker daemon, so Testcontainers pulls and boots
+  # the pinned MinIO image directly; the timeout is generous to cover a cold image
+  # pull. The suite runs with --runInBand and one container at a time, so it stays
+  # memory-safe on the runner. The locally linked library is provisioned by the
+  # shared composite, exactly as the other jobs.
+  e2e:
+    name: E2E
+    runs-on: ubuntu-latest
+    # Gate on the unit tier too so a coverage regression fails before the slower
+    # container-backed e2e runs and can never report green alongside a red unit job.
+    needs: [lint, unit]
+    permissions:
+      contents: read
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Setup workspace
+        uses: ./.github/actions/setup
+      - name: API e2e (presigned round-trips against Testcontainers MinIO)
+        run: pnpm --filter api run test:e2e

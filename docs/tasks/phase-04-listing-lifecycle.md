@@ -1,6 +1,6 @@
 # Phase 4: listing-lifecycle
 
-> **Status**: 👀 Review · **Progress**: 5 / 5 tasks · **Last updated**: 2026-07-07
+> **Status**: ✅ Done · **Progress**: 5 / 5 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P4)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §11.1 (Vault), §15
 
@@ -27,13 +27,13 @@ idempotent and bulk deletion with per-key failure rendering, server-side copy (s
 
 ## Task index
 
-| ID  | Task                                                       | Status    | Priority | Size | Depends on |
-| --- | ---------------------------------------------------------- | --------- | -------- | ---- | ---------- |
-| 4.1 | Branch + listing: prefix, pagination, folders              | ✅ Done   | P0       | M    | none       |
-| 4.2 | Detail: head, exists, public URLs (plain + CDN)            | ✅ Done   | P0       | S    | 4.1        |
-| 4.3 | Deletion: idempotent single + chunked bulk with failures   | ✅ Done   | P0       | M    | 4.1        |
-| 4.4 | Copy: same-bucket rename + archive cross-bucket            | ✅ Done   | P0       | S    | 4.1        |
-| 4.5 | Phase close: audit, dashboards, PR + Copilot review, merge | 👀 Review | P0       | S    | 4.1-4.4    |
+| ID  | Task                                                       | Status  | Priority | Size | Depends on |
+| --- | ---------------------------------------------------------- | ------- | -------- | ---- | ---------- |
+| 4.1 | Branch + listing: prefix, pagination, folders              | ✅ Done | P0       | M    | none       |
+| 4.2 | Detail: head, exists, public URLs (plain + CDN)            | ✅ Done | P0       | S    | 4.1        |
+| 4.3 | Deletion: idempotent single + chunked bulk with failures   | ✅ Done | P0       | M    | 4.1        |
+| 4.4 | Copy: same-bucket rename + archive cross-bucket            | ✅ Done | P0       | S    | 4.1        |
+| 4.5 | Phase close: audit, dashboards, PR + Copilot review, merge | ✅ Done | P0       | S    | 4.1-4.4    |
 
 ## Tasks
 
@@ -319,7 +319,7 @@ Completion Protocol:
 
 ### Task 4.5: Phase close
 
-- **Status**: 👀 Review
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 4.1-4.4
@@ -330,8 +330,8 @@ Audit the phase Definition of Done, sync dashboards, PR + GitHub Copilot review,
 
 #### Acceptance criteria
 
-- [ ] Plan P4 Definition of Done verified live (three-page walk, folder aggregation, bulk partitioning, idempotent repeat, archive copy).
-- [ ] Dashboards synced; PR merged squash with Copilot findings addressed and CI green; branch deleted.
+- [x] Plan P4 Definition of Done verified live (three-page walk, folder aggregation, bulk partitioning, idempotent repeat, archive copy).
+- [x] Dashboards synced; PR merged squash with Copilot findings addressed and CI green; branch deleted.
 
 #### Files to create / modify
 
@@ -383,6 +383,7 @@ Completion Protocol:
 
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
 
+- 4.5 ✅ 2026-07-07: phase merged in PR #5 (squash); CI green; Copilot rounds addressed (utf-8 byte key limits, exists() provider-error propagation, public-url encoding, bulk-delete HttpCode 200); 228 tests, 100% coverage.
 - 4.5 👀 2026-07-07: phase close in review. Audited DoD live against compose MinIO (paginated walk, folder aggregation, idempotent repeat delete, bulk report, cross-bucket archive copy); dashboards synced; PR opened and GitHub Copilot review requested. Merge intentionally deferred pending review. During the live audit a latent P3 DI bug was found and fixed (`StorageService`/`UploadSessionStore` were `import type`-only, so NestJS could not resolve them and the app failed to boot); the app now boots and every vault route works end to end. 221 unit tests, 100% coverage; lint/typecheck/format clean.
 - 4.4 ✅ 2026-07-07: `POST /vault/copy` (`copyBodySchema`: sourceKey/destinationKey via shared `objectKeySchema`, `destination: 'same'|'archive'`, optional `deleteSource`) with an `exists()` precheck throwing `STORAGE_OBJECT_NOT_FOUND` before any CopyObject; archive mode routes to `STORAGE_ARCHIVE_BUCKET` via `destinationBucket`; `deleteSource` completes the rename pattern. Verified live against MinIO: same-bucket and archive copies return the new etag/bucket, and a missing source yields the 404 envelope. 100% coverage.
 - 4.3 ✅ 2026-07-07: `DELETE /vault/object` idempotent single delete surfacing a `warned` flag via an `exists()` precheck, and `POST /vault/bulk-delete` (`bulkDeleteBodySchema`: 1-1000 keys, each via the shared `objectKeySchema`) passing the library `{ deleted, failed }` report through verbatim. Verified live against MinIO: repeat delete returns `warned:false` then `warned:true`; a mixed batch returns the S3 report. 100% coverage.

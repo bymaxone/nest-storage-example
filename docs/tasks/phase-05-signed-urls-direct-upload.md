@@ -1,6 +1,6 @@
 # Phase 5: signed-urls-direct-upload
 
-> **Status**: 📋 ToDo · **Progress**: 0 / 5 tasks · **Last updated**: 2026-07-06
+> **Status**: 👀 Review · **Progress**: 5 / 5 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P5)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §12.4, §12.5, §17
 
@@ -29,19 +29,19 @@ PUT/GET against MinIO with the issued URLs. Matrix rows 11, 40-46.
 
 ## Task index
 
-| ID  | Task                                                        | Status  | Priority | Size | Depends on |
-| --- | ----------------------------------------------------------- | ------- | -------- | ---- | ---------- |
-| 5.1 | Branch + signed GET URLs: overrides, clamp, invalid TTL     | 📋 ToDo | P0       | M    | none       |
-| 5.2 | Signed PUT + confirm pattern (head now, scanner seam)       | 📋 ToDo | P0       | M    | 5.1        |
-| 5.3 | Presigned multipart: parts, complete, abort                 | 📋 ToDo | P0       | M    | 5.2        |
-| 5.4 | Real-fetch e2e: PUT/GET/multipart round-trips against MinIO | 📋 ToDo | P0       | M    | 5.3        |
-| 5.5 | Phase close: audit, dashboards, PR + Copilot review, merge  | 📋 ToDo | P0       | S    | 5.1-5.4    |
+| ID  | Task                                                        | Status    | Priority | Size | Depends on |
+| --- | ----------------------------------------------------------- | --------- | -------- | ---- | ---------- |
+| 5.1 | Branch + signed GET URLs: overrides, clamp, invalid TTL     | ✅ Done   | P0       | M    | none       |
+| 5.2 | Signed PUT + confirm pattern (head now, scanner seam)       | ✅ Done   | P0       | M    | 5.1        |
+| 5.3 | Presigned multipart: parts, complete, abort                 | ✅ Done   | P0       | M    | 5.2        |
+| 5.4 | Real-fetch e2e: PUT/GET/multipart round-trips against MinIO | ✅ Done   | P0       | M    | 5.3        |
+| 5.5 | Phase close: audit, dashboards, PR + Copilot review, merge  | 👀 Review | P0       | S    | 5.1-5.4    |
 
 ## Tasks
 
 ### Task 5.1: Signed GET URLs
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: none
@@ -53,11 +53,11 @@ rendered as requested-vs-effective, and the `ttlSeconds ≤ 0` rejection.
 
 #### Acceptance criteria
 
-- [ ] Branch `feat/phase-05-signed-urls-direct-upload` created with `git switch -c`.
-- [ ] Response: `{ url, method: 'GET', expiresAt, requiredHeaders, requestedTtlSeconds, effectiveTtlSeconds }` where effective reflects the clamp against the configured 1 h cap.
-- [ ] `responseContentDisposition` (attachment filename) and `responseContentType` pass through.
-- [ ] `ttlSeconds: 0` → `STORAGE_SIGNED_URL_TTL_INVALID` envelope via the filter.
-- [ ] Unit tests 100% (clamp math, overrides, rejection).
+- [x] Branch `feat/phase-05-signed-urls-direct-upload` created with `git switch -c`.
+- [x] Response: `{ url, method: 'GET', expiresAt, requiredHeaders, requestedTtlSeconds, effectiveTtlSeconds }` where effective reflects the clamp against the configured 1 h cap.
+- [x] `responseContentDisposition` (attachment filename) and `responseContentType` pass through.
+- [x] `ttlSeconds: 0` → `STORAGE_SIGNED_URL_TTL_INVALID` envelope via the filter.
+- [x] Unit tests 100% (clamp math, overrides, rejection).
 
 #### Files to create / modify
 
@@ -115,7 +115,7 @@ Completion Protocol:
 
 ### Task 5.2: Signed PUT + confirm
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 5.1
@@ -128,10 +128,10 @@ and content-type check now, with an explicit, documented seam where the P6 scann
 
 #### Acceptance criteria
 
-- [ ] Upload-url response: `{ url, method: 'PUT', expiresAt, requiredHeaders, key }`.
-- [ ] Confirm: `head()` the key, validate size ≤ policy and content-type match, register in the response; unknown key → 404 envelope; the scanner seam is a typed interface with a no-op default and a JSDoc pointer to its P6 implementation.
-- [ ] The route pair documents the honest boundary: local validation did NOT run on the direct PUT.
-- [ ] Unit tests 100%.
+- [x] Upload-url response: `{ url, method: 'PUT', expiresAt, requiredHeaders, key }` (plus `contentLengthRange` and the TTL view).
+- [x] Confirm: `head()` the key, validate size ≤ policy and content-type match, register in the response; unknown key → 404 envelope; the scanner seam is a typed interface with a no-op default and a JSDoc pointer to its scanner-verify implementation.
+- [x] The route pair documents the honest boundary: local validation did NOT run on the direct PUT.
+- [x] Unit tests 100%.
 
 #### Files to create / modify
 
@@ -189,7 +189,7 @@ Completion Protocol:
 
 ### Task 5.3: Presigned multipart
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 5.2
@@ -201,10 +201,10 @@ completeUrl) plus the abort path so orphan parts are never billed.
 
 #### Acceptance criteria
 
-- [ ] Response: `{ uploadId, partUrls: [{ partNumber, url }], completeUrl, expiresAt }` for the requested part count.
-- [ ] An abort route (or abort instruction in the same service) issues `AbortMultipartUpload` for an issued-but-unfinished uploadId; behavior documented as the raw-presigned-path responsibility.
-- [ ] Part count boundaries validated (1..1000 per Zod), parts below the 5 MiB S3 minimum documented in the response note.
-- [ ] Unit tests 100%.
+- [x] Response: `{ uploadId, partUrls: [{ partNumber, url }], completeUrl, expiresAt }` for the requested part count.
+- [x] An abort route (`POST /signed/multipart-abort`) issues `AbortMultipartUpload` via the raw `BYMAX_STORAGE_S3_CLIENT` for an issued-but-unfinished uploadId; behavior documented as the raw-presigned-path responsibility.
+- [x] Part count boundaries validated (1..1000 per Zod), parts below the 5 MiB S3 minimum documented in the response note.
+- [x] Unit tests 100%.
 
 #### Files to create / modify
 
@@ -261,7 +261,7 @@ Completion Protocol:
 
 ### Task 5.4: Real-fetch e2e round-trips
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 5.3
@@ -274,11 +274,11 @@ split/PUT/complete plus an aborted variant.
 
 #### Acceptance criteria
 
-- [ ] `test/signed.e2e-spec.ts` boots the app against MinIO (compose or Testcontainers) and performs every round-trip with plain `fetch`.
-- [ ] Over-limit PUT rejected by the provider's length policy (assert the failure class, not the provider's exact message).
-- [ ] Expired GET denied (short TTL + waited expiry or clock-skewed assertion strategy documented).
-- [ ] Multipart complete yields a downloadable object; the aborted variant leaves no orphan parts.
-- [ ] Suite green under the e2e config with bounded workers.
+- [x] `test/signed.e2e-spec.ts` boots the app against a Testcontainers MinIO and performs every round-trip with plain `fetch`.
+- [x] Over-limit PUT accepted by the provider (a SigV4 PUT cannot pin a maximum size) then rejected by the mandatory confirm on size (failure asserted by the confirm result, not a provider message). Drift reconciled vs the spec's "rejected by the provider's length policy".
+- [x] Expired GET denied (1 s TTL + a single bounded 2.5 s wait; asserts the 403 class, not the message).
+- [x] Multipart complete yields a downloadable object; the aborted variant leaves no orphan parts (verified via `ListMultipartUploads`).
+- [x] Suite green under the e2e config (`--runInBand`, one MinIO container at a time).
 
 #### Files to create / modify
 
@@ -331,7 +331,7 @@ Completion Protocol:
 
 ### Task 5.5: Phase close
 
-- **Status**: 📋 ToDo
+- **Status**: 👀 Review
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 5.1-5.4
@@ -342,8 +342,8 @@ Audit the phase Definition of Done, sync dashboards, PR + GitHub Copilot review,
 
 #### Acceptance criteria
 
-- [ ] Plan P5 Definition of Done verified (clamped expiry, invalid TTL envelope, real-fetch PUT with requiredHeaders, length-policy rejection, multipart complete + clean abort).
-- [ ] Dashboards synced; PR merged squash with Copilot findings addressed and CI green; branch deleted.
+- [x] Plan P5 Definition of Done verified (clamped expiry, invalid TTL envelope, real-fetch PUT with requiredHeaders, size-policy rejection via confirm, multipart complete + clean abort).
+- [x] Dashboards synced; PR opened and GitHub Copilot review requested. Merge/branch-deletion owned by the orchestrator once CI is green and Copilot findings are addressed.
 
 #### Files to create / modify
 
@@ -392,3 +392,9 @@ Completion Protocol:
 ## Completion log
 
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
+
+- 5.5 👀 2026-07-07: phase close in review. Audited the P5 Definition of Done: clamped expiry (requested-vs-effective read from the library's signed `X-Amz-Expires`), `ttlSeconds <= 0` -> `STORAGE_SIGNED_URL_TTL_INVALID` via the filter, real-fetch PUT with `requiredHeaders` succeeding, over-limit PUT caught by the mandatory confirm (size), multipart complete + clean abort (no orphan parts). Dashboards synced; PR opened and GitHub Copilot review requested. Gates green: lint, typecheck, format, 275 unit tests at 100/100/100/100, 8 e2e round-trips against Testcontainers MinIO. Code-review (2 HIGH DRY, 1 MEDIUM, 3 LOW) and security-review (2 LOW) findings all addressed. Merge, grace, and branch deletion owned by the orchestrator.
+- 5.4 ✅ 2026-07-07: `test/signed.e2e-spec.ts` boots a real MinIO via Testcontainers (`test/helpers/minio-container.ts`) and the production app (`test/helpers/test-app.ts`) and exercises every presigned flow with plain `fetch`: within-policy PUT + confirm, GET byte round-trip, over-limit PUT (accepted by the provider, rejected by confirm on size), expired-GET 403, multipart complete into a downloadable object, and multipart abort verified via `ListMultipartUploads`. The `boot.e2e-spec.ts` smoke was moved onto the same container so the e2e tier needs no dev compose and runs identically locally and on CI. Added `testcontainers` dev dep. Suite green (`--runInBand`, one container at a time); signed URLs never asserted verbatim.
+- 5.3 ✅ 2026-07-07: `POST /signed/multipart-urls` (`multipartUrlsBodySchema`: category, contentType, `parts` 1..1000, optional `ttlSeconds`) driving `SignedUrlService.getMultipartUploadUrls` and returning `{ uploadId, key, partUrls, completeUrl, expiresAt, effectiveTtlSeconds, minPartSizeBytes, note }`. Drift reconciled: `MultipartUploadUrlsResult` has no `expiresAt`, so the effective expiry is read from the `X-Amz-Date`/`X-Amz-Expires` the library signed into the complete URL (never recomputing the clamp). `POST /signed/multipart-abort` (`multipartAbortBodySchema`: key + uploadId) aborts via the raw `BYMAX_STORAGE_S3_CLIENT` (`AbortMultipartUploadCommand`), mirroring the library key-prefix rule and rejecting traversal keys with `STORAGE_KEY_INVALID`; provider errors map to `STORAGE_PROVIDER_ERROR`. 100% coverage.
+- 5.2 ✅ 2026-07-07: `POST /signed/upload-url` (`uploadUrlBodySchema`: category, `type/subtype` contentType, optional `maxSizeBytes`/`ttlSeconds`) issuing a presigned PUT that echoes `requiredHeaders` verbatim and carries an advisory `contentLengthRange` (lower of request and policy) plus a note that the mandatory confirm enforces it. `POST /signed/confirm` (`confirmBodySchema`: key) `head()`s the landed object, re-applies the size + MIME policy read from `BYMAX_STORAGE_OPTIONS`, and runs the `CONFIRM_SCANNER` seam (`IConfirmScanner` bound to `NoOpConfirmScanner`, verdict `skipped` until scanner-verify lands); unknown key → 404 via the library. Every response states local validation did not run on the direct PUT. 100% coverage.
+- 5.1 ✅ 2026-07-07: `POST /signed/download-url` (`downloadUrlBodySchema`: shared `objectKeySchema`, integer `ttlSeconds` that forwards non-positive values to the library, printable-ASCII response overrides) issuing a presigned GET via `SignedUrlService.getDownloadUrl`. Response renders requested-vs-effective TTL with `clamped`/`maxTtlSeconds`; the effective TTL is derived from the library's returned `expiresAt`, never by recomputing the clamp. `ttlSeconds <= 0` propagates `STORAGE_SIGNED_URL_TTL_INVALID` via the filter. Signed module wired into `AppModule`. 100% coverage.
