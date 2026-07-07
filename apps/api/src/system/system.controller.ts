@@ -8,12 +8,23 @@
  */
 import { Controller, Get, Inject } from '@nestjs/common'
 import { BYMAX_STORAGE_OPTIONS, providerRecipes } from '@bymax-one/nest-storage'
-import { redactStorageOptions, type RedactableStorageOptions } from './config-redactor.js'
+import {
+  redactStorageOptions,
+  type RedactableStorageOptions,
+  type RedactedStorageOptions,
+} from './config-redactor.js'
+
+/** A provider recipe blueprint: its name, raw sample options, and quirk notes. */
+interface RecipeBlueprint {
+  provider: string
+  options: RedactableStorageOptions
+  quirks: string[]
+}
 
 /** One rendered provider recipe: its name, redacted options, and quirk notes. */
 export interface RecipeView {
   provider: string
-  options: RedactableStorageOptions
+  options: RedactedStorageOptions
   quirks: string[]
 }
 
@@ -25,7 +36,7 @@ const SAMPLE = { accessKeyId: 'AKIAEXAMPLE1234', secretAccessKey: 'sample-secret
  * with its documented quirk notes (spec §12.6-§12.7). Built once at module load;
  * the controller redacts a fresh clone per request so no sample value leaks.
  */
-const RECIPE_BLUEPRINTS: RecipeView[] = [
+const RECIPE_BLUEPRINTS: RecipeBlueprint[] = [
   {
     provider: 'awsS3',
     options: providerRecipes.awsS3({ region: 'us-east-1', bucket: 'vault', ...SAMPLE }),
@@ -116,7 +127,7 @@ export class SystemController {
    * @returns The redacted resolved storage options.
    */
   @Get('config')
-  config(): RedactableStorageOptions {
+  config(): RedactedStorageOptions {
     return redactStorageOptions(this.options)
   }
 

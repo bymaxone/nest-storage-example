@@ -1,13 +1,29 @@
 /**
- * Unit: redactStorageOptions - credential-safe cloning for introspection.
+ * Unit: redactStorageOptions - credential-safe, introspectable rendering.
  *
  * Covers masking of the access key id, full redaction of the secret and session
- * token, the credentials-absent passthrough, a short-key mask, input
- * immutability, and the guarantee that a planted secret never survives.
+ * token, the credentials-absent clone, a short-key mask, input immutability, the
+ * guarantee that a planted secret never survives, and the introspection
+ * rendering of the scanner (impl by name, mode, rejectOnUnknown) and validation
+ * (custom validators by name) blocks.
  *
  * @module system/config-redactor.spec
  */
+import type { IFileScanner, IUploadValidator } from '@bymax-one/nest-storage'
 import { redactStorageOptions, type RedactableStorageOptions } from './config-redactor.js'
+
+/** A named scanner stub whose class name is rendered by the redactor. */
+class DemoScanner implements IFileScanner {
+  scan(): ReturnType<IFileScanner['scan']> {
+    return Promise.resolve({ status: 'clean', engine: 'demo' })
+  }
+}
+
+/** A named validator stub whose `name` is rendered by the redactor. */
+const namedValidator: IUploadValidator = {
+  name: 'demo-validator',
+  validate: () => Promise.resolve({ ok: true }),
+}
 
 /** Minimal required options shell shared by the tests. */
 const base: RedactableStorageOptions = {
@@ -51,14 +67,74 @@ describe('redactStorageOptions (unit)', () => {
     expect(redacted.credentials?.sessionToken).toBe('[redacted]')
   })
 
-  it('returns options unchanged when credentials are absent', () => {
+  it('returns an equal clone when credentials are absent', () => {
     /*
-     * Scenario: an unconfigured module has no credentials.
-     * Rule it protects: the credentials-absent arm returns the options as-is
-     * rather than throwing on a missing credentials object.
+     * Scenario: an unconfigured module has no credentials, scanner, or validation.
+     * Rule it protects: the redactor returns a value-equal copy (no credentials
+     * key added) rather than throwing on a missing credentials object.
      */
     const options = { ...base }
-    expect(redactStorageOptions(options)).toBe(options)
+    const redacted = redactStorageOptions(options)
+    expect(redacted).toEqual(base)
+    expect(redacted.credentials).toBeUndefined()
+  })
+
+  it('renders the scanner impl by name with its mode and reject flag', () => {
+    /*
+     * Scenario: options carry a live scanner instance with mode and reject flag.
+     * Rule it protects: the impl is summarized by its class name (never serialized
+     * as an opaque object) and the resolved settings are surfaced as plain values.
+     */
+    const redacted = redactStorageOptions({
+      ...base,
+      scanner: { impl: new DemoScanner(), mode: 'post-upload', rejectOnUnknown: true },
+    })
+    expect(redacted.scanner).toEqual({
+      impl: 'DemoScanner',
+      mode: 'post-upload',
+      rejectOnUnknown: true,
+    })
+  })
+
+  it('renders a scanner without optional mode or reject flag', () => {
+    /*
+     * Scenario: a scanner is configured with only an impl.
+     * Rule it protects: absent mode and rejectOnUnknown are omitted rather than
+     * emitted as undefined.
+     */
+    const redacted = redactStorageOptions({ ...base, scanner: { impl: new DemoScanner() } })
+    expect(redacted.scanner).toEqual({ impl: 'DemoScanner' })
+  })
+
+  it('renders custom validators by name with the whitelist and size cap', () => {
+    /*
+     * Scenario: options carry live custom validators plus a whitelist and cap.
+     * Rule it protects: validators are summarized by name and the plain-value
+     * whitelist and size cap pass through.
+     */
+    const redacted = redactStorageOptions({
+      ...base,
+      validation: {
+        mimeWhitelist: ['image/png'],
+        maxSizeBytes: 4096,
+        customValidators: [namedValidator],
+      },
+    })
+    expect(redacted.validation).toEqual({
+      mimeWhitelist: ['image/png'],
+      maxSizeBytes: 4096,
+      customValidators: ['demo-validator'],
+    })
+  })
+
+  it('renders an empty validation block without optional fields', () => {
+    /*
+     * Scenario: a validation block is present but carries no fields.
+     * Rule it protects: an empty validation object renders as empty rather than
+     * emitting undefined fields.
+     */
+    const redacted = redactStorageOptions({ ...base, validation: {} })
+    expect(redacted.validation).toEqual({})
   })
 
   it('masks a short access key id without a negative repeat count', () => {

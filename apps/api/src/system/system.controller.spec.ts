@@ -7,15 +7,24 @@
  *
  * @module system/system.controller.spec
  */
+import type { IFileScanner } from '@bymax-one/nest-storage'
 import { SystemController } from './system.controller.js'
 import type { RedactableStorageOptions } from './config-redactor.js'
 
-/** Options token value with a planted secret to prove redaction. */
+/** A scanner stub whose class name proves the config renders the impl by name. */
+class DemoScanner implements IFileScanner {
+  scan(): ReturnType<IFileScanner['scan']> {
+    return Promise.resolve({ status: 'clean', engine: 'demo' })
+  }
+}
+
+/** Options token value with a planted secret and a live scanner to prove rendering. */
 const options = {
   endpoint: 'http://localhost:9000',
   region: 'us-east-1',
   bucket: 'vault',
   credentials: { accessKeyId: 'minioadmin', secretAccessKey: 'planted-secret-9876' },
+  scanner: { impl: new DemoScanner(), mode: 'post-upload', rejectOnUnknown: true },
 } as RedactableStorageOptions
 
 describe('SystemController (unit)', () => {
@@ -34,6 +43,12 @@ describe('SystemController (unit)', () => {
       expect(result.credentials?.accessKeyId).toBe('mini******')
       expect(result.credentials?.secretAccessKey).toBe('[redacted]')
       expect(JSON.stringify(result)).not.toContain('planted-secret-9876')
+      // The live scanner is surfaced by name with its resolved mode and reject flag.
+      expect(result.scanner).toEqual({
+        impl: 'DemoScanner',
+        mode: 'post-upload',
+        rejectOnUnknown: true,
+      })
     })
   })
 
