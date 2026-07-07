@@ -1,6 +1,6 @@
 # Phase 2: api-skeleton-wiring
 
-> **Status**: 📋 ToDo · **Progress**: 0 / 6 tasks · **Last updated**: 2026-07-06
+> **Status**: 👀 Review · **Progress**: 6 / 6 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P2)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §9, §10, §18, §19
 
@@ -31,20 +31,20 @@ wiring is honest from day one (the marker scanner and magic-byte validator are s
 
 ## Task index
 
-| ID  | Task                                                        | Status  | Priority | Size | Depends on |
-| --- | ----------------------------------------------------------- | ------- | -------- | ---- | ---------- |
-| 2.1 | Branch + Nest app shell (`main.ts`, module, boot)           | 📋 ToDo | P0       | M    | none       |
-| 2.2 | Zod env schema with aggregated fail-fast                    | 📋 ToDo | P0       | S    | 2.1        |
-| 2.3 | Canonical wiring: `storage.config.ts` + validator + scanner | 📋 ToDo | P0       | M    | 2.2        |
-| 2.4 | Cross-cutting: exception filter + validation pipe + health  | 📋 ToDo | P0       | M    | 2.3        |
-| 2.5 | System module: config introspection + provider recipes      | 📋 ToDo | P1       | S    | 2.3        |
-| 2.6 | Phase close: audit, dashboards, PR + Copilot review, merge  | 📋 ToDo | P0       | S    | 2.1-2.5    |
+| ID  | Task                                                        | Status    | Priority | Size | Depends on |
+| --- | ----------------------------------------------------------- | --------- | -------- | ---- | ---------- |
+| 2.1 | Branch + Nest app shell (`main.ts`, module, boot)           | ✅ Done   | P0       | M    | none       |
+| 2.2 | Zod env schema with aggregated fail-fast                    | ✅ Done   | P0       | S    | 2.1        |
+| 2.3 | Canonical wiring: `storage.config.ts` + validator + scanner | ✅ Done   | P0       | M    | 2.2        |
+| 2.4 | Cross-cutting: exception filter + validation pipe + health  | ✅ Done   | P0       | M    | 2.3        |
+| 2.5 | System module: config introspection + provider recipes      | ✅ Done   | P1       | S    | 2.3        |
+| 2.6 | Phase close: audit, dashboards, PR + Copilot review, merge  | 👀 Review | P0       | S    | 2.1-2.5    |
 
 ## Tasks
 
 ### Task 2.1: Branch + Nest app shell
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: none
@@ -57,11 +57,11 @@ workers, and a boot smoke test via a `createApp()` seam.
 
 #### Acceptance criteria
 
-- [ ] Branch `feat/phase-02-api-skeleton-wiring` created with `git switch -c`.
-- [ ] `apps/api` boots with `pnpm --filter api dev` (a temporary root `GET /` returns `{ name, docs }` until system lands).
-- [ ] `main.ts` delegates to an exported `createApp()` so e2e and unit tests cover bootstrap without spawning a process.
-- [ ] `jest.config.ts` (+ `jest.e2e.config.ts` stub): `coverageThreshold` 100/100/100/100, `maxWorkers: '50%'`; the boot smoke test passes.
-- [ ] `pnpm --filter api test` green; CI still green.
+- [x] Branch `feat/phase-02-api-skeleton-wiring` created with `git switch -c`.
+- [x] `apps/api` boots with `pnpm --filter api dev` (a temporary root `GET /` returns `{ name, version, docs }` until system lands).
+- [x] `main.ts` delegates to an exported `createApp()` so e2e and unit tests cover bootstrap without spawning a process.
+- [x] `jest.config.cjs` (+ `jest-e2e.config.mjs`): `coverageThreshold` 100/100/100/100, `maxWorkers: '50%'`; the boot smoke test passes.
+- [x] `pnpm --filter api test` green; CI still green.
 
 #### Files to create / modify
 
@@ -123,7 +123,7 @@ Completion Protocol:
 
 ### Task 2.2: Zod env schema
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 2.1
@@ -135,10 +135,10 @@ fail-fast report that never echoes values, typed `Env` export consumed via `@nes
 
 #### Acceptance criteria
 
-- [ ] Schema covers every spec §9.1 variable with correct types/coercions/defaults (booleans, numbers, enums for `SCANNER_MODE` and `STORAGE_CHECKSUM_MODE`).
-- [ ] Boot with an invalid env prints ONE aggregated report listing every violation by variable name (values never printed) and exits non-zero.
-- [ ] `main.ts`/`app.factory.ts` consume PORT/WEB_ORIGIN through the validated config only; the temporary seam from 2.1 is removed.
-- [ ] Unit tests cover happy path, each failure class, and the no-value-echo guarantee.
+- [x] Schema covers every spec §9.1 variable with correct types/coercions/defaults (booleans, numbers, enums for `SCANNER_MODE` and `STORAGE_CHECKSUM_MODE`).
+- [x] Boot with an invalid env prints ONE aggregated report listing every violation by variable name (values never printed) and exits non-zero.
+- [x] `main.ts`/`app.factory.ts` consume PORT/WEB_ORIGIN through the validated config only; the temporary seam from 2.1 is removed.
+- [x] Unit tests cover happy path, each failure class, and the no-value-echo guarantee.
 
 #### Files to create / modify
 
@@ -197,7 +197,7 @@ Completion Protocol:
 
 ### Task 2.3: Canonical wiring + pipeline classes
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 2.2
@@ -209,10 +209,10 @@ Completion Protocol:
 
 #### Acceptance criteria
 
-- [ ] `buildStorageOptions(env)` matches spec §9.2: connection, keyPrefix, headers, signedUrls (reduced `maxTtlSeconds`), multipart, validation (shared whitelists + magic-byte validator), scanner (marker impl, env mode), checksum mode, network knobs.
-- [ ] `PdfMagicByteValidator implements IUploadValidator` using `readBytes(4)`; `MarkerFileScanner implements IFileScanner` with the deterministic verdict table of spec §16.
-- [ ] `app.module.ts` registers `BymaxStorageModule.forRootAsync` injecting the validated config.
-- [ ] Boot against Docker MinIO succeeds; unit tests cover the factory mapping (every option asserted), both classes (all verdicts/paths), 100%.
+- [x] `buildStorageOptions(env)` matches spec §9.2: connection, keyPrefix, headers, signedUrls (reduced `maxTtlSeconds`), multipart, validation (shared whitelists + magic-byte validator), scanner (marker impl, env mode), checksum mode, network knobs.
+- [x] `PdfMagicByteValidator implements IUploadValidator` using `readBytes(4)`; `MarkerFileScanner implements IFileScanner` with the deterministic verdict table of spec §16.
+- [x] `app.module.ts` registers `BymaxStorageModule.forRootAsync` injecting the validated config.
+- [x] Boot against Docker MinIO succeeds; unit tests cover the factory mapping (every option asserted), both classes (all verdicts/paths), 100%.
 
 #### Files to create / modify
 
@@ -277,7 +277,7 @@ Completion Protocol:
 
 ### Task 2.4: Exception filter, validation pipe, health
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 2.3
@@ -289,10 +289,10 @@ The cross-cutting HTTP layer: `StorageExceptionFilter` passing the library envel
 
 #### Acceptance criteria
 
-- [ ] `@Catch(StorageException)` filter returns the library's `{ error: { code, message, details } }` body with its HTTP status untouched; unknown errors are not swallowed by it.
-- [ ] `ZodValidationPipe` rejects with a structured 400 (`{ error: { code: 'VALIDATION', issues } }`) without echoing raw values.
-- [ ] `GET /health`: `{ status: 'up', latencyMs, bucket }` via `exists()` on a sentinel key; degraded MinIO yields `{ status: 'down' }` 503.
-- [ ] Both registered globally in `createApp()`; e2e boot spec extended to assert health against the container; unit tests 100%.
+- [x] `@Catch(StorageException)` filter returns the library's `{ error: { code, message, details } }` body with its HTTP status untouched; unknown errors are not swallowed by it.
+- [x] `ZodValidationPipe` rejects with a structured 400 (`{ error: { code: 'VALIDATION', issues } }`) without echoing raw values.
+- [x] `GET /health`: `{ status: 'up', latencyMs, bucket }` via `exists()` on a sentinel key; degraded MinIO yields `{ status: 'down' }` 503.
+- [x] Filter registered globally in `createApp()` (the schema-bound Zod pipe is applied per route, not a zero-arg global); e2e boot spec extended to assert health against the container; unit tests 100%.
 
 #### Files to create / modify
 
@@ -354,7 +354,7 @@ Completion Protocol:
 
 ### Task 2.5: System introspection + provider recipes
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P1
 - **Size**: S
 - **Depends on**: 2.3
@@ -366,9 +366,9 @@ Completion Protocol:
 
 #### Acceptance criteria
 
-- [ ] `/system/config` returns the resolved options with `credentials.accessKeyId` masked to first 4 chars and `secretAccessKey` fully redacted; proves tokens injection (matrix #19).
-- [ ] `/system/recipes` renders aws, digitalOceanSpaces, cloudflareR2, backblazeB2, minio, wasabi with sample args and per-provider quirk notes (checksums, ACL, publicBaseUrl) sourced from the library docs.
-- [ ] Unit tests 100% (redaction proven: the secret never appears in the serialized response).
+- [x] `/system/config` returns the resolved options with `credentials.accessKeyId` masked to first 4 chars and `secretAccessKey` fully redacted; proves tokens injection (matrix #19).
+- [x] `/system/recipes` renders aws, digitalOceanSpaces, cloudflareR2, backblazeB2, minio, wasabi with sample args and per-provider quirk notes (checksums, ACL, publicBaseUrl) sourced from the library docs.
+- [x] Unit tests 100% (redaction proven: the secret never appears in the serialized response).
 
 #### Files to create / modify
 
@@ -427,7 +427,7 @@ Completion Protocol:
 
 ### Task 2.6: Phase close
 
-- **Status**: 📋 ToDo
+- **Status**: 👀 Review
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 2.1-2.5
@@ -439,9 +439,9 @@ address findings, merge with CI green.
 
 #### Acceptance criteria
 
-- [ ] Plan P2 Definition of Done verified (boot against MinIO, health shape, redacted introspection, six recipes, aggregated env failure).
-- [ ] Phase file, plan §1, tasks/README.md updated.
-- [ ] PR + Copilot review, findings addressed, squash-merged with CI green, branch deleted.
+- [x] Plan P2 Definition of Done verified (boot against MinIO, health shape, redacted introspection, six recipes, aggregated env failure).
+- [x] Phase file, plan §1, tasks/README.md updated.
+- [x] PR opened with GitHub Copilot review requested. (Findings, CI-green squash-merge, and branch deletion are owned by the orchestrator.)
 
 #### Files to create / modify
 
@@ -494,3 +494,11 @@ Completion Protocol:
 ## Completion log
 
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
+
+- 2.0 ✅ 2026-07-07: folded the blocked P1 finalization into this branch (direct-to-main is blocked): P1 flipped to Done across plan §1 + tasks/README + the P1 file (task 1.5 log notes PR #2 squash-merge, CI green, Copilot round addressed), and P2 opened as In Progress
+- 2.1 ✅ 2026-07-07: bootable NestJS 11 shell - main.ts delegates to the exported createApp() seam (CORS + shutdown hooks, fail-fast exit), app.module.ts + root AppController (GET / -> { name, version, docs }), nest-cli.json + build/spec tsconfigs, unit jest.config.cjs (100/100/100/100, maxWorkers 50%, metadata-off spec tsconfig) and jest-e2e.config.mjs; app.controller + library-probe unit specs and a boot e2e smoke all green; lint/typecheck/format clean
+- 2.2 ✅ 2026-07-07: Zod env schema (every §9.1 variable, coerced numbers, coercion-free envBoolean, enums for SCANNER_MODE/STORAGE_CHECKSUM_MODE, empty-or-URL for CDN/SSE); validateEnv throws ONE aggregated report by variable name + issue code (never values); loadEnv is the sole environment reader and namespaces the result under `env`; ConfigModule registers it globally via `load`; app.factory/main now consume the validated config (env.WEB_ORIGIN / env.PORT), 2.1 seam removed; invalid-env boot exits non-zero with one report; unit coverage 100/100/100/100
+- 2.3 ✅ 2026-07-07: canonical storage.config.ts (buildStorageOptions reproduces spec §9.2 verbatim: connection, credentials, keyPrefix, header defaults, reduced signed-URL cap, multipart, validation with shared whitelists + video wildcard + PdfMagicByteValidator, MarkerFileScanner + env mode/rejectOnUnknown, checksum mode, network knobs); PdfMagicByteValidator (readBytes(4) %PDF guard) and MarkerFileScanner (inert X-DEMO markers, pre-upload body prefix + post-upload key convention, bounded stream read); BymaxStorageModule.forRootAsync wired in app.module injecting the validated env; boots clean against MinIO (S3Client initialized, graceful shutdown); unit coverage 100/100/100/100. Drift reconciled: the shipped d.ts types forRootAsync useFactory args as `unknown[]`, so the injected ConfigService is narrowed in the factory body rather than annotated on the parameter as §9.2 depicts
+- 2.4 ✅ 2026-07-07: StorageExceptionFilter (@Catch(StorageException), relays getStatus() + getResponse() envelope verbatim, non-storage errors untouched) registered globally in createApp; ZodValidationPipe (generic, schema-bound, 400 `{ error: { code: 'VALIDATION', issues: [{ path, message }] } }`, never echoes the received value); GET /health (SystemModule) probes exists() on a sentinel key, returns `{ status:'up', latencyMs, bucket }` and throws a 503 down report on fault; boot e2e extended to assert /health up against compose MinIO; unit coverage 100/100/100/100. Note: the Zod pipe is applied per route (it is schema-bound) rather than as a zero-arg global provider
+- 2.5 ✅ 2026-07-07: SystemController (SystemModule) with GET /system/config (injects BYMAX_STORAGE_OPTIONS, returns options through the pure config-redactor: accessKeyId masked to first 4 chars, secretAccessKey and sessionToken replaced with [redacted], absent-credentials passthrough, input never mutated) and GET /system/recipes (renders all six providerRecipes - awsS3, digitalOceanSpaces, cloudflareR2, backblazeB2, minio, wasabi - with sample args and documented quirk notes for checksum mode, ACL limits, R2 custom domain, MinIO path-style, each recipe's sample credentials redacted too); live checks: /system/config shows 0 raw secrets, /system/recipes lists 6 providers; unit coverage 100/100/100/100
+- 2.6 👀 2026-07-07: phase close - P2 Definition of Done audited (boots against MinIO, /health returns { status, latencyMs, bucket }, /system/config redacted, /system/recipes six providers, broken env exits non-zero with one aggregated report - all verified); added the CI Unit tests job gating `pnpm test:cov:api` at 100/100/100/100 via the shared setup composite; code-review fixes applied (boot error logged via NestJS Logger not console; recipe blueprints extracted to module-level data so buildRecipeViews stays under the size cap); security review clean (redaction control, no value echo, inert scanner markers, no process.env leak); phase-wide gates green (lint, typecheck, format, 50 unit tests, invariant greps empty); dashboards synced to 6/6 Review; PR opened with Copilot review requested (merge + branch deletion owned by the orchestrator)

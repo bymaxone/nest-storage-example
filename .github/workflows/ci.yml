@@ -52,3 +52,20 @@ jobs:
         uses: ./.github/actions/setup
       - name: Check formatting
         run: pnpm format:check
+
+  # The API unit suite is the first coverage-gated tier. It runs after lint on
+  # its own runner (the locally linked library is provisioned by the composite)
+  # and enforces the 100/100/100/100 threshold baked into apps/api/jest.config.cjs,
+  # so any coverage regression fails the check. The worker pool is capped at
+  # maxWorkers '50%' in that config to stay memory-safe on small runners.
+  unit:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Setup workspace
+        uses: ./.github/actions/setup
+      - name: API unit coverage
+        run: pnpm test:cov:api
