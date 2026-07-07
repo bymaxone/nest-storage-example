@@ -132,12 +132,12 @@ describe('ConfirmService (unit)', () => {
      * Scenario: the scanner seam reports a threat.
      * Rule it protects: an infected verdict fails the confirm.
      */
-    const { service, head } = setup({ status: 'infected', threat: 'EICAR' })
+    const { service, head } = setup({ status: 'infected', threat: 'Demo.Marker.A' })
     head.mockResolvedValue(makeMetadata())
     const res = await service.confirm('avatars/uuid.png')
     expect(res.confirmed).toBe(false)
     expect(res.checks.scanClean).toBe(false)
-    expect(res.scan).toEqual({ status: 'infected', threat: 'EICAR' })
+    expect(res.scan).toEqual({ status: 'infected', threat: 'Demo.Marker.A' })
   })
 
   it('passes the size check when no size policy is configured', async () => {

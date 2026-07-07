@@ -19,16 +19,20 @@ import type { StoragePolicyOptions } from './storage-policy.js'
 /** Structured outcome of a confirm request. */
 export interface ConfirmResult {
   /**
-   * True only when size, MIME, and a CLEAN scan verdict all pass. A `skipped` or
-   * `unknown` scan is NOT clean, so a direct upload stays unconfirmed until a
-   * real scanner actually inspects it and returns `clean`.
+   * True only when size, MIME, and a CLEAN scan verdict all pass. An `unknown`,
+   * `infected`, or `skipped` scan is NOT clean, so a direct upload is confirmed
+   * only when the real scanner actually inspects it and returns `clean`.
    */
   confirmed: boolean
   /** The verified key. */
   key: string
   /** Full metadata of the landed object (size, contentType, etag, ...). */
   metadata: ObjectMetadata
-  /** The scanner verdict (`skipped` until the real scanner is wired). */
+  /**
+   * The scanner verdict. With the real scanner wired this is `clean`, `unknown`,
+   * or `infected` (the infected object is also removed); `skipped` only appears
+   * under the no-op test fallback.
+   */
   scan: ScanVerdict
   /**
    * Per-check outcomes so a caller sees exactly which policy gate failed:
@@ -45,7 +49,7 @@ export interface ConfirmResult {
 
 /** Honest, non-optional note documenting the validation-bypass boundary. */
 const BYPASS_NOTE =
-  'A presigned PUT bypasses server-side MIME/size validation by design; this confirm re-checks the landed object as the mitigation: its size against the server\'s CONFIGURED size policy (not any per-request value), its content type against the configured MIME whitelist, and a scan verdict. confirmed is true only when all three pass, and scanClean requires an actual clean verdict; the scanner seam reports "skipped" until a real content scanner is wired (spec §16), so a valid direct upload stays unconfirmed until then.'
+  "A presigned PUT bypasses server-side MIME/size validation by design; this confirm re-checks the landed object as the mitigation: its size against the server's CONFIGURED size policy (not any per-request value), its content type against the configured MIME whitelist, and a real scanner verdict (a bounded prefix of the object is downloaded and scanned; an infected object is removed). confirmed is true only when all three pass, and scanClean requires an actual clean verdict, so an unknown or infected object stays unconfirmed (spec §16)."
 
 /**
  * Tests a MIME type against a whitelist supporting exact matches, a bare `*`
@@ -98,8 +102,9 @@ export class ConfirmService {
     const sizeWithinPolicy = this.isSizeWithinPolicy(metadata.size)
     const mimeAllowed = this.isMimeWithinPolicy(metadata.contentType)
     const scan = await this.scanner.scan(key, this.options.bucket)
-    // A direct upload is trusted only when actually scanned clean; `skipped` and
-    // `unknown` are NOT clean, so the no-op scanner keeps confirmed false.
+    // A direct upload is trusted only when actually scanned clean; `unknown`,
+    // `infected`, and the no-op `skipped` are all NOT clean, so they keep
+    // confirmed false.
     const scanClean = scan.status === 'clean'
     return {
       confirmed: sizeWithinPolicy && mimeAllowed && scanClean,

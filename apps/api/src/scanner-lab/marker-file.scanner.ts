@@ -11,9 +11,9 @@
 import type { FileScanResult, IFileScanner } from '@bymax-one/nest-storage'
 
 /** Inert marker that yields an `infected` verdict. NEVER real malware. */
-const INFECTED_MARKER = 'X-DEMO-INFECTED'
+export const INFECTED_MARKER = 'X-DEMO-INFECTED'
 /** Inert marker that yields an `unknown` (inconclusive) verdict. */
-const UNKNOWN_MARKER = 'X-DEMO-UNKNOWN'
+export const UNKNOWN_MARKER = 'X-DEMO-UNKNOWN'
 /** Threat name reported alongside an infected verdict. */
 const THREAT_NAME = 'Demo.Marker.A'
 /** Engine identifier surfaced in the scan result. */

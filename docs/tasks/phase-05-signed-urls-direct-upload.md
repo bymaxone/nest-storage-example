@@ -1,6 +1,6 @@
 # Phase 5: signed-urls-direct-upload
 
-> **Status**: 👀 Review · **Progress**: 5 / 5 tasks · **Last updated**: 2026-07-07
+> **Status**: ✅ Done · **Progress**: 5 / 5 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P5)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §12.4, §12.5, §17
 
@@ -29,13 +29,13 @@ PUT/GET against MinIO with the issued URLs. Matrix rows 11, 40-46.
 
 ## Task index
 
-| ID  | Task                                                        | Status    | Priority | Size | Depends on |
-| --- | ----------------------------------------------------------- | --------- | -------- | ---- | ---------- |
-| 5.1 | Branch + signed GET URLs: overrides, clamp, invalid TTL     | ✅ Done   | P0       | M    | none       |
-| 5.2 | Signed PUT + confirm pattern (head now, scanner seam)       | ✅ Done   | P0       | M    | 5.1        |
-| 5.3 | Presigned multipart: parts, complete, abort                 | ✅ Done   | P0       | M    | 5.2        |
-| 5.4 | Real-fetch e2e: PUT/GET/multipart round-trips against MinIO | ✅ Done   | P0       | M    | 5.3        |
-| 5.5 | Phase close: audit, dashboards, PR + Copilot review, merge  | 👀 Review | P0       | S    | 5.1-5.4    |
+| ID  | Task                                                        | Status  | Priority | Size | Depends on |
+| --- | ----------------------------------------------------------- | ------- | -------- | ---- | ---------- |
+| 5.1 | Branch + signed GET URLs: overrides, clamp, invalid TTL     | ✅ Done | P0       | M    | none       |
+| 5.2 | Signed PUT + confirm pattern (head now, scanner seam)       | ✅ Done | P0       | M    | 5.1        |
+| 5.3 | Presigned multipart: parts, complete, abort                 | ✅ Done | P0       | M    | 5.2        |
+| 5.4 | Real-fetch e2e: PUT/GET/multipart round-trips against MinIO | ✅ Done | P0       | M    | 5.3        |
+| 5.5 | Phase close: audit, dashboards, PR + Copilot review, merge  | ✅ Done | P0       | S    | 5.1-5.4    |
 
 ## Tasks
 
@@ -331,7 +331,7 @@ Completion Protocol:
 
 ### Task 5.5: Phase close
 
-- **Status**: 👀 Review
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 5.1-5.4
@@ -393,6 +393,7 @@ Completion Protocol:
 
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
 
+- 5.5 ✅ 2026-07-07: phase merged in PR #6 (squash); CI green incl. the new Testcontainers-MinIO e2e job; Copilot round addressed (scanClean requires a clean verdict, mimeAllowed no-policy-pass, advisory contentLengthRange wording); 278 unit tests 100%, 8 e2e.
 - 5.5 👀 2026-07-07: phase close in review. Audited the P5 Definition of Done: clamped expiry (requested-vs-effective read from the library's signed `X-Amz-Expires`), `ttlSeconds <= 0` -> `STORAGE_SIGNED_URL_TTL_INVALID` via the filter, real-fetch PUT with `requiredHeaders` succeeding, over-limit PUT caught by the mandatory confirm (size), multipart complete + clean abort (no orphan parts). Dashboards synced; PR opened and GitHub Copilot review requested. Gates green: lint, typecheck, format, 275 unit tests at 100/100/100/100, 8 e2e round-trips against Testcontainers MinIO. Code-review (2 HIGH DRY, 1 MEDIUM, 3 LOW) and security-review (2 LOW) findings all addressed. Merge, grace, and branch deletion owned by the orchestrator.
 - 5.4 ✅ 2026-07-07: `test/signed.e2e-spec.ts` boots a real MinIO via Testcontainers (`test/helpers/minio-container.ts`) and the production app (`test/helpers/test-app.ts`) and exercises every presigned flow with plain `fetch`: within-policy PUT + confirm, GET byte round-trip, over-limit PUT (accepted by the provider, rejected by confirm on size), expired-GET 403, multipart complete into a downloadable object, and multipart abort verified via `ListMultipartUploads`. The `boot.e2e-spec.ts` smoke was moved onto the same container so the e2e tier needs no dev compose and runs identically locally and on CI. Added `testcontainers` dev dep. Suite green (`--runInBand`, one container at a time); signed URLs never asserted verbatim.
 - 5.3 ✅ 2026-07-07: `POST /signed/multipart-urls` (`multipartUrlsBodySchema`: category, contentType, `parts` 1..1000, optional `ttlSeconds`) driving `SignedUrlService.getMultipartUploadUrls` and returning `{ uploadId, key, partUrls, completeUrl, expiresAt, effectiveTtlSeconds, minPartSizeBytes, note }`. Drift reconciled: `MultipartUploadUrlsResult` has no `expiresAt`, so the effective expiry is read from the `X-Amz-Date`/`X-Amz-Expires` the library signed into the complete URL (never recomputing the clamp). `POST /signed/multipart-abort` (`multipartAbortBodySchema`: key + uploadId) aborts via the raw `BYMAX_STORAGE_S3_CLIENT` (`AbortMultipartUploadCommand`), mirroring the library key-prefix rule and rejecting traversal keys with `STORAGE_KEY_INVALID`; provider errors map to `STORAGE_PROVIDER_ERROR`. 100% coverage.

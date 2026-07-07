@@ -3,12 +3,13 @@
  *
  * Proves the issued URLs work for a browser-grade client using plain `fetch`:
  * a signed PUT within policy round-trips and confirm reports the honest shape
- * (size + MIME pass, but the no-op scanner reports `skipped`, so scanClean is
- * false and the object is not yet confirmed); a signed GET returns the bytes; an
- * expired GET is denied by the provider; an over-limit PUT is accepted by the
- * provider (a SigV4 PUT cannot pin a maximum size) but the mandatory confirm
- * catches the size breach; a presigned multipart completes into a downloadable
- * object; and an aborted multipart leaves no orphan parts.
+ * (size + MIME pass and the real scanner returns clean, so the object is
+ * confirmed); a direct-uploaded infected marker is caught and removed at confirm;
+ * a signed GET returns the bytes; an expired GET is denied by the provider; an
+ * over-limit PUT is accepted by the provider (a SigV4 PUT cannot pin a maximum
+ * size) but the mandatory confirm catches the size breach; a presigned multipart
+ * completes into a downloadable object; and an aborted multipart leaves no orphan
+ * parts.
  *
  * Signed URLs are credentials: this suite asserts behavior (status, bytes,
  * confirm result) and NEVER asserts a URL's contents.
@@ -79,12 +80,11 @@ describe('signed presigned flows (e2e)', () => {
     return res.body.url
   }
 
-  it('PUT within policy round-trips and confirm reports the honest unscanned shape', async () => {
+  it('PUT within policy round-trips and confirm reports a clean, confirmed object', async () => {
     /*
-     * Scenario: a client PUTs a small PNG directly, then confirms it.
+     * Scenario: a client PUTs a small clean PNG directly, then confirms it.
      * Rule it protects: the required headers make the PUT succeed; size and MIME
-     * pass, but the no-op scanner reports skipped, so scanClean is false and the
-     * object is NOT yet confirmed until a real scanner lands (honest trust model).
+     * pass and the real scanner returns clean, so the object is confirmed.
      */
     const { url, key, requiredHeaders } = await issueUpload('image/png')
     const body = new Uint8Array(64).fill(7)
@@ -95,13 +95,41 @@ describe('signed presigned flows (e2e)', () => {
       .post('/signed/confirm')
       .send({ key })
       .expect(200)
-    expect(confirm.body.scan.status).toBe('skipped')
+    expect(confirm.body.scan.status).toBe('clean')
     expect(confirm.body.checks).toEqual({
       sizeWithinPolicy: true,
       mimeAllowed: true,
-      scanClean: false,
+      scanClean: true,
     })
+    expect(confirm.body.confirmed).toBe(true)
+  })
+
+  it('catches and removes a directly-uploaded infected object at confirm', async () => {
+    /*
+     * Scenario: a client PUTs an inert infected marker directly (bypassing local
+     * validation), then confirms it.
+     * Rule it protects: confirm downloads and scans the landed object, refuses it on
+     * the infected verdict, and removes it, so a threat that arrived via a signed
+     * PUT does not survive (exists() is false afterwards).
+     */
+    const { url, key, requiredHeaders } = await issueUpload('image/png')
+    const body = new TextEncoder().encode('payload X-DEMO-INFECTED trailing')
+    const put = await fetch(url, { method: 'PUT', headers: requiredHeaders, body })
+    expect(put.ok).toBe(true)
+
+    const confirm = await request(app.getHttpServer())
+      .post('/signed/confirm')
+      .send({ key })
+      .expect(200)
+    expect(confirm.body.scan).toEqual({ status: 'infected', threat: 'Demo.Marker.A' })
+    expect(confirm.body.checks.scanClean).toBe(false)
     expect(confirm.body.confirmed).toBe(false)
+
+    const probe = await request(app.getHttpServer())
+      .get('/scanner/exists')
+      .query({ key })
+      .expect(200)
+    expect(probe.body.exists).toBe(false)
   })
 
   it('GET round-trips the exact bytes that were uploaded', async () => {
