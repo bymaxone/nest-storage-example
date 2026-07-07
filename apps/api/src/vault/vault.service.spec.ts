@@ -1,9 +1,10 @@
 /**
- * Unit: VaultService - vault download operations.
+ * Unit: VaultService - vault download, listing, and lifecycle operations.
  *
  * Mocks `StorageService` directly. Covers: stream delegation, preview size
  * guard (pass + 413 rejection), byte-range string composition, versioned
- * bucket routing, and not-found propagation.
+ * bucket routing, not-found propagation, paged listing, head/exists,
+ * public-URL building, idempotent single delete, bulk delete, and copy.
  *
  * @module vault/vault.service.spec
  */
@@ -11,7 +12,12 @@ import 'reflect-metadata'
 import { jest } from '@jest/globals'
 import { BadRequestException, PayloadTooLargeException } from '@nestjs/common'
 import { StorageException } from '@bymax-one/nest-storage'
-import type { StorageService, ObjectMetadata } from '@bymax-one/nest-storage'
+import type {
+  StorageService,
+  ObjectMetadata,
+  ListResult,
+  DeleteManyResult,
+} from '@bymax-one/nest-storage'
 import { VaultService } from './vault.service.js'
 
 /** Minimal ObjectMetadata stub. */
@@ -37,9 +43,21 @@ function setup() {
   const download = jest.fn<StorageService['download']>()
   const downloadBuffer = jest.fn<StorageService['downloadBuffer']>()
   const head = jest.fn<StorageService['head']>()
-  const storage = { download, downloadBuffer, head } as unknown as StorageService
+  const list = jest.fn<StorageService['list']>()
+  const deleteOne = jest.fn<StorageService['delete']>()
+  const deleteMany = jest.fn<StorageService['deleteMany']>()
+  const copy = jest.fn<StorageService['copy']>()
+  const storage = {
+    download,
+    downloadBuffer,
+    head,
+    list,
+    delete: deleteOne,
+    deleteMany,
+    copy,
+  } as unknown as StorageService
   const service = new VaultService(storage)
-  return { service, download, downloadBuffer, head }
+  return { service, download, downloadBuffer, head, list, deleteOne, deleteMany, copy }
 }
 
 describe('VaultService (unit)', () => {
@@ -225,6 +243,453 @@ describe('VaultService (unit)', () => {
       await expect(service.downloadVersion('missing', 'vault-versioned')).rejects.toBeInstanceOf(
         StorageException,
       )
+    })
+  })
+
+  describe('list', () => {
+    /** Minimal ListResult stub. */
+    function makeListResult(overrides: Partial<ListResult> = {}): ListResult {
+      return {
+        objects: [],
+        commonPrefixes: [],
+        isTruncated: false,
+        ...overrides,
+      }
+    }
+
+    it('maps query fields to library ListOptions and returns one page', async () => {
+      /*
+       * Scenario: caller sends all list query params; they are forwarded to the
+       * library and the result is mapped to the API response shape.
+       * Rule it protects: cursor maps to continuationToken; nextCursor maps from
+       * nextContinuationToken.
+       */
+      const { service, list } = setup()
+      list.mockResolvedValue(
+        makeListResult({
+          objects: [
+            {
+              key: 'avatars/a.png',
+              size: 100,
+              etag: '"e1"',
+              lastModified: new Date('2026-01-01'),
+            },
+          ],
+          commonPrefixes: ['invoices/'],
+          isTruncated: true,
+          nextContinuationToken: 'tok2',
+        }),
+      )
+
+      const result = await service.list({
+        prefix: 'avatars/',
+        maxKeys: 10,
+        cursor: 'tok1',
+        delimiter: '/',
+      })
+
+      expect(list).toHaveBeenCalledWith({
+        prefix: 'avatars/',
+        maxKeys: 10,
+        continuationToken: 'tok1',
+        delimiter: '/',
+      })
+      expect(result.objects).toHaveLength(1)
+      expect(result.commonPrefixes).toEqual(['invoices/'])
+      expect(result.isTruncated).toBe(true)
+      expect(result.nextCursor).toBe('tok2')
+    })
+
+    it('omits nextCursor on the last page', async () => {
+      /*
+       * Scenario: the library returns isTruncated=false with no token.
+       * Rule it protects: nextCursor is absent (not null or empty string) at
+       * the end of the listing.
+       */
+      const { service, list } = setup()
+      list.mockResolvedValue(makeListResult({ isTruncated: false }))
+
+      const result = await service.list({ maxKeys: 50 })
+      expect(result.isTruncated).toBe(false)
+      expect(result.nextCursor).toBeUndefined()
+    })
+
+    it('propagates StorageException from the library', async () => {
+      /*
+       * Scenario: the provider rejects the list call.
+       * Rule it protects: provider errors reach the global filter.
+       */
+      const { service, list } = setup()
+      list.mockRejectedValue(new StorageException('STORAGE_PROVIDER_ERROR'))
+
+      await expect(service.list({ maxKeys: 50 })).rejects.toBeInstanceOf(StorageException)
+    })
+  })
+
+  describe('head', () => {
+    it('delegates to storage.head() and returns the metadata', async () => {
+      /*
+       * Scenario: successful head call for an existing object.
+       * Rule it protects: the metadata is returned verbatim from the library.
+       */
+      const { service, head } = setup()
+      const metadata = makeMetadata()
+      head.mockResolvedValue(metadata)
+
+      const result = await service.head('avatars/uuid.png')
+      expect(head).toHaveBeenCalledWith('avatars/uuid.png')
+      expect(result).toBe(metadata)
+    })
+
+    it('propagates STORAGE_OBJECT_NOT_FOUND for a missing key', async () => {
+      /*
+       * Scenario: key does not exist; the library throws.
+       * Rule it protects: the not-found exception reaches the global filter.
+       */
+      const { service, head } = setup()
+      head.mockRejectedValue(new StorageException('STORAGE_OBJECT_NOT_FOUND'))
+
+      await expect(service.head('missing')).rejects.toBeInstanceOf(StorageException)
+    })
+  })
+
+  describe('exists', () => {
+    it('returns true when head() resolves for a present object', async () => {
+      /*
+       * Scenario: the provider returns metadata, confirming the key is present.
+       * Rule it protects: a successful head() maps to true.
+       */
+      const { service, head } = setup()
+      head.mockResolvedValue(makeMetadata())
+
+      const result = await service.exists('avatars/uuid.png')
+      expect(result).toBe(true)
+    })
+
+    it('returns false when head() reports the object is not found', async () => {
+      /*
+       * Scenario: head() rejects with STORAGE_OBJECT_NOT_FOUND (confirmed absent).
+       * Rule it protects: only a genuine not-found maps to false.
+       */
+      const { service, head } = setup()
+      head.mockRejectedValue(new StorageException('STORAGE_OBJECT_NOT_FOUND'))
+
+      const result = await service.exists('missing')
+      expect(result).toBe(false)
+    })
+
+    it('propagates a non-not-found provider error instead of masking it as false', async () => {
+      /*
+       * Scenario: head() rejects with a provider fault (not a missing object).
+       * Rule it protects: real faults surface to the caller / health probe rather
+       * than being hidden behind a false negative.
+       */
+      const { service, head } = setup()
+      head.mockRejectedValue(new StorageException('STORAGE_PROVIDER_ERROR'))
+
+      await expect(service.exists('any/key')).rejects.toBeInstanceOf(StorageException)
+    })
+
+    it('propagates a non-StorageException error unchanged', async () => {
+      /*
+       * Scenario: head() rejects with a plain Error (e.g. a network failure).
+       * Rule it protects: only StorageException not-found is caught; every other
+       * error type re-throws so it is never swallowed.
+       */
+      const { service, head } = setup()
+      head.mockRejectedValue(new Error('socket hang up'))
+
+      await expect(service.exists('any/key')).rejects.toThrow('socket hang up')
+    })
+
+    it('forwards the bucket option to head() when supplied', async () => {
+      /*
+       * Scenario: caller provides a bucket override.
+       * Rule it protects: the bucket option is forwarded to the head() probe.
+       */
+      const { service, head } = setup()
+      head.mockResolvedValue(makeMetadata())
+
+      await service.exists('some/key', 'vault-archive')
+      expect(head).toHaveBeenCalledWith('some/key', { bucket: 'vault-archive' })
+    })
+
+    it('calls head() without an options argument when no bucket is given', async () => {
+      /*
+       * Scenario: no bucket override; the library uses its default bucket.
+       * Rule it protects: undefined is passed as the options argument, not an object.
+       */
+      const { service, head } = setup()
+      head.mockResolvedValue(makeMetadata())
+
+      await service.exists('some/key')
+      expect(head).toHaveBeenCalledWith('some/key', undefined)
+    })
+  })
+
+  describe('getPublicUrls', () => {
+    it('returns the plain URL when no CDN is configured', () => {
+      /*
+       * Scenario: STORAGE_CDN_BASE_URL is empty; only the plain URL is returned.
+       * Rule it protects: cdnUrl is absent when the CDN env var is not set.
+       */
+      const { service } = setup()
+      const result = service.getPublicUrls(
+        'avatars/uuid.png',
+        'http://localhost:9000/vault',
+        '',
+        'storage-example',
+      )
+      expect(result.url).toBe('http://localhost:9000/vault/storage-example/avatars/uuid.png')
+      expect(result.cdnUrl).toBeUndefined()
+      expect(result.note).toContain('unsigned')
+    })
+
+    it('returns both url and cdnUrl when CDN is configured', () => {
+      /*
+       * Scenario: STORAGE_CDN_BASE_URL is set; both plain and CDN URLs appear.
+       * Rule it protects: cdnUrl is present and uses the CDN base URL.
+       */
+      const { service } = setup()
+      const result = service.getPublicUrls(
+        'avatars/uuid.png',
+        'http://localhost:9000/vault',
+        'https://cdn.example.com',
+        'storage-example',
+      )
+      expect(result.url).toBe('http://localhost:9000/vault/storage-example/avatars/uuid.png')
+      expect(result.cdnUrl).toBe('https://cdn.example.com/storage-example/avatars/uuid.png')
+    })
+
+    it('handles an empty key prefix gracefully', () => {
+      /*
+       * Scenario: STORAGE_KEY_PREFIX is empty; no extra slash is introduced.
+       * Rule it protects: URL construction stays correct when prefix is omitted.
+       */
+      const { service } = setup()
+      const result = service.getPublicUrls('docs/file.pdf', 'http://localhost:9000/vault', '', '')
+      expect(result.url).toBe('http://localhost:9000/vault/docs/file.pdf')
+    })
+
+    it('url-encodes keys with spaces and reserved characters per segment', () => {
+      /*
+       * Scenario: a key contains a space and a reserved character but keeps its
+       * `/` folder separators.
+       * Rule it protects: each path segment is percent-encoded (spaces become
+       * %20) while the `/` separators are preserved, yielding a valid URL.
+       */
+      const { service } = setup()
+      const result = service.getPublicUrls(
+        'my folder/a+b c.png',
+        'http://localhost:9000/vault',
+        'https://cdn.example.com',
+        'tenant one',
+      )
+      expect(result.url).toBe('http://localhost:9000/vault/tenant%20one/my%20folder/a%2Bb%20c.png')
+      expect(result.cdnUrl).toBe('https://cdn.example.com/tenant%20one/my%20folder/a%2Bb%20c.png')
+    })
+  })
+
+  describe('deleteOne', () => {
+    it('returns warned=false when the key existed before the delete', async () => {
+      /*
+       * Scenario: first delete of an existing object; the exists() probe (head)
+       * resolves, so the key was present.
+       * Rule it protects: warned is false on the first call -- no idempotency event.
+       */
+      const { service, head, deleteOne } = setup()
+      head.mockResolvedValue(makeMetadata())
+      deleteOne.mockResolvedValue(undefined)
+
+      const result = await service.deleteOne('avatars/uuid.png')
+      expect(result).toEqual({ deleted: 'avatars/uuid.png', warned: false })
+      expect(deleteOne).toHaveBeenCalledWith('avatars/uuid.png')
+    })
+
+    it('returns warned=true when the key was already absent', async () => {
+      /*
+       * Scenario: repeat delete of a non-existent key; the exists() probe (head)
+       * rejects with a confirmed not-found.
+       * Rule it protects: warned=true surfaces the library's internal warning to
+       * the UI so idempotent repeat is observable.
+       */
+      const { service, head, deleteOne } = setup()
+      head.mockRejectedValue(new StorageException('STORAGE_OBJECT_NOT_FOUND'))
+      deleteOne.mockResolvedValue(undefined)
+
+      const result = await service.deleteOne('avatars/uuid.png')
+      expect(result).toEqual({ deleted: 'avatars/uuid.png', warned: true })
+    })
+
+    it('propagates StorageException from storage.delete()', async () => {
+      /*
+       * Scenario: the exists() probe succeeds, then delete() returns a provider error.
+       * Rule it protects: non-idempotency errors are not swallowed.
+       */
+      const { service, head, deleteOne } = setup()
+      head.mockResolvedValue(makeMetadata())
+      deleteOne.mockRejectedValue(new StorageException('STORAGE_PROVIDER_ERROR'))
+
+      await expect(service.deleteOne('avatars/uuid.png')).rejects.toBeInstanceOf(StorageException)
+    })
+  })
+
+  describe('deleteMany', () => {
+    it('delegates to storage.deleteMany() and returns the verbatim result', async () => {
+      /*
+       * Scenario: bulk delete of three keys returns the library report unchanged.
+       * Rule it protects: partial failures are never masked; the result is passed through.
+       */
+      const { service, deleteMany } = setup()
+      const report: DeleteManyResult = {
+        deleted: ['k1', 'k2'],
+        failed: [{ key: 'k3', error: 'NoSuchKey' }],
+      }
+      deleteMany.mockResolvedValue(report)
+
+      const result = await service.deleteMany(['k1', 'k2', 'k3'])
+      expect(deleteMany).toHaveBeenCalledWith(['k1', 'k2', 'k3'])
+      expect(result).toBe(report)
+    })
+
+    it('propagates StorageException on a whole-batch failure', async () => {
+      /*
+       * Scenario: the entire batch request fails at the provider level.
+       * Rule it protects: batch-level errors reach the global filter.
+       */
+      const { service, deleteMany } = setup()
+      deleteMany.mockRejectedValue(new StorageException('STORAGE_PROVIDER_ERROR'))
+
+      await expect(service.deleteMany(['k1'])).rejects.toBeInstanceOf(StorageException)
+    })
+  })
+
+  describe('copy', () => {
+    it('copies within the same bucket when destination is "same"', async () => {
+      /*
+       * Scenario: same-bucket copy; destinationBucket is not passed to the library.
+       * Rule it protects: the default bucket is used when destination='same'.
+       */
+      const { service, head, copy } = setup()
+      head.mockResolvedValue(makeMetadata())
+      copy.mockResolvedValue({ etag: '"new-etag"' })
+
+      const result = await service.copy(
+        { sourceKey: 'src.png', destinationKey: 'dst.png', destination: 'same' },
+        'vault-archive',
+        'vault',
+      )
+
+      expect(copy).toHaveBeenCalledWith(
+        expect.objectContaining({ sourceKey: 'src.png', destinationKey: 'dst.png' }),
+      )
+      expect(result).toEqual({
+        etag: '"new-etag"',
+        source: 'src.png',
+        destination: 'dst.png',
+        bucket: 'vault',
+      })
+    })
+
+    it('targets the archive bucket when destination is "archive"', async () => {
+      /*
+       * Scenario: cross-bucket copy to vault-archive.
+       * Rule it protects: destinationBucket is passed when destination='archive'.
+       */
+      const { service, head, copy } = setup()
+      head.mockResolvedValue(makeMetadata())
+      copy.mockResolvedValue({ etag: '"arc-etag"' })
+
+      const result = await service.copy(
+        { sourceKey: 'src.png', destinationKey: 'arc/src.png', destination: 'archive' },
+        'vault-archive',
+        'vault',
+      )
+
+      expect(copy).toHaveBeenCalledWith(
+        expect.objectContaining({ destinationBucket: 'vault-archive' }),
+      )
+      expect(result.bucket).toBe('vault-archive')
+    })
+
+    it('deletes the source when deleteSource is true', async () => {
+      /*
+       * Scenario: rename pattern -- deleteSource=true triggers a post-copy delete.
+       * Rule it protects: the source is removed only after a successful copy.
+       */
+      const { service, head, copy, deleteOne } = setup()
+      head.mockResolvedValue(makeMetadata())
+      copy.mockResolvedValue({ etag: '"e"' })
+      deleteOne.mockResolvedValue(undefined)
+
+      await service.copy(
+        {
+          sourceKey: 'old.png',
+          destinationKey: 'new.png',
+          destination: 'same',
+          deleteSource: true,
+        },
+        'vault-archive',
+        'vault',
+      )
+
+      expect(deleteOne).toHaveBeenCalledWith('old.png')
+    })
+
+    it('does not delete the source when deleteSource is absent', async () => {
+      /*
+       * Scenario: plain copy without deleteSource; source stays intact.
+       * Rule it protects: the source is not deleted unless explicitly requested.
+       */
+      const { service, head, copy, deleteOne } = setup()
+      head.mockResolvedValue(makeMetadata())
+      copy.mockResolvedValue({ etag: '"e"' })
+
+      await service.copy(
+        { sourceKey: 'src.png', destinationKey: 'dst.png', destination: 'same' },
+        'vault-archive',
+        'vault',
+      )
+
+      expect(deleteOne).not.toHaveBeenCalled()
+    })
+
+    it('throws STORAGE_OBJECT_NOT_FOUND when the source is absent', async () => {
+      /*
+       * Scenario: the exists() precheck (head) reports a confirmed not-found; a
+       * typed 404 is thrown before any CopyObject request is issued.
+       * Rule it protects: the precheck prevents undefined copy semantics at the provider.
+       */
+      const { service, head, copy } = setup()
+      head.mockRejectedValue(new StorageException('STORAGE_OBJECT_NOT_FOUND'))
+
+      await expect(
+        service.copy(
+          { sourceKey: 'missing.png', destinationKey: 'dst.png', destination: 'same' },
+          'vault-archive',
+          'vault',
+        ),
+      ).rejects.toBeInstanceOf(StorageException)
+      expect(copy).not.toHaveBeenCalled()
+    })
+
+    it('propagates a non-not-found provider error from the source precheck', async () => {
+      /*
+       * Scenario: the exists() precheck (head) rejects with a provider fault.
+       * Rule it protects: precheck faults surface instead of being misread as a
+       * missing source, and no CopyObject request is issued.
+       */
+      const { service, head, copy } = setup()
+      head.mockRejectedValue(new StorageException('STORAGE_PROVIDER_ERROR'))
+
+      await expect(
+        service.copy(
+          { sourceKey: 'src.png', destinationKey: 'dst.png', destination: 'same' },
+          'vault-archive',
+          'vault',
+        ),
+      ).rejects.toBeInstanceOf(StorageException)
+      expect(copy).not.toHaveBeenCalled()
     })
   })
 })

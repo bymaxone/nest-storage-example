@@ -1,9 +1,10 @@
 /**
- * Unit: VaultController - HTTP layer for vault download routes.
+ * Unit: VaultController - HTTP layer for vault object routes.
  *
  * Mocks `VaultService` and an injectable `ConfigService` stub. Covers: stream
  * route (headers set from metadata, pipe called), preview delegation, range
- * delegation, version delegation with requestedVersionId echo, route metadata
+ * delegation, version delegation with requestedVersionId echo, head delegation,
+ * public-url (plain and CDN), single delete with warned flag, route metadata
  * (verb + path), and not-found propagation.
  *
  * @module vault/vault.controller.spec
@@ -71,7 +72,18 @@ function setup() {
   const preview = jest.fn<VaultService['preview']>()
   const downloadRange = jest.fn<VaultService['downloadRange']>()
   const downloadVersion = jest.fn<VaultService['downloadVersion']>()
-  const service = { download, preview, downloadRange, downloadVersion } as unknown as VaultService
+  const head = jest.fn<VaultService['head']>()
+  const getPublicUrls = jest.fn<VaultService['getPublicUrls']>()
+  const deleteOne = jest.fn<VaultService['deleteOne']>()
+  const service = {
+    download,
+    preview,
+    downloadRange,
+    downloadVersion,
+    head,
+    getPublicUrls,
+    deleteOne,
+  } as unknown as VaultService
 
   const env: Env = {
     NODE_ENV: 'test',
@@ -102,7 +114,16 @@ function setup() {
   } as unknown as ConfigService<{ env: Env }, true>
 
   const controller = new VaultController(service, config)
-  return { controller, download, preview, downloadRange, downloadVersion }
+  return {
+    controller,
+    download,
+    preview,
+    downloadRange,
+    downloadVersion,
+    head,
+    getPublicUrls,
+    deleteOne,
+  }
 }
 
 describe('VaultController (unit)', () => {
@@ -248,6 +269,84 @@ describe('VaultController (unit)', () => {
     })
   })
 
+  describe('head', () => {
+    it('delegates to the service and returns the metadata', async () => {
+      /*
+       * Scenario: head of an existing object returns ObjectMetadata.
+       * Rule it protects: the controller passes the key and returns the result.
+       */
+      const { controller, head } = setup()
+      const metadata = makeMetadata()
+      head.mockResolvedValue(metadata)
+
+      const result = await controller.head({ key: 'avatars/uuid.png' })
+      expect(head).toHaveBeenCalledWith('avatars/uuid.png')
+      expect(result).toBe(metadata)
+    })
+
+    it('propagates STORAGE_OBJECT_NOT_FOUND for a missing key', async () => {
+      /*
+       * Scenario: head of a non-existent object; the global filter handles it.
+       * Rule it protects: StorageException is not swallowed.
+       */
+      const { controller, head } = setup()
+      head.mockRejectedValue(new StorageException('STORAGE_OBJECT_NOT_FOUND'))
+
+      await expect(controller.head({ key: 'missing' })).rejects.toBeInstanceOf(StorageException)
+    })
+  })
+
+  describe('getPublicUrl', () => {
+    it('returns the plain URL and note when no CDN is configured', () => {
+      /*
+       * Scenario: STORAGE_CDN_BASE_URL is empty; only url and note are present.
+       * Rule it protects: cdnUrl is absent when CDN is not configured.
+       */
+      const { controller, getPublicUrls } = setup()
+      const response = {
+        url: 'http://localhost:9000/vault/storage-example/avatars/uuid.png',
+        note: 'URL is unsigned and existence is unchecked.',
+      }
+      getPublicUrls.mockReturnValue(response)
+
+      const result = controller.getPublicUrl({ key: 'avatars/uuid.png' })
+      expect(getPublicUrls).toHaveBeenCalledWith(
+        'avatars/uuid.png',
+        'http://localhost:9000/vault',
+        '',
+        'storage-example',
+      )
+      expect(result).toBe(response)
+    })
+  })
+
+  describe('delete', () => {
+    it('returns warned=false on the first delete', async () => {
+      /*
+       * Scenario: key existed; deleteOne returns warned=false.
+       * Rule it protects: the controller forwards the key and returns the result.
+       */
+      const { controller, deleteOne } = setup()
+      deleteOne.mockResolvedValue({ deleted: 'avatars/uuid.png', warned: false })
+
+      const result = await controller.delete({ key: 'avatars/uuid.png' })
+      expect(deleteOne).toHaveBeenCalledWith('avatars/uuid.png')
+      expect(result).toEqual({ deleted: 'avatars/uuid.png', warned: false })
+    })
+
+    it('returns warned=true on a repeat delete', async () => {
+      /*
+       * Scenario: key was absent; deleteOne returns warned=true.
+       * Rule it protects: idempotent repeat is observable via the warned flag.
+       */
+      const { controller, deleteOne } = setup()
+      deleteOne.mockResolvedValue({ deleted: 'avatars/uuid.png', warned: true })
+
+      const result = await controller.delete({ key: 'avatars/uuid.png' })
+      expect(result.warned).toBe(true)
+    })
+  })
+
   describe('route metadata', () => {
     const reflector = new Reflector()
 
@@ -271,6 +370,37 @@ describe('VaultController (unit)', () => {
       const fn = VaultController.prototype[handler]
       expect(reflector.get<number>(METHOD_METADATA, fn)).toBe(RequestMethod.GET)
       expect(reflector.get<string>(PATH_METADATA, fn)).toBe('version')
+    })
+
+    it('declares GET on the head handler', () => {
+      /*
+       * Scenario: inspect verb for the head route.
+       * Rule it protects: HEAD metadata returns GET at the root path.
+       */
+      const handler: keyof VaultController = 'head'
+      const fn = VaultController.prototype[handler]
+      expect(reflector.get<number>(METHOD_METADATA, fn)).toBe(RequestMethod.GET)
+    })
+
+    it('declares DELETE on the delete handler', () => {
+      /*
+       * Scenario: inspect verb for the single delete route.
+       * Rule it protects: the route is DELETE, not GET or POST.
+       */
+      const handler: keyof VaultController = 'delete'
+      const fn = VaultController.prototype[handler]
+      expect(reflector.get<number>(METHOD_METADATA, fn)).toBe(RequestMethod.DELETE)
+    })
+
+    it('declares GET public-url on the getPublicUrl handler', () => {
+      /*
+       * Scenario: inspect verb and path for the public-url route.
+       * Rule it protects: the route is GET + 'public-url'.
+       */
+      const handler: keyof VaultController = 'getPublicUrl'
+      const fn = VaultController.prototype[handler]
+      expect(reflector.get<number>(METHOD_METADATA, fn)).toBe(RequestMethod.GET)
+      expect(reflector.get<string>(PATH_METADATA, fn)).toBe('public-url')
     })
   })
 })
