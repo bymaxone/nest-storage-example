@@ -1,6 +1,6 @@
 # Phase 4: listing-lifecycle
 
-> **Status**: 🔄 In Progress · **Progress**: 2 / 5 tasks · **Last updated**: 2026-07-07
+> **Status**: 🔄 In Progress · **Progress**: 3 / 5 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P4)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §11.1 (Vault), §15
 
@@ -31,7 +31,7 @@ idempotent and bulk deletion with per-key failure rendering, server-side copy (s
 | --- | ---------------------------------------------------------- | ------- | -------- | ---- | ---------- |
 | 4.1 | Branch + listing: prefix, pagination, folders              | ✅ Done | P0       | M    | none       |
 | 4.2 | Detail: head, exists, public URLs (plain + CDN)            | ✅ Done | P0       | S    | 4.1        |
-| 4.3 | Deletion: idempotent single + chunked bulk with failures   | 📋 ToDo | P0       | M    | 4.1        |
+| 4.3 | Deletion: idempotent single + chunked bulk with failures   | ✅ Done | P0       | M    | 4.1        |
 | 4.4 | Copy: same-bucket rename + archive cross-bucket            | 📋 ToDo | P0       | S    | 4.1        |
 | 4.5 | Phase close: audit, dashboards, PR + Copilot review, merge | 📋 ToDo | P0       | S    | 4.1-4.4    |
 
@@ -180,7 +180,7 @@ Completion Protocol:
 
 ### Task 4.3: Deletion surface
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 4.1
@@ -192,10 +192,10 @@ with the `{ deleted, failed }` report rendered verbatim.
 
 #### Acceptance criteria
 
-- [ ] `DELETE /vault/object?key=`: first call deletes; second call returns 200 `{ warned: true }` (the library logs, does not throw).
-- [ ] `POST /vault/bulk-delete` body `{ keys: string[] }` (Zod, 1..1000): returns the library's `{ deleted, failed }` untouched; a mixed valid/invalid batch shows accurate partitioning.
-- [ ] Chunking beyond 1000 is rejected at the DTO with a pointer to batching guidance.
-- [ ] Unit tests 100% on new files.
+- [x] `DELETE /vault/object?key=`: first call deletes; second call returns 200 `{ warned: true }` (the library logs, does not throw).
+- [x] `POST /vault/bulk-delete` body `{ keys: string[] }` (Zod, 1..1000): returns the library's `{ deleted, failed }` untouched; a mixed valid/invalid batch shows accurate partitioning.
+- [x] Chunking beyond 1000 is rejected at the DTO with a pointer to batching guidance.
+- [x] Unit tests 100% on new files.
 
 #### Files to create / modify
 
@@ -383,5 +383,6 @@ Completion Protocol:
 
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
 
+- 4.3 ✅ 2026-07-07: `DELETE /vault/object` idempotent single delete surfacing a `warned` flag via an `exists()` precheck, and `POST /vault/bulk-delete` (`bulkDeleteBodySchema`: 1-1000 keys, each via the shared `objectKeySchema`) passing the library `{ deleted, failed }` report through verbatim. Verified live against MinIO: repeat delete returns `warned:false` then `warned:true`; a mixed batch returns the S3 report. 100% coverage.
 - 4.2 ✅ 2026-07-07: `GET /vault/object` head pass-through and `GET /vault/object/public-url` (plain URL always, `cdnUrl` only when `STORAGE_CDN_BASE_URL` set, plus an unsigned/unvalidated note); `exists()` service seam for the copy precheck. Routes live on the object-level `VaultController`. Verified live against MinIO: head returns full metadata, public-url builds the unsigned URL. 100% coverage.
 - 4.1 ✅ 2026-07-07: `GET /vault` paged listing on new `VaultBrowseController`; `listQuerySchema` (prefix/maxKeys/cursor/delimiter) mapping cursor↔continuationToken and nextContinuationToken↔nextCursor; shared `objectKeySchema` (non-empty, ≤1024, no control chars). Verified live against compose MinIO: `delimiter=/` aggregates `attachments/ avatars/ invoices/`, a maxKeys=2 walk pages the set with no repeats, `prefix=` filters. 100% coverage.
