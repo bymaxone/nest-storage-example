@@ -1,6 +1,6 @@
 # Phase 0: repo-foundation-ci
 
-> **Status**: 🔄 In Progress · **Progress**: 2 / 6 tasks · **Last updated**: 2026-07-07
+> **Status**: 🔄 In Progress · **Progress**: 3 / 6 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P0)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §5, §6, §22
 
@@ -31,7 +31,7 @@ automatically when it goes public.
 | --- | ------------------------------------------------------------------ | ------- | -------- | ---- | ---------- |
 | 0.1 | Branch + workspace root (pnpm, engines, scripts, tsconfig base)    | ✅ Done | P0       | S    | none       |
 | 0.2 | Lint & format toolchain (ESLint 9 flat + Prettier 3)               | ✅ Done | P0       | S    | 0.1        |
-| 0.3 | Git governance (husky, commitlint, lint-staged, .gitmessage)       | 📋 ToDo | P0       | S    | 0.1        |
+| 0.3 | Git governance (husky, commitlint, lint-staged, .gitmessage)       | ✅ Done | P0       | S    | 0.1        |
 | 0.4 | Community & meta files (LICENSE, README stub, CHANGELOG, Renovate) | 📋 ToDo | P1       | S    | 0.1        |
 | 0.5 | CI workflows: `ci.yml` + conditional `codeql.yml`/`scorecard.yml`  | 📋 ToDo | P0       | M    | 0.2        |
 | 0.6 | Phase close: audit, dashboards, PR + Copilot review, merge         | 📋 ToDo | P0       | S    | 0.1-0.5    |
@@ -195,7 +195,7 @@ Completion Protocol:
 
 ### Task 0.3: Git governance
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 0.1
@@ -206,11 +206,11 @@ Husky hooks, commitlint (Conventional Commits), lint-staged, and the commit temp
 
 #### Acceptance criteria
 
-- [ ] `.husky/pre-commit` runs `pnpm exec lint-staged`; `.husky/commit-msg` runs commitlint.
-- [ ] `commitlint.config.mjs` extends `@commitlint/config-conventional`.
-- [ ] `lint-staged.config.mjs`: eslint --fix + prettier --write on staged TS/TSX/MD/JSON.
-- [ ] `.gitmessage` with the project scopes (repo, infra, api, web, vault, uploads, signed, validation, scanner, tenants, errors, system, ci, docs, test).
-- [ ] A non-Conventional commit message is rejected locally.
+- [x] `.husky/pre-commit` runs `pnpm exec lint-staged`; `.husky/commit-msg` runs commitlint.
+- [x] `commitlint.config.mjs` extends `@commitlint/config-conventional`.
+- [x] `lint-staged.config.mjs`: eslint --fix + prettier --write on staged TS/TSX/MD/JSON.
+- [x] `.gitmessage` with the project scopes (repo, infra, api, web, vault, uploads, signed, validation, scanner, tenants, errors, system, ci, docs, test).
+- [x] A non-Conventional commit message is rejected locally.
 
 #### Files to create / modify
 
@@ -488,5 +488,6 @@ Completion Protocol:
 
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
 
+- 0.3 ✅ 2026-07-07: added husky v9 hooks (pre-commit/commit-msg), commitlint with config-conventional, lint-staged with eslint+prettier on staged files, and .gitmessage template
 - 0.2 ✅ 2026-07-07: added ESLint 9 flat config with recommendedTypeChecked, banned imports, test relaxations, Prettier 3 with project settings, and .prettierignore
 - 0.1 ✅ 2026-07-07: scaffolded pnpm workspace root with package.json, pnpm-workspace.yaml, .nvmrc, .npmrc, .gitignore, .editorconfig, and tsconfig.base.json

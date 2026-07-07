@@ -1,0 +1,28 @@
+# Conventional Commits format: <type>(<scope>): <subject>
+#
+# To use this template automatically: git config commit.template .gitmessage
+#
+# Types: feat | fix | chore | docs | refactor | test | ci | perf | style | revert | build
+#
+# Scopes for this repository:
+#   repo         - root configuration, tooling, governance
+#   infra        - docker-compose, MinIO, environment setup
+#   api          - NestJS backend application
+#   web          - Next.js frontend application
+#   vault        - vault browse/download/delete/copy routes
+#   uploads      - single/multipart/stream upload routes
+#   signed       - presigned URL routes and direct upload flow
+#   validation   - MIME/size/magic-byte validation pipeline
+#   scanner      - file scanner adapter and verdict routes
+#   tenants      - key-prefix isolation and tenant management
+#   errors       - error demo routes and exception filter
+#   system       - health, config introspection, provider recipes
+#   ci           - GitHub Actions workflows
+#   docs         - documentation files
+#   test         - test infrastructure and suites
+#
+# Rules:
+#   - Subject line: imperative mood, lowercase, no trailing period, <=72 chars
+#   - Body: wrap at 100 chars; explain WHY, not WHAT
+#   - No Co-Authored-By or AI-attribution lines
+#
