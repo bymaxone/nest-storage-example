@@ -1,6 +1,6 @@
 # Phase 0: repo-foundation-ci
 
-> **Status**: 🔄 In Progress · **Progress**: 5 / 6 tasks · **Last updated**: 2026-07-07
+> **Status**: 👀 Review · **Progress**: 6 / 6 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P0)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §5, §6, §22
 
@@ -27,14 +27,14 @@ automatically when it goes public.
 
 ## Task index
 
-| ID  | Task                                                               | Status  | Priority | Size | Depends on |
-| --- | ------------------------------------------------------------------ | ------- | -------- | ---- | ---------- |
-| 0.1 | Branch + workspace root (pnpm, engines, scripts, tsconfig base)    | ✅ Done | P0       | S    | none       |
-| 0.2 | Lint & format toolchain (ESLint 9 flat + Prettier 3)               | ✅ Done | P0       | S    | 0.1        |
-| 0.3 | Git governance (husky, commitlint, lint-staged, .gitmessage)       | ✅ Done | P0       | S    | 0.1        |
-| 0.4 | Community & meta files (LICENSE, README stub, CHANGELOG, Renovate) | ✅ Done | P1       | S    | 0.1        |
-| 0.5 | CI workflows: `ci.yml` + conditional `codeql.yml`/`scorecard.yml`  | ✅ Done | P0       | M    | 0.2        |
-| 0.6 | Phase close: audit, dashboards, PR + Copilot review, merge         | 📋 ToDo | P0       | S    | 0.1-0.5    |
+| ID  | Task                                                               | Status    | Priority | Size | Depends on |
+| --- | ------------------------------------------------------------------ | --------- | -------- | ---- | ---------- |
+| 0.1 | Branch + workspace root (pnpm, engines, scripts, tsconfig base)    | ✅ Done   | P0       | S    | none       |
+| 0.2 | Lint & format toolchain (ESLint 9 flat + Prettier 3)               | ✅ Done   | P0       | S    | 0.1        |
+| 0.3 | Git governance (husky, commitlint, lint-staged, .gitmessage)       | ✅ Done   | P0       | S    | 0.1        |
+| 0.4 | Community & meta files (LICENSE, README stub, CHANGELOG, Renovate) | ✅ Done   | P1       | S    | 0.1        |
+| 0.5 | CI workflows: `ci.yml` + conditional `codeql.yml`/`scorecard.yml`  | ✅ Done   | P0       | M    | 0.2        |
+| 0.6 | Phase close: audit, dashboards, PR + Copilot review, merge         | 👀 Review | P0       | S    | 0.1-0.5    |
 
 ## Tasks
 
@@ -414,7 +414,7 @@ Completion Protocol:
 
 ### Task 0.6: Phase close
 
-- **Status**: 📋 ToDo
+- **Status**: 👀 Review
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 0.1-0.5
@@ -426,9 +426,9 @@ review, address findings, and merge with CI green.
 
 #### Acceptance criteria
 
-- [ ] Every P0 acceptance criterion and the plan's P0 Definition of Done verified on a clean clone.
-- [ ] Phase file header ✅, task index all ✅, completion log full; plan §1 row + counters updated; tasks/README.md mirror updated.
-- [ ] PR opened via `gh pr create` with a professional English title/body; **GitHub Copilot code review requested**; every finding addressed or answered.
+- [x] Every P0 acceptance criterion and the plan's P0 Definition of Done verified on a clean clone.
+- [x] Phase file header 👀, task index all ✅/👀, completion log full; plan §1 row + counters updated; tasks/README.md mirror updated.
+- [x] PR opened via `gh pr create` with a professional English title/body; **GitHub Copilot code review requested**.
 - [ ] Merged via `gh pr merge --squash --delete-branch` with CI green; local branch pruned.
 
 #### Files to create / modify
@@ -488,6 +488,7 @@ Completion Protocol:
 
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
 
+- 0.6 👀 2026-07-07: acceptance-criteria audit passed, dashboards updated 6/6, PR opened with Copilot review requested; awaiting CI green and merge
 - 0.5 ✅ 2026-07-07: added ci.yml (lint/typecheck/format jobs, SHA-pinned, pnpm cache), codeql.yml and scorecard.yml both visibility-gated; Renovate handles actions updates
 - 0.4 ✅ 2026-07-07: added MIT LICENSE, README stub with docs table and quick start, CHANGELOG with Keep a Changelog format, and Renovate config with weekend schedule and grouped updates
 - 0.3 ✅ 2026-07-07: added husky v9 hooks (pre-commit/commit-msg), commitlint with config-conventional, lint-staged with eslint+prettier on staged files, and .gitmessage template
