@@ -8,9 +8,12 @@
 import { Module } from '@nestjs/common'
 import { HealthController } from './health.controller.js'
 import { SystemController } from './system.controller.js'
+import { QuirksController } from './quirks.controller.js'
+import { QuirksService } from './quirks.service.js'
 
-/** Groups the operational (health + introspection) controllers. */
+/** Groups the operational (health + introspection + provider-quirk) controllers. */
 @Module({
-  controllers: [HealthController, SystemController],
+  controllers: [HealthController, SystemController, QuirksController],
+  providers: [QuirksService],
 })
 export class SystemModule {}

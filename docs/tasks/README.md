@@ -17,10 +17,10 @@
 | P4    | `phase-04-listing-lifecycle.md`         | 5/5       | ✅ Done        | list/folders/pagination, head/exists, delete/deleteMany, copy, public URLs                           |
 | P5    | `phase-05-signed-urls-direct-upload.md` | 5/5       | ✅ Done        | presigned GET/PUT/multipart, TTL clamp, direct upload + confirm                                      |
 | P6    | `phase-06-validation-scanner.md`        | 5/5       | ✅ Done        | MIME/size/magic-byte validation + marker scanner (modes, rejectOnUnknown)                            |
-| P7    | `phase-07-tenants-advanced-errors.md`   | 2/5       | 🔄 In Progress | tenant prefixes, raw S3Client ops, all 17 error codes, provider quirks                               |
+| P7    | `phase-07-tenants-advanced-errors.md`   | 3/5       | 🔄 In Progress | tenant prefixes, raw S3Client ops, all 17 error codes, provider quirks                               |
 | P8    | `phase-08-web-dashboard.md`             | 0/6       | 📋 ToDo        | Next.js 16 dashboard, verbatim design system, all pages                                              |
 | P9    | `phase-09-quality-docs-readiness.md`    | 0/6       | 📋 ToDo        | 100% unit coverage, full e2e, Stryker, export audit, README, public-flip checklist                   |
-|       | **Total**                               | **39/54** | 🔄             |                                                                                                      |
+|       | **Total**                               | **40/54** | 🔄             |                                                                                                      |
 
 ## Task-file anatomy
 
