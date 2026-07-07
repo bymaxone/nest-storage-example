@@ -2,9 +2,11 @@
  * Unit: ConfirmService - post-direct-upload verification.
  *
  * Mocks `StorageService.head` and the `IConfirmScanner` seam directly. Covers:
- * the happy path (size + MIME pass, scanner skipped), size-policy violation,
- * MIME-mismatch refusal, infected-scan refusal, the no-size-policy branch,
- * not-found propagation, and the exported `isMimeAllowed` matcher.
+ * the happy path (size + MIME pass, CLEAN scan => confirmed), the honest
+ * not-clean verdicts (skipped/unknown/infected all fail scanClean and confirm),
+ * size-policy violation, MIME-mismatch refusal, the no-size-policy branch, the
+ * no-whitelist branch (nothing to enforce => mimeAllowed true), not-found
+ * propagation, and the exported `isMimeAllowed` matcher.
  *
  * @module signed/confirm.service.spec
  */
@@ -61,19 +63,44 @@ function setup(
 }
 
 describe('ConfirmService (unit)', () => {
-  it('confirms an object within policy with a skipped scan', async () => {
+  it('confirms an object within policy with a CLEAN scan verdict', async () => {
     /*
-     * Scenario: a landed object passes size and MIME with no scanner wired.
-     * Rule it protects: confirmed is true and every check reports true.
+     * Scenario: a landed object passes size and MIME and the scanner returns clean.
+     * Rule it protects: confirmed is true only when an actual clean verdict backs it.
      */
-    const { service, head, scan } = setup()
+    const { service, head, scan } = setup({ status: 'clean' })
     head.mockResolvedValue(makeMetadata({ size: 1024, contentType: 'image/png' }))
     const res = await service.confirm('avatars/uuid.png')
     expect(res.confirmed).toBe(true)
     expect(res.checks).toEqual({ sizeWithinPolicy: true, mimeAllowed: true, scanClean: true })
-    expect(res.scan).toEqual({ status: 'skipped' })
+    expect(res.scan).toEqual({ status: 'clean' })
     expect(res.note).toContain('bypasses')
     expect(scan).toHaveBeenCalledWith('avatars/uuid.png', 'vault')
+  })
+
+  it('does not confirm on a skipped scan even when size and MIME pass', async () => {
+    /*
+     * Scenario: the no-op scanner returns skipped for a size/MIME-valid object.
+     * Rule it protects: skipped is NOT clean, so a direct upload stays untrusted
+     * until a real scanner actually inspects it (honest trust model).
+     */
+    const { service, head } = setup({ status: 'skipped' })
+    head.mockResolvedValue(makeMetadata({ size: 1024, contentType: 'image/png' }))
+    const res = await service.confirm('avatars/uuid.png')
+    expect(res.checks).toEqual({ sizeWithinPolicy: true, mimeAllowed: true, scanClean: false })
+    expect(res.confirmed).toBe(false)
+  })
+
+  it('does not confirm on an unknown scan verdict', async () => {
+    /*
+     * Scenario: the scanner could not decide (unknown).
+     * Rule it protects: only a clean verdict counts as clean; unknown fails confirm.
+     */
+    const { service, head } = setup({ status: 'unknown' })
+    head.mockResolvedValue(makeMetadata({ size: 1024, contentType: 'image/png' }))
+    const res = await service.confirm('avatars/uuid.png')
+    expect(res.checks.scanClean).toBe(false)
+    expect(res.confirmed).toBe(false)
   })
 
   it('refuses an object exceeding the size policy', async () => {
@@ -127,11 +154,12 @@ describe('ConfirmService (unit)', () => {
     expect(res.checks.sizeWithinPolicy).toBe(true)
   })
 
-  it('refuses when no validation policy is configured (empty whitelist)', async () => {
+  it('allows any MIME when no whitelist is configured', async () => {
     /*
      * Scenario: the module carries no validation policy at all.
-     * Rule it protects: the MIME whitelist defaults to empty, so nothing is
-     * allowed, while the absent size policy passes.
+     * Rule it protects: with no whitelist there is nothing to enforce, so
+     * mimeAllowed passes (mirroring the size-policy semantics); the absent size
+     * policy passes too, and scanClean is false under the no-op scanner.
      */
     const options: StoragePolicyOptions = {
       bucket: 'vault',
@@ -139,9 +167,24 @@ describe('ConfirmService (unit)', () => {
       signedUrls: { defaultGetTtlSeconds: 300, defaultPutTtlSeconds: 300, maxTtlSeconds: 3600 },
     }
     const { service, head } = setup({ status: 'skipped' }, options)
-    head.mockResolvedValue(makeMetadata({ contentType: 'image/png' }))
+    head.mockResolvedValue(makeMetadata({ contentType: 'application/zip' }))
     const res = await service.confirm('avatars/uuid.png')
-    expect(res.checks).toEqual({ sizeWithinPolicy: true, mimeAllowed: false, scanClean: true })
+    expect(res.checks).toEqual({ sizeWithinPolicy: true, mimeAllowed: true, scanClean: false })
+    expect(res.confirmed).toBe(false)
+  })
+
+  it('applies the whitelist when one is configured, refusing a mismatch', async () => {
+    /*
+     * Scenario: a whitelist is configured and the landed type is outside it.
+     * Rule it protects: a configured whitelist is enforced (mimeAllowed false).
+     */
+    const { service, head } = setup(
+      { status: 'clean' },
+      makeOptions({ validation: { mimeWhitelist: ['image/png'] } }),
+    )
+    head.mockResolvedValue(makeMetadata({ contentType: 'application/zip' }))
+    const res = await service.confirm('avatars/uuid.png')
+    expect(res.checks.mimeAllowed).toBe(false)
     expect(res.confirmed).toBe(false)
   })
 

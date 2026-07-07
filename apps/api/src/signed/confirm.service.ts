@@ -18,7 +18,11 @@ import type { StoragePolicyOptions } from './storage-policy.js'
 
 /** Structured outcome of a confirm request. */
 export interface ConfirmResult {
-  /** True only when size, MIME, and scan all pass. */
+  /**
+   * True only when size, MIME, and a CLEAN scan verdict all pass. A `skipped` or
+   * `unknown` scan is NOT clean, so a direct upload stays unconfirmed until a
+   * real scanner actually inspects it and returns `clean`.
+   */
   confirmed: boolean
   /** The verified key. */
   key: string
@@ -27,8 +31,12 @@ export interface ConfirmResult {
   /** The scanner verdict (`skipped` until the real scanner is wired). */
   scan: ScanVerdict
   /**
-   * Per-check outcomes so a caller sees exactly which policy gate failed. Absent
-   * checks (e.g. no size policy configured) are reported as `true`.
+   * Per-check outcomes so a caller sees exactly which policy gate failed:
+   * - `sizeWithinPolicy`: true when no size policy is set OR size <= maxSizeBytes.
+   * - `mimeAllowed`: true when no whitelist is configured OR the content type
+   *   matches the configured whitelist.
+   * - `scanClean`: true ONLY for a `clean` scan verdict; `skipped`/`unknown`/
+   *   `infected` are all not-clean.
    */
   checks: { sizeWithinPolicy: boolean; mimeAllowed: boolean; scanClean: boolean }
   /** States that local validation did not run on the direct PUT. */
@@ -37,7 +45,7 @@ export interface ConfirmResult {
 
 /** Honest, non-optional note documenting the validation-bypass boundary. */
 const BYPASS_NOTE =
-  'A presigned PUT bypasses server-side MIME/size validation by design; this confirm re-checks the landed object (size, MIME, scan) as the mitigation. The scanner seam reports "skipped" until a real content scanner is wired (spec §16).'
+  'A presigned PUT bypasses server-side MIME/size validation by design; this confirm re-checks the landed object as the mitigation: its size against the server\'s CONFIGURED size policy (not any per-request value), its content type against the configured MIME whitelist, and a scan verdict. confirmed is true only when all three pass, and scanClean requires an actual clean verdict; the scanner seam reports "skipped" until a real content scanner is wired (spec §16), so a valid direct upload stays unconfirmed until then.'
 
 /**
  * Tests a MIME type against a whitelist supporting exact matches, a bare `*`
@@ -88,12 +96,11 @@ export class ConfirmService {
   async confirm(key: string): Promise<ConfirmResult> {
     const metadata = await this.storage.head(key)
     const sizeWithinPolicy = this.isSizeWithinPolicy(metadata.size)
-    const mimeAllowed = isMimeAllowed(
-      metadata.contentType,
-      this.options.validation?.mimeWhitelist ?? [],
-    )
+    const mimeAllowed = this.isMimeWithinPolicy(metadata.contentType)
     const scan = await this.scanner.scan(key, this.options.bucket)
-    const scanClean = scan.status !== 'infected'
+    // A direct upload is trusted only when actually scanned clean; `skipped` and
+    // `unknown` are NOT clean, so the no-op scanner keeps confirmed false.
+    const scanClean = scan.status === 'clean'
     return {
       confirmed: sizeWithinPolicy && mimeAllowed && scanClean,
       key,
@@ -114,5 +121,22 @@ export class ConfirmService {
   private isSizeWithinPolicy(size: number): boolean {
     const max = this.options.validation?.maxSizeBytes
     return max === undefined || size <= max
+  }
+
+  /**
+   * Returns true when the landed content type satisfies the configured MIME
+   * whitelist. When NO whitelist is configured (empty or undefined) there is
+   * nothing to enforce, so the check passes, mirroring the size-policy semantics
+   * ("no policy configured => pass").
+   *
+   * @param contentType - The landed object's content type (may be undefined).
+   * @returns True when allowed (or no whitelist is configured).
+   */
+  private isMimeWithinPolicy(contentType: string | undefined): boolean {
+    const whitelist = this.options.validation?.mimeWhitelist
+    if (whitelist === undefined || whitelist.length === 0) {
+      return true
+    }
+    return isMimeAllowed(contentType, whitelist)
   }
 }

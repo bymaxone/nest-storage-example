@@ -66,7 +66,11 @@ export interface UploadUrlResponse extends TtlView {
   method: 'PUT'
   key: string
   requiredHeaders: Record<string, string>
-  /** Advisory byte range; NOT enforced at presign time, only at confirm. */
+  /**
+   * Advisory byte range only. SigV4 cannot pin a maximum size at PUT time, so
+   * this is never enforced by the provider; confirm verifies the landed size
+   * against the server's CONFIGURED size policy, not against this value.
+   */
   contentLengthRange: { minBytes: number; maxBytes?: number }
   note: string
 }
@@ -184,8 +188,9 @@ export class SignedService {
    * Issues a presigned PUT URL. The client MUST send every `requiredHeaders`
    * entry verbatim (each is part of the signature). The response carries an
    * advisory Content-Length-Range and states that the mandatory `confirm` step
-   * is what actually enforces size/MIME, since a direct PUT bypasses local
-   * validation by design.
+   * re-checks the landed object against the server's CONFIGURED size/MIME policy
+   * (not the per-request value), since a direct PUT bypasses local validation by
+   * design.
    *
    * @param body - Validated upload-url request.
    * @returns The presigned PUT URL, the composed key, and the TTL view.
@@ -206,7 +211,7 @@ export class SignedService {
       key,
       requiredHeaders: result.requiredHeaders,
       contentLengthRange: this.buildContentLengthRange(body.maxSizeBytes),
-      note: 'This direct PUT bypasses server-side MIME/size validation by design. After the PUT, the client MUST call POST /signed/confirm to verify the landed object (size, MIME, scan). The range is advisory: it is enforced at confirm, not at presign.',
+      note: "This direct PUT bypasses server-side MIME/size validation by design. After the PUT, the client MUST call POST /signed/confirm to verify the landed object (size, MIME, scan). contentLengthRange is advisory only: SigV4 cannot pin a maximum size at PUT time, so the provider may store an over-limit body. The landed size is verified at confirm against the server's CONFIGURED size policy, NOT against this per-request maxSizeBytes.",
       ...this.buildTtlView(requested, result.url),
     }
   }

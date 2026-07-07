@@ -26,8 +26,10 @@ export const uploadUrlBodySchema = z.object({
   contentType: contentTypeSchema,
   /**
    * Advisory maximum upload size in bytes. NOT bindable at presign time (a SigV4
-   * PUT can only pin an exact Content-Length), so it is enforced after the fact
-   * by `POST /signed/confirm`. Capped by the server against the configured policy.
+   * PUT can only pin an exact Content-Length), and NOT enforced per-request at
+   * confirm: `POST /signed/confirm` verifies the landed size against the server's
+   * CONFIGURED size policy, not against this value. It only narrows the advisory
+   * `contentLengthRange` returned to the client.
    */
   maxSizeBytes: z.number().int().positive().optional(),
   /** Requested lifetime; silently clamped by the library to the configured cap. */

@@ -2,11 +2,13 @@
  * E2E: presigned URL flows against a real MinIO (Testcontainers).
  *
  * Proves the issued URLs work for a browser-grade client using plain `fetch`:
- * a signed PUT within policy round-trips and confirms; a signed GET returns the
- * bytes; an expired GET is denied by the provider; an over-limit PUT is accepted
- * by the provider (a SigV4 PUT cannot pin a maximum size) but the mandatory
- * confirm catches the size breach; a presigned multipart completes into a
- * downloadable object; and an aborted multipart leaves no orphan parts.
+ * a signed PUT within policy round-trips and confirm reports the honest shape
+ * (size + MIME pass, but the no-op scanner reports `skipped`, so scanClean is
+ * false and the object is not yet confirmed); a signed GET returns the bytes; an
+ * expired GET is denied by the provider; an over-limit PUT is accepted by the
+ * provider (a SigV4 PUT cannot pin a maximum size) but the mandatory confirm
+ * catches the size breach; a presigned multipart completes into a downloadable
+ * object; and an aborted multipart leaves no orphan parts.
  *
  * Signed URLs are credentials: this suite asserts behavior (status, bytes,
  * confirm result) and NEVER asserts a URL's contents.
@@ -77,11 +79,12 @@ describe('signed presigned flows (e2e)', () => {
     return res.body.url
   }
 
-  it('PUT within policy round-trips and confirm passes', async () => {
+  it('PUT within policy round-trips and confirm reports the honest unscanned shape', async () => {
     /*
      * Scenario: a client PUTs a small PNG directly, then confirms it.
-     * Rule it protects: the required headers make the PUT succeed and confirm
-     * reports the landed object within size and MIME policy.
+     * Rule it protects: the required headers make the PUT succeed; size and MIME
+     * pass, but the no-op scanner reports skipped, so scanClean is false and the
+     * object is NOT yet confirmed until a real scanner lands (honest trust model).
      */
     const { url, key, requiredHeaders } = await issueUpload('image/png')
     const body = new Uint8Array(64).fill(7)
@@ -92,12 +95,13 @@ describe('signed presigned flows (e2e)', () => {
       .post('/signed/confirm')
       .send({ key })
       .expect(200)
-    expect(confirm.body.confirmed).toBe(true)
+    expect(confirm.body.scan.status).toBe('skipped')
     expect(confirm.body.checks).toEqual({
       sizeWithinPolicy: true,
       mimeAllowed: true,
-      scanClean: true,
+      scanClean: false,
     })
+    expect(confirm.body.confirmed).toBe(false)
   })
 
   it('GET round-trips the exact bytes that were uploaded', async () => {
