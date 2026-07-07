@@ -28,12 +28,12 @@ idempotent and bulk deletion with per-key failure rendering, server-side copy (s
 ## Task index
 
 | ID  | Task                                                       | Status  | Priority | Size | Depends on |
-| --- | ----------------------------------------------------------- | ------- | -------- | ---- | ---------- |
-| 4.1 | Branch + listing: prefix, pagination, folders                | 📋 ToDo | P0       | M    | none       |
-| 4.2 | Detail: head, exists, public URLs (plain + CDN)              | 📋 ToDo | P0       | S    | 4.1        |
-| 4.3 | Deletion: idempotent single + chunked bulk with failures     | 📋 ToDo | P0       | M    | 4.1        |
-| 4.4 | Copy: same-bucket rename + archive cross-bucket              | 📋 ToDo | P0       | S    | 4.1        |
-| 4.5 | Phase close: audit, dashboards, PR + Copilot review, merge   | 📋 ToDo | P0       | S    | 4.1-4.4    |
+| --- | ---------------------------------------------------------- | ------- | -------- | ---- | ---------- |
+| 4.1 | Branch + listing: prefix, pagination, folders              | 📋 ToDo | P0       | M    | none       |
+| 4.2 | Detail: head, exists, public URLs (plain + CDN)            | 📋 ToDo | P0       | S    | 4.1        |
+| 4.3 | Deletion: idempotent single + chunked bulk with failures   | 📋 ToDo | P0       | M    | 4.1        |
+| 4.4 | Copy: same-bucket rename + archive cross-bucket            | 📋 ToDo | P0       | S    | 4.1        |
+| 4.5 | Phase close: audit, dashboards, PR + Copilot review, merge | 📋 ToDo | P0       | S    | 4.1-4.4    |
 
 ## Tasks
 
@@ -63,7 +63,7 @@ the seeded objects deterministically.
 
 #### Agent prompt
 
-````
+```
 You are a senior NestJS engineer implementing paged object listing.
 
 PROJECT: nest-storage-example, reference app for @bymax-one/nest-storage. list() wraps S3
@@ -106,7 +106,7 @@ Completion Protocol:
 2. Update the P4 row in docs/DEVELOPMENT_PLAN.md §1 and the docs/tasks/README.md mirror.
 3. Append `- 4.1 ✅ YYYY-MM-DD: <summary>` to the Completion log.
 4. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -135,7 +135,7 @@ plain and CDN forms.
 
 #### Agent prompt
 
-````
+```
 You are a senior NestJS engineer implementing object detail endpoints.
 
 PROJECT: nest-storage-example. head() returns ObjectMetadata; exists() is boolean on 404;
@@ -174,7 +174,7 @@ Completion Protocol:
 2. Update the P4 row in docs/DEVELOPMENT_PLAN.md §1 and the docs/tasks/README.md mirror.
 3. Append `- 4.2 ✅ YYYY-MM-DD: <summary>` to the Completion log.
 4. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -203,7 +203,7 @@ with the `{ deleted, failed }` report rendered verbatim.
 
 #### Agent prompt
 
-````
+```
 You are a senior NestJS engineer implementing deletion endpoints.
 
 PROJECT: nest-storage-example. delete() is idempotent (warn, not throw, on missing keys);
@@ -244,7 +244,7 @@ Completion Protocol:
 2. Update the P4 row in docs/DEVELOPMENT_PLAN.md §1 and the docs/tasks/README.md mirror.
 3. Append `- 4.3 ✅ YYYY-MM-DD: <summary>` to the Completion log.
 4. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -273,7 +273,7 @@ Completion Protocol:
 
 #### Agent prompt
 
-````
+```
 You are a senior NestJS engineer implementing server-side object copy.
 
 PROJECT: nest-storage-example. copy() performs server-side CopyObject (no bytes through the app),
@@ -313,7 +313,7 @@ Completion Protocol:
 2. Update the P4 row in docs/DEVELOPMENT_PLAN.md §1 and the docs/tasks/README.md mirror.
 3. Append `- 4.4 ✅ YYYY-MM-DD: <summary>` to the Completion log.
 4. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -339,7 +339,7 @@ Audit the phase Definition of Done, sync dashboards, PR + GitHub Copilot review,
 
 #### Agent prompt
 
-````
+```
 You are a senior release engineer closing a development phase.
 
 PROJECT: nest-storage-example. Repo: github.com/bymaxone/nest-storage-example.
@@ -377,7 +377,7 @@ Completion Protocol:
 2. Update plan §1 + README mirror.
 3. Append `- 4.5 ✅ YYYY-MM-DD: phase merged in PR #<n>`.
 4. Commit dashboards on main: `docs(plan): mark P4 complete`.
-````
+```
 
 ## Completion log
 

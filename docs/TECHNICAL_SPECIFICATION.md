@@ -165,14 +165,14 @@ module, `Symbol()` injection tokens, `dependencies: {}` (everything is a peer).
 
 ### 4.1 Public API inventory (server subpath `.`)
 
-| Kind      | Export                                                                                                                                                                                                        |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Module    | `BymaxStorageModule` (`forRoot` / `forRootAsync`)                                                                                                                                                              |
-| Services  | `StorageService`, `SignedUrlService`                                                                                                                                                                           |
-| Tokens    | `BYMAX_STORAGE_OPTIONS`, `BYMAX_STORAGE_S3_CLIENT`, `BYMAX_STORAGE_UPLOAD_VALIDATORS`, `BYMAX_STORAGE_FILE_SCANNER`, `BYMAX_STORAGE_LOGGER`                                                                    |
-| Interfaces| `BymaxStorageModuleOptions`, `UploadOptions`, `UploadResult`, `DownloadOptions`, `ListOptions`, `ListResult`, `SignedGetUrlOptions`, `SignedPutUrlOptions`, `SignedUrlResult`, `ObjectMetadata`, `IUploadValidator`, `IFileScanner`, `FileScanResult`, `ProviderRecipe`, `StorageErrorResponse` |
-| Errors    | `StorageException`, `STORAGE_ERROR_CODES`                                                                                                                                                                      |
-| Helpers   | `providerRecipes` (aws, digitalOceanSpaces, cloudflareR2, backblazeB2, minio, wasabi), `NoOpUploadValidator`, `NoOpFileScanner`                                                                                 |
+| Kind       | Export                                                                                                                                                                                                                                                                                          |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Module     | `BymaxStorageModule` (`forRoot` / `forRootAsync`)                                                                                                                                                                                                                                               |
+| Services   | `StorageService`, `SignedUrlService`                                                                                                                                                                                                                                                            |
+| Tokens     | `BYMAX_STORAGE_OPTIONS`, `BYMAX_STORAGE_S3_CLIENT`, `BYMAX_STORAGE_UPLOAD_VALIDATORS`, `BYMAX_STORAGE_FILE_SCANNER`, `BYMAX_STORAGE_LOGGER`                                                                                                                                                     |
+| Interfaces | `BymaxStorageModuleOptions`, `UploadOptions`, `UploadResult`, `DownloadOptions`, `ListOptions`, `ListResult`, `SignedGetUrlOptions`, `SignedPutUrlOptions`, `SignedUrlResult`, `ObjectMetadata`, `IUploadValidator`, `IFileScanner`, `FileScanResult`, `ProviderRecipe`, `StorageErrorResponse` |
+| Errors     | `StorageException`, `STORAGE_ERROR_CODES`                                                                                                                                                                                                                                                       |
+| Helpers    | `providerRecipes` (aws, digitalOceanSpaces, cloudflareR2, backblazeB2, minio, wasabi), `NoOpUploadValidator`, `NoOpFileScanner`                                                                                                                                                                 |
 
 `StorageService` methods: `upload`, `download`, `downloadBuffer`, `delete`, `deleteMany`, `list`,
 `head`, `exists`, `copy`, `getPublicUrl`. `SignedUrlService` methods: `getDownloadUrl`,
@@ -187,30 +187,30 @@ Zero-dependency types and constants for frontends and workers: `UploadResult`, `
 
 ### 4.3 Key defaults this example makes visible
 
-| Concern         | Default                                                            | Where demonstrated |
-| --------------- | ------------------------------------------------------------------ | ------------------ |
-| Signed URL TTL  | GET/PUT 300 s; `maxTtlSeconds` 604800 s (SigV4 hard cap, clamped)  | §12.4, §17         |
-| Multipart       | threshold 5 MiB, part 5 MiB, queueSize 4                           | §12.2              |
-| Headers         | `Cache-Control: public, max-age=31536000, immutable`, `inline`     | §12.1              |
-| Scanner         | `mode: 'pre-upload'`, `rejectOnUnknown: false`                     | §16                |
-| Checksums       | `WHEN_SUPPORTED` (SDK default); MinIO recipe opts out to `WHEN_REQUIRED` | §12.7        |
-| Network         | `maxAttempts: 3`, `requestTimeoutMs: 30000`                        | §12.8              |
-| Idempotency     | in-memory LRU, 1000 entries, 24 h TTL                              | §12.3              |
+| Concern        | Default                                                                  | Where demonstrated |
+| -------------- | ------------------------------------------------------------------------ | ------------------ |
+| Signed URL TTL | GET/PUT 300 s; `maxTtlSeconds` 604800 s (SigV4 hard cap, clamped)        | §12.4, §17         |
+| Multipart      | threshold 5 MiB, part 5 MiB, queueSize 4                                 | §12.2              |
+| Headers        | `Cache-Control: public, max-age=31536000, immutable`, `inline`           | §12.1              |
+| Scanner        | `mode: 'pre-upload'`, `rejectOnUnknown: false`                           | §16                |
+| Checksums      | `WHEN_SUPPORTED` (SDK default); MinIO recipe opts out to `WHEN_REQUIRED` | §12.7              |
+| Network        | `maxAttempts: 3`, `requestTimeoutMs: 30000`                              | §12.8              |
+| Idempotency    | in-memory LRU, 1000 entries, 24 h TTL                                    | §12.3              |
 
 ---
 
 ## 5 · Tech Stack
 
-| Layer      | Choice                                                                                       |
-| ---------- | -------------------------------------------------------------------------------------------- |
-| Backend    | NestJS 11 (Express), TypeScript 5.9 strict, Zod DTOs (no Swagger, JSDoc-documented controllers) |
-| Library    | `@bymax-one/nest-storage@^0.1.0` (local `file:` link until published, then npm)               |
-| SDK peers  | `@aws-sdk/client-s3`, `@aws-sdk/lib-storage`, `@aws-sdk/s3-request-presigner` (all `^3.700.0`) |
-| Frontend   | Next.js 16, React 19, Tailwind v4, shadcn `new-york`, TanStack Query, nuqs, Sonner            |
-| Storage    | MinIO (S3-compatible, Docker), three buckets (§15)                                            |
-| Testing    | Jest (api) + Vitest (web) at 100% coverage, supertest + Testcontainers MinIO e2e, Stryker, Playwright smoke |
-| Tooling    | pnpm workspaces, ESLint 9 flat, Prettier 3, husky + commitlint + lint-staged, Renovate        |
-| Runtime    | Node `>=24`                                                                                   |
+| Layer     | Choice                                                                                                      |
+| --------- | ----------------------------------------------------------------------------------------------------------- |
+| Backend   | NestJS 11 (Express), TypeScript 5.9 strict, Zod DTOs (no Swagger, JSDoc-documented controllers)             |
+| Library   | `@bymax-one/nest-storage@^0.1.0` (local `file:` link until published, then npm)                             |
+| SDK peers | `@aws-sdk/client-s3`, `@aws-sdk/lib-storage`, `@aws-sdk/s3-request-presigner` (all `^3.700.0`)              |
+| Frontend  | Next.js 16, React 19, Tailwind v4, shadcn `new-york`, TanStack Query, nuqs, Sonner                          |
+| Storage   | MinIO (S3-compatible, Docker), three buckets (§15)                                                          |
+| Testing   | Jest (api) + Vitest (web) at 100% coverage, supertest + Testcontainers MinIO e2e, Stryker, Playwright smoke |
+| Tooling   | pnpm workspaces, ESLint 9 flat, Prettier 3, husky + commitlint + lint-staged, Renovate                      |
+| Runtime   | Node `>=24`                                                                                                 |
 
 ---
 
@@ -256,83 +256,83 @@ fails CI if a library export has no demonstration.
 
 ### 7.1 Module, registration & configuration
 
-| #  | Library surface                                              | Demonstration                                                             |
-| -- | ------------------------------------------------------------ | ------------------------------------------------------------------------- |
-| 1  | `BymaxStorageModule.forRootAsync` (env-driven factory)        | canonical wiring in `config/storage.config.ts` (the copy-paste reference) |
-| 2  | `BymaxStorageModule.forRoot` (sync)                           | e2e boot path with inline options                                          |
-| 3  | Required-options validation at init                           | errors-demo: boot probe rendering `STORAGE_INVALID_CONFIG`                 |
-| 4  | Missing credentials tolerated at init                         | system page: "not configured" mode, ops return `STORAGE_NOT_CONFIGURED` 503 |
-| 5  | `providerRecipes` (aws, digitalOceanSpaces, cloudflareR2, backblazeB2, minio, wasabi) | system page recipe explorer; MinIO recipe runs live       |
-| 6  | `forcePathStyle`                                              | MinIO recipe (`true`) vs virtual-hosted rendering                          |
-| 7  | `publicBaseUrl` / `cdnBaseUrl` → `getPublicUrl()`             | vault detail: public URL with and without CDN base                         |
-| 8  | `defaultPublicRead` + modern-S3 ACL honesty                   | §12.6 honest demo (ACL caveat surfaced, not hidden)                        |
-| 9  | `keyPrefix` (global, per module instance)                     | tenants page: instance prefix + app-level tenant prefixes                  |
-| 10 | `defaultCacheControl` / `defaultContentDisposition`           | upload lab: header inspector on `head()` after upload                      |
-| 11 | `signedUrls` defaults + `maxTtlSeconds` init clamp            | signed page: TTL clamp visualization (§12.4)                               |
-| 12 | `multipart` threshold / partSize / queueSize                  | upload lab: strategy indicator (§12.2)                                     |
-| 13 | `validation` block enables `ValidationService`                | validation lab                                                             |
-| 14 | `scanner` block enables `FileScannerService`                  | scanner lab                                                                |
-| 15 | `serverSideEncryption: 'AES256'` global                       | upload lab: SSE column on head metadata                                    |
-| 16 | `kmsKeyId` + `'aws:kms'`                                      | documented configuration demo (MinIO KMS caveat noted)                     |
-| 17 | `requestChecksumCalculation` / `responseChecksumValidation`   | §12.7: the checksum trap, `WHEN_REQUIRED` live on MinIO                    |
-| 18 | `maxAttempts` / `requestTimeoutMs`                            | errors-demo: timeout trigger → `STORAGE_TIMEOUT` (§12.8)                   |
-| 19 | Injection tokens (`BYMAX_STORAGE_OPTIONS`, `_LOGGER`)         | system config introspection endpoint                                       |
+| #   | Library surface                                                                       | Demonstration                                                               |
+| --- | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| 1   | `BymaxStorageModule.forRootAsync` (env-driven factory)                                | canonical wiring in `config/storage.config.ts` (the copy-paste reference)   |
+| 2   | `BymaxStorageModule.forRoot` (sync)                                                   | e2e boot path with inline options                                           |
+| 3   | Required-options validation at init                                                   | errors-demo: boot probe rendering `STORAGE_INVALID_CONFIG`                  |
+| 4   | Missing credentials tolerated at init                                                 | system page: "not configured" mode, ops return `STORAGE_NOT_CONFIGURED` 503 |
+| 5   | `providerRecipes` (aws, digitalOceanSpaces, cloudflareR2, backblazeB2, minio, wasabi) | system page recipe explorer; MinIO recipe runs live                         |
+| 6   | `forcePathStyle`                                                                      | MinIO recipe (`true`) vs virtual-hosted rendering                           |
+| 7   | `publicBaseUrl` / `cdnBaseUrl` → `getPublicUrl()`                                     | vault detail: public URL with and without CDN base                          |
+| 8   | `defaultPublicRead` + modern-S3 ACL honesty                                           | §12.6 honest demo (ACL caveat surfaced, not hidden)                         |
+| 9   | `keyPrefix` (global, per module instance)                                             | tenants page: instance prefix + app-level tenant prefixes                   |
+| 10  | `defaultCacheControl` / `defaultContentDisposition`                                   | upload lab: header inspector on `head()` after upload                       |
+| 11  | `signedUrls` defaults + `maxTtlSeconds` init clamp                                    | signed page: TTL clamp visualization (§12.4)                                |
+| 12  | `multipart` threshold / partSize / queueSize                                          | upload lab: strategy indicator (§12.2)                                      |
+| 13  | `validation` block enables `ValidationService`                                        | validation lab                                                              |
+| 14  | `scanner` block enables `FileScannerService`                                          | scanner lab                                                                 |
+| 15  | `serverSideEncryption: 'AES256'` global                                               | upload lab: SSE column on head metadata                                     |
+| 16  | `kmsKeyId` + `'aws:kms'`                                                              | documented configuration demo (MinIO KMS caveat noted)                      |
+| 17  | `requestChecksumCalculation` / `responseChecksumValidation`                           | §12.7: the checksum trap, `WHEN_REQUIRED` live on MinIO                     |
+| 18  | `maxAttempts` / `requestTimeoutMs`                                                    | errors-demo: timeout trigger → `STORAGE_TIMEOUT` (§12.8)                    |
+| 19  | Injection tokens (`BYMAX_STORAGE_OPTIONS`, `_LOGGER`)                                 | system config introspection endpoint                                        |
 
 ### 7.2 `StorageService`
 
-| #  | Library surface                                   | Demonstration                                                        |
-| -- | ------------------------------------------------- | -------------------------------------------------------------------- |
-| 20 | `upload()` single-shot (Buffer)                   | upload lab: small file, `multipart: false` in result                  |
-| 21 | `upload()` multipart (size ≥ threshold)           | upload lab: large file, `multipart: true`, part progress              |
-| 22 | `upload()` stream with known `size`               | upload lab: stream mode                                               |
-| 23 | `upload()` stream with unknown size → multipart   | upload lab: forced-multipart indicator                                |
-| 24 | `onProgress` events                               | upload lab: live progress bar (loaded/total/part)                     |
-| 25 | `idempotencyKey` → `fromIdempotencyCache`         | upload lab: repeat-upload demo (§12.3)                                |
-| 26 | Automatic headers (cache, disposition, x-amz-meta)| vault detail metadata tab                                             |
-| 27 | Per-upload SSE override incl. `'NONE'` sentinel   | upload lab: SSE selector                                              |
-| 28 | `download()` stream + metadata                    | vault: stream download proxy route                                    |
-| 29 | `downloadBuffer()` (small files)                  | vault: inline preview (images)                                        |
-| 30 | `download({ range })`                             | vault detail: first-KiB hex preview                                   |
-| 31 | `download({ versionId })`                         | versioned bucket demo (§15)                                           |
-| 32 | `delete()` idempotent                             | vault: delete (second delete logs warning, no throw)                  |
-| 33 | `deleteMany()` chunked, per-key failures          | vault: bulk delete with partial-failure rendering                     |
-| 34 | `list()` prefix / maxKeys / continuationToken     | vault browser pagination                                              |
-| 35 | `list({ delimiter: '/' })` + `commonPrefixes`     | vault folder navigation                                               |
-| 36 | `head()`                                          | vault detail drawer                                                   |
-| 37 | `exists()`                                        | vault: existence check on rename/copy targets                         |
-| 38 | `copy()` same-bucket and cross-bucket             | vault: copy-to-archive action (§15)                                   |
-| 39 | `getPublicUrl()`                                  | vault detail: unsigned URL rendering                                  |
+| #   | Library surface                                    | Demonstration                                            |
+| --- | -------------------------------------------------- | -------------------------------------------------------- |
+| 20  | `upload()` single-shot (Buffer)                    | upload lab: small file, `multipart: false` in result     |
+| 21  | `upload()` multipart (size ≥ threshold)            | upload lab: large file, `multipart: true`, part progress |
+| 22  | `upload()` stream with known `size`                | upload lab: stream mode                                  |
+| 23  | `upload()` stream with unknown size → multipart    | upload lab: forced-multipart indicator                   |
+| 24  | `onProgress` events                                | upload lab: live progress bar (loaded/total/part)        |
+| 25  | `idempotencyKey` → `fromIdempotencyCache`          | upload lab: repeat-upload demo (§12.3)                   |
+| 26  | Automatic headers (cache, disposition, x-amz-meta) | vault detail metadata tab                                |
+| 27  | Per-upload SSE override incl. `'NONE'` sentinel    | upload lab: SSE selector                                 |
+| 28  | `download()` stream + metadata                     | vault: stream download proxy route                       |
+| 29  | `downloadBuffer()` (small files)                   | vault: inline preview (images)                           |
+| 30  | `download({ range })`                              | vault detail: first-KiB hex preview                      |
+| 31  | `download({ versionId })`                          | versioned bucket demo (§15)                              |
+| 32  | `delete()` idempotent                              | vault: delete (second delete logs warning, no throw)     |
+| 33  | `deleteMany()` chunked, per-key failures           | vault: bulk delete with partial-failure rendering        |
+| 34  | `list()` prefix / maxKeys / continuationToken      | vault browser pagination                                 |
+| 35  | `list({ delimiter: '/' })` + `commonPrefixes`      | vault folder navigation                                  |
+| 36  | `head()`                                           | vault detail drawer                                      |
+| 37  | `exists()`                                         | vault: existence check on rename/copy targets            |
+| 38  | `copy()` same-bucket and cross-bucket              | vault: copy-to-archive action (§15)                      |
+| 39  | `getPublicUrl()`                                   | vault detail: unsigned URL rendering                     |
 
 ### 7.3 `SignedUrlService` & direct upload
 
-| #  | Library surface                                        | Demonstration                                                    |
-| -- | ------------------------------------------------------ | ----------------------------------------------------------------- |
-| 40 | `getDownloadUrl()` + response overrides                | signed page: attachment filename override, expiry countdown       |
-| 41 | Silent TTL clamp (request above `maxTtlSeconds`)       | signed page: requested vs effective TTL rendered side by side     |
-| 42 | `ttlSeconds ≤ 0` → `STORAGE_SIGNED_URL_TTL_INVALID`    | signed page + errors-demo                                         |
-| 43 | `getUploadUrl()` + `maxSizeBytes` length policy        | direct upload page: browser PUT straight to MinIO                 |
-| 44 | `SignedUrlResult.requiredHeaders` honored              | direct upload: headers echoed and applied by the client           |
-| 45 | `getMultipartUploadUrls()` (uploadId, partUrls, completeUrl) | direct upload: big-file browser multipart lab               |
-| 46 | Signed PUT bypasses local validation (honest boundary) | §12.5: post-upload `head()` + scanner verify pattern              |
+| #   | Library surface                                              | Demonstration                                                 |
+| --- | ------------------------------------------------------------ | ------------------------------------------------------------- |
+| 40  | `getDownloadUrl()` + response overrides                      | signed page: attachment filename override, expiry countdown   |
+| 41  | Silent TTL clamp (request above `maxTtlSeconds`)             | signed page: requested vs effective TTL rendered side by side |
+| 42  | `ttlSeconds ≤ 0` → `STORAGE_SIGNED_URL_TTL_INVALID`          | signed page + errors-demo                                     |
+| 43  | `getUploadUrl()` + `maxSizeBytes` length policy              | direct upload page: browser PUT straight to MinIO             |
+| 44  | `SignedUrlResult.requiredHeaders` honored                    | direct upload: headers echoed and applied by the client       |
+| 45  | `getMultipartUploadUrls()` (uploadId, partUrls, completeUrl) | direct upload: big-file browser multipart lab                 |
+| 46  | Signed PUT bypasses local validation (honest boundary)       | §12.5: post-upload `head()` + scanner verify pattern          |
 
 ### 7.4 Validation, scanner, errors & shared subpath
 
-| #  | Library surface                                        | Demonstration                                                    |
-| -- | ------------------------------------------------------ | ----------------------------------------------------------------- |
-| 47 | MIME whitelist with wildcards                          | validation lab: `image/*` pass, `application/zip` reject 415      |
-| 48 | `maxSizeBytes` → `STORAGE_SIZE_EXCEEDED` 413           | validation lab                                                    |
-| 49 | `IUploadValidator` + `readBytes` magic-byte sniffing   | validation lab: PDF magic-byte validator (declared PDF, fake bytes) |
-| 50 | `NoOpUploadValidator` default                          | config introspection: validators array when none configured       |
-| 51 | `IFileScanner` + `FileScanResult` (clean/infected/unknown) | scanner lab: marker-based stub verdicts                       |
-| 52 | Scanner `mode: 'pre-upload'` vs `'post-upload'`        | scanner lab: mode toggle, post-upload removal proof               |
-| 53 | `rejectOnUnknown` both values                          | scanner lab: `STORAGE_SCAN_INCONCLUSIVE` vs pass-with-warning     |
-| 54 | `NoOpFileScanner` default                              | config introspection                                              |
-| 55 | Key normalization + path traversal guard               | errors-demo: `../etc/passwd` → `STORAGE_KEY_INVALID` 400          |
-| 56 | All `STORAGE_ERROR_CODES` + `StorageException` envelope| error explorer: every code triggered on demand (§18)              |
-| 57 | AWS SDK → `StorageException` mapping                   | errors-demo: not-found, provider-error, timeout paths             |
-| 58 | Raw client via `BYMAX_STORAGE_S3_CLIENT`               | system: advanced ops (bucket versioning status) with trade-off note |
-| 59 | `./shared` zero-dependency browser import              | `apps/web` probe + typed api-client error codes                   |
-| 60 | Shared constants (default whitelists, TTLs, threshold) | validation lab + upload lab render the constants they enforce     |
+| #   | Library surface                                            | Demonstration                                                       |
+| --- | ---------------------------------------------------------- | ------------------------------------------------------------------- |
+| 47  | MIME whitelist with wildcards                              | validation lab: `image/*` pass, `application/zip` reject 415        |
+| 48  | `maxSizeBytes` → `STORAGE_SIZE_EXCEEDED` 413               | validation lab                                                      |
+| 49  | `IUploadValidator` + `readBytes` magic-byte sniffing       | validation lab: PDF magic-byte validator (declared PDF, fake bytes) |
+| 50  | `NoOpUploadValidator` default                              | config introspection: validators array when none configured         |
+| 51  | `IFileScanner` + `FileScanResult` (clean/infected/unknown) | scanner lab: marker-based stub verdicts                             |
+| 52  | Scanner `mode: 'pre-upload'` vs `'post-upload'`            | scanner lab: mode toggle, post-upload removal proof                 |
+| 53  | `rejectOnUnknown` both values                              | scanner lab: `STORAGE_SCAN_INCONCLUSIVE` vs pass-with-warning       |
+| 54  | `NoOpFileScanner` default                                  | config introspection                                                |
+| 55  | Key normalization + path traversal guard                   | errors-demo: `../etc/passwd` → `STORAGE_KEY_INVALID` 400            |
+| 56  | All `STORAGE_ERROR_CODES` + `StorageException` envelope    | error explorer: every code triggered on demand (§18)                |
+| 57  | AWS SDK → `StorageException` mapping                       | errors-demo: not-found, provider-error, timeout paths               |
+| 58  | Raw client via `BYMAX_STORAGE_S3_CLIENT`                   | system: advanced ops (bucket versioning status) with trade-off note |
+| 59  | `./shared` zero-dependency browser import                  | `apps/web` probe + typed api-client error codes                     |
+| 60  | Shared constants (default whitelists, TTLs, threshold)     | validation lab + upload lab render the constants they enforce       |
 
 ---
 
@@ -358,10 +358,10 @@ are declared in `apps/api` so they resolve to a single copy. `apps/web` imports 
 
 ### 8.2 Subpath usage
 
-| Subpath    | Used by    | Imports                                                          |
-| ---------- | ---------- | ---------------------------------------------------------------- |
-| `.`        | `apps/api` | module, services, tokens, interfaces, errors, recipes, helpers    |
-| `./shared` | both apps  | `STORAGE_ERROR_CODES`, result types, default whitelists/TTLs      |
+| Subpath    | Used by    | Imports                                                        |
+| ---------- | ---------- | -------------------------------------------------------------- |
+| `.`        | `apps/api` | module, services, tokens, interfaces, errors, recipes, helpers |
+| `./shared` | both apps  | `STORAGE_ERROR_CODES`, result types, default whitelists/TTLs   |
 
 ---
 
@@ -369,29 +369,29 @@ are declared in `apps/api` so they resolve to a single copy. `apps/web` imports 
 
 ### 9.1 Environment variables (`apps/api`)
 
-| Variable                        | Default (dev)             | Purpose                                             |
-| ------------------------------- | ------------------------- | ---------------------------------------------------- |
-| `NODE_ENV`                      | `development`             | mode switches (pretty errors, scanner defaults)      |
-| `PORT`                          | `3001`                    | API port                                             |
-| `WEB_ORIGIN`                    | `http://localhost:3000`   | CORS                                                 |
-| `STORAGE_ENDPOINT`              | `http://localhost:9000`   | MinIO S3 endpoint                                    |
-| `STORAGE_REGION`                | `us-east-1`               | region (MinIO accepts any)                           |
-| `STORAGE_BUCKET`                | `vault`                   | default bucket                                       |
-| `STORAGE_ARCHIVE_BUCKET`        | `vault-archive`           | cross-bucket copy target                             |
-| `STORAGE_VERSIONED_BUCKET`      | `vault-versioned`         | versioning demo                                      |
-| `STORAGE_ACCESS_KEY_ID`         | `minioadmin`              | dev credentials (never real keys)                    |
-| `STORAGE_SECRET_ACCESS_KEY`     | `minioadmin`              | dev credentials                                      |
-| `STORAGE_FORCE_PATH_STYLE`      | `true`                    | MinIO path-style                                     |
-| `STORAGE_PUBLIC_BASE_URL`       | `http://localhost:9000/vault` | unsigned public URLs                             |
-| `STORAGE_CDN_BASE_URL`          | (empty)                   | when set, `getPublicUrl` switches to CDN             |
-| `STORAGE_KEY_PREFIX`            | `storage-example`         | global instance prefix                               |
-| `STORAGE_SSE`                   | (empty)                   | `AES256` to enable global SSE (MinIO supports SSE-S3 when KMS is configured; documented) |
-| `STORAGE_CHECKSUM_MODE`         | `WHEN_REQUIRED`           | the non-AWS checksum opt-out (matrix #17)            |
-| `STORAGE_MAX_TTL_SECONDS`       | `3600`                    | signed-URL cap for the clamp demo                    |
-| `STORAGE_MULTIPART_THRESHOLD`   | `5242880`                 | 5 MiB threshold                                      |
-| `SCANNER_MODE`                  | `pre-upload`              | scanner lab default                                  |
-| `SCANNER_REJECT_ON_UNKNOWN`     | `false`                   | scanner lab default                                  |
-| `UPLOAD_MAX_SIZE_BYTES`         | `26214400`                | 25 MiB validation cap                                |
+| Variable                      | Default (dev)                 | Purpose                                                                                  |
+| ----------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------- |
+| `NODE_ENV`                    | `development`                 | mode switches (pretty errors, scanner defaults)                                          |
+| `PORT`                        | `3001`                        | API port                                                                                 |
+| `WEB_ORIGIN`                  | `http://localhost:3000`       | CORS                                                                                     |
+| `STORAGE_ENDPOINT`            | `http://localhost:9000`       | MinIO S3 endpoint                                                                        |
+| `STORAGE_REGION`              | `us-east-1`                   | region (MinIO accepts any)                                                               |
+| `STORAGE_BUCKET`              | `vault`                       | default bucket                                                                           |
+| `STORAGE_ARCHIVE_BUCKET`      | `vault-archive`               | cross-bucket copy target                                                                 |
+| `STORAGE_VERSIONED_BUCKET`    | `vault-versioned`             | versioning demo                                                                          |
+| `STORAGE_ACCESS_KEY_ID`       | `minioadmin`                  | dev credentials (never real keys)                                                        |
+| `STORAGE_SECRET_ACCESS_KEY`   | `minioadmin`                  | dev credentials                                                                          |
+| `STORAGE_FORCE_PATH_STYLE`    | `true`                        | MinIO path-style                                                                         |
+| `STORAGE_PUBLIC_BASE_URL`     | `http://localhost:9000/vault` | unsigned public URLs                                                                     |
+| `STORAGE_CDN_BASE_URL`        | (empty)                       | when set, `getPublicUrl` switches to CDN                                                 |
+| `STORAGE_KEY_PREFIX`          | `storage-example`             | global instance prefix                                                                   |
+| `STORAGE_SSE`                 | (empty)                       | `AES256` to enable global SSE (MinIO supports SSE-S3 when KMS is configured; documented) |
+| `STORAGE_CHECKSUM_MODE`       | `WHEN_REQUIRED`               | the non-AWS checksum opt-out (matrix #17)                                                |
+| `STORAGE_MAX_TTL_SECONDS`     | `3600`                        | signed-URL cap for the clamp demo                                                        |
+| `STORAGE_MULTIPART_THRESHOLD` | `5242880`                     | 5 MiB threshold                                                                          |
+| `SCANNER_MODE`                | `pre-upload`                  | scanner lab default                                                                      |
+| `SCANNER_REJECT_ON_UNKNOWN`   | `false`                       | scanner lab default                                                                      |
+| `UPLOAD_MAX_SIZE_BYTES`       | `26214400`                    | 25 MiB validation cap                                                                    |
 
 Web: `NEXT_PUBLIC_API_URL` (`http://localhost:3001`). Every variable is Zod-validated in
 `apps/api/src/config/env.schema.ts`; the app fails fast with an aggregated report on boot.
@@ -483,18 +483,18 @@ BymaxStorageModule.forRootAsync({
 
 ### 10.1 Module map
 
-| Module           | Responsibility                                                                  |
-| ---------------- | -------------------------------------------------------------------------------- |
-| `config/`        | env schema (Zod) + `storage.config.ts` factory                                    |
-| `common/`        | `StorageExceptionFilter` (`@Catch(StorageException)` → envelope pass-through), `ZodValidationPipe` |
-| `vault/`         | browse (list/delimiter), detail (head), download (stream/buffer/range), delete/deleteMany, copy, public URL |
-| `uploads/`       | server-side uploads: single, multipart, stream, progress, idempotency, SSE override |
-| `signed/`        | presigned GET/PUT/multipart issuance + post-upload confirm/verify                  |
-| `validation-lab/`| endpoints that intentionally violate MIME/size/magic-byte rules                    |
-| `scanner-lab/`   | marker-driven scan verdicts, mode + rejectOnUnknown toggles                        |
-| `tenants/`       | tenant-prefixed keys, per-tenant listing and clearing                              |
-| `errors-demo/`   | trigger every `STORAGE_*` code deterministically                                   |
-| `system/`        | health, config introspection (resolved options, redacted), provider recipes, raw-client advanced ops |
+| Module            | Responsibility                                                                                              |
+| ----------------- | ----------------------------------------------------------------------------------------------------------- |
+| `config/`         | env schema (Zod) + `storage.config.ts` factory                                                              |
+| `common/`         | `StorageExceptionFilter` (`@Catch(StorageException)` → envelope pass-through), `ZodValidationPipe`          |
+| `vault/`          | browse (list/delimiter), detail (head), download (stream/buffer/range), delete/deleteMany, copy, public URL |
+| `uploads/`        | server-side uploads: single, multipart, stream, progress, idempotency, SSE override                         |
+| `signed/`         | presigned GET/PUT/multipart issuance + post-upload confirm/verify                                           |
+| `validation-lab/` | endpoints that intentionally violate MIME/size/magic-byte rules                                             |
+| `scanner-lab/`    | marker-driven scan verdicts, mode + rejectOnUnknown toggles                                                 |
+| `tenants/`        | tenant-prefixed keys, per-tenant listing and clearing                                                       |
+| `errors-demo/`    | trigger every `STORAGE_*` code deterministically                                                            |
+| `system/`         | health, config introspection (resolved options, redacted), provider recipes, raw-client advanced ops        |
 
 ### 10.2 House style
 
@@ -521,54 +521,54 @@ the provider already knows (metadata lives on the objects).
 
 **Vault (browse & lifecycle)**
 
-| Route                          | Library calls                         | Notes                                             |
-| ------------------------------ | ------------------------------------- | -------------------------------------------------- |
-| `GET /vault`                   | `list()`                              | `prefix`, `delimiter`, `maxKeys`, `cursor` query; returns `{ objects, commonPrefixes, nextCursor }` |
-| `GET /vault/object`            | `head()`                              | full `ObjectMetadata` for the detail drawer        |
-| `GET /vault/object/download`   | `download()`                          | streams with `Content-Type`/`Length`/`Disposition` from metadata |
-| `GET /vault/object/preview`    | `downloadBuffer()`                    | small images only, size-guarded at 10 MiB          |
-| `GET /vault/object/range`      | `download({ range })`                 | `bytes=0-1023`, returns base64 for the hex panel   |
-| `GET /vault/object/version`    | `download({ versionId })`             | versioned bucket only                              |
-| `DELETE /vault/object`         | `delete()`                            | idempotent; repeat delete returns 200 with a `warned` flag |
-| `POST /vault/bulk-delete`      | `deleteMany()`                        | returns `{ deleted, failed }` verbatim             |
-| `POST /vault/copy`             | `copy()` (+ `exists()` precheck)      | `destinationBucket` optional (archive)             |
-| `GET /vault/object/public-url` | `getPublicUrl()`                      | renders both plain and CDN forms                   |
+| Route                          | Library calls                    | Notes                                                                                               |
+| ------------------------------ | -------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `GET /vault`                   | `list()`                         | `prefix`, `delimiter`, `maxKeys`, `cursor` query; returns `{ objects, commonPrefixes, nextCursor }` |
+| `GET /vault/object`            | `head()`                         | full `ObjectMetadata` for the detail drawer                                                         |
+| `GET /vault/object/download`   | `download()`                     | streams with `Content-Type`/`Length`/`Disposition` from metadata                                    |
+| `GET /vault/object/preview`    | `downloadBuffer()`               | small images only, size-guarded at 10 MiB                                                           |
+| `GET /vault/object/range`      | `download({ range })`            | `bytes=0-1023`, returns base64 for the hex panel                                                    |
+| `GET /vault/object/version`    | `download({ versionId })`        | versioned bucket only                                                                               |
+| `DELETE /vault/object`         | `delete()`                       | idempotent; repeat delete returns 200 with a `warned` flag                                          |
+| `POST /vault/bulk-delete`      | `deleteMany()`                   | returns `{ deleted, failed }` verbatim                                                              |
+| `POST /vault/copy`             | `copy()` (+ `exists()` precheck) | `destinationBucket` optional (archive)                                                              |
+| `GET /vault/object/public-url` | `getPublicUrl()`                 | renders both plain and CDN forms                                                                    |
 
 **Uploads (server-side)**
 
-| Route                        | Library calls                          | Notes                                              |
-| ---------------------------- | -------------------------------------- | --------------------------------------------------- |
-| `POST /uploads/single`       | `upload()` (Buffer)                    | multer memory storage; returns `UploadResult`       |
-| `POST /uploads/multipart`    | `upload()` (size ≥ threshold)          | `onProgress` snapshots into the session store        |
-| `POST /uploads/stream`       | `upload()` (Readable)                  | `?knownSize=false` drops `size` to force multipart   |
-| `GET /uploads/sessions/:id`  | (app-level)                            | progress snapshots `{ loaded, total, part, strategy }` |
-| `POST /uploads/idempotent`   | `upload({ idempotencyKey })`           | response surfaces `fromIdempotencyCache`             |
-| `POST /uploads/sse-override` | `upload({ serverSideEncryption })`     | per-call `AES256` / `'NONE'` sentinel                |
+| Route                        | Library calls                      | Notes                                                  |
+| ---------------------------- | ---------------------------------- | ------------------------------------------------------ |
+| `POST /uploads/single`       | `upload()` (Buffer)                | multer memory storage; returns `UploadResult`          |
+| `POST /uploads/multipart`    | `upload()` (size ≥ threshold)      | `onProgress` snapshots into the session store          |
+| `POST /uploads/stream`       | `upload()` (Readable)              | `?knownSize=false` drops `size` to force multipart     |
+| `GET /uploads/sessions/:id`  | (app-level)                        | progress snapshots `{ loaded, total, part, strategy }` |
+| `POST /uploads/idempotent`   | `upload({ idempotencyKey })`       | response surfaces `fromIdempotencyCache`               |
+| `POST /uploads/sse-override` | `upload({ serverSideEncryption })` | per-call `AES256` / `'NONE'` sentinel                  |
 
 **Signed URLs & direct upload**
 
-| Route                        | Library calls                 | Notes                                                    |
-| ---------------------------- | ----------------------------- | --------------------------------------------------------- |
-| `POST /signed/download-url`  | `getDownloadUrl()`            | `responseContentDisposition` / `responseContentType` knobs |
-| `POST /signed/upload-url`    | `getUploadUrl()`              | `maxSizeBytes` length policy; echoes `requiredHeaders`     |
-| `POST /signed/multipart-urls`| `getMultipartUploadUrls()`    | `{ uploadId, partUrls, completeUrl }`                      |
-| `POST /signed/confirm`       | `head()` + scanner `scan()`   | the post-direct-upload verification pattern (§12.5)        |
+| Route                         | Library calls               | Notes                                                      |
+| ----------------------------- | --------------------------- | ---------------------------------------------------------- |
+| `POST /signed/download-url`   | `getDownloadUrl()`          | `responseContentDisposition` / `responseContentType` knobs |
+| `POST /signed/upload-url`     | `getUploadUrl()`            | `maxSizeBytes` length policy; echoes `requiredHeaders`     |
+| `POST /signed/multipart-urls` | `getMultipartUploadUrls()`  | `{ uploadId, partUrls, completeUrl }`                      |
+| `POST /signed/confirm`        | `head()` + scanner `scan()` | the post-direct-upload verification pattern (§12.5)        |
 
 **Labs, tenants, errors, system**
 
-| Route                          | Library calls                              | Notes                                        |
-| ------------------------------ | ------------------------------------------ | --------------------------------------------- |
-| `POST /validation/upload`      | `upload()` through the validation pipeline | `?path=mime\|size\|magic` selects the failing stage |
-| `POST /scanner/upload`         | `upload()` through the scanner             | verdict driven by content marker (§16)        |
-| `GET /scanner/config`          | (introspection)                            | active mode + `rejectOnUnknown`               |
-| `GET /tenants/:t/objects`      | `list({ prefix })`                         | tenant prefix under the instance `keyPrefix`  |
-| `POST /tenants/:t/upload`      | `upload()`                                 | tenant-composed key                           |
-| `DELETE /tenants/:t/objects`   | `list()` + `deleteMany()`                  | clears one tenant, proves isolation           |
-| `POST /errors/:code`           | varies                                     | deterministic trigger per `STORAGE_*` code    |
-| `GET /health`                  | `exists()` probe                           | `{ status, latencyMs, bucket }`               |
-| `GET /system/config`           | `BYMAX_STORAGE_OPTIONS` token              | resolved options, credentials redacted        |
-| `GET /system/recipes`          | `providerRecipes`                          | rendered per provider with quirk annotations  |
-| `GET /system/versioning`       | raw `BYMAX_STORAGE_S3_CLIENT`              | bucket versioning status (advanced-ops demo)  |
+| Route                        | Library calls                              | Notes                                               |
+| ---------------------------- | ------------------------------------------ | --------------------------------------------------- |
+| `POST /validation/upload`    | `upload()` through the validation pipeline | `?path=mime\|size\|magic` selects the failing stage |
+| `POST /scanner/upload`       | `upload()` through the scanner             | verdict driven by content marker (§16)              |
+| `GET /scanner/config`        | (introspection)                            | active mode + `rejectOnUnknown`                     |
+| `GET /tenants/:t/objects`    | `list({ prefix })`                         | tenant prefix under the instance `keyPrefix`        |
+| `POST /tenants/:t/upload`    | `upload()`                                 | tenant-composed key                                 |
+| `DELETE /tenants/:t/objects` | `list()` + `deleteMany()`                  | clears one tenant, proves isolation                 |
+| `POST /errors/:code`         | varies                                     | deterministic trigger per `STORAGE_*` code          |
+| `GET /health`                | `exists()` probe                           | `{ status, latencyMs, bucket }`                     |
+| `GET /system/config`         | `BYMAX_STORAGE_OPTIONS` token              | resolved options, credentials redacted              |
+| `GET /system/recipes`        | `providerRecipes`                          | rendered per provider with quirk annotations        |
+| `GET /system/versioning`     | raw `BYMAX_STORAGE_S3_CLIENT`              | bucket versioning status (advanced-ops demo)        |
 
 ### 11.2 Documented journeys
 
@@ -643,18 +643,18 @@ helpers that honor `SignedUrlResult.requiredHeaders`.
 
 ### 13.2 Pages
 
-| Route         | Page                                                                              |
-| ------------- | ---------------------------------------------------------------------------------- |
-| `/`           | Overview: bucket stats, config summary, quick actions, recent uploads               |
+| Route         | Page                                                                                                                                                      |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/`           | Overview: bucket stats, config summary, quick actions, recent uploads                                                                                     |
 | `/vault`      | Folder browser (delimiter navigation), virtualized object table, detail drawer (Metadata / Preview / Range hex / URLs tabs), copy-to-archive, bulk delete |
-| `/upload`     | Upload lab: drag-and-drop, strategy indicator, progress bars, idempotency card, SSE selector |
-| `/direct`     | Direct upload: signed PUT + signed multipart, required-headers inspector, confirm step |
-| `/signed`     | Signed URLs: GET link generator, TTL clamp visualization, expiry countdown           |
-| `/validation` | Validation lab: whitelist matrix, size limit, magic-byte forgery demo                |
-| `/scanner`    | Scanner lab: verdict cards (clean / infected / unknown), mode + rejectOnUnknown toggles |
-| `/tenants`    | Tenant switcher, per-tenant listing, isolation proof                                 |
-| `/errors`     | Error explorer: all 17 codes, response envelope panel                                |
-| `/system`     | Health, resolved config (redacted), provider recipes, versioning status              |
+| `/upload`     | Upload lab: drag-and-drop, strategy indicator, progress bars, idempotency card, SSE selector                                                              |
+| `/direct`     | Direct upload: signed PUT + signed multipart, required-headers inspector, confirm step                                                                    |
+| `/signed`     | Signed URLs: GET link generator, TTL clamp visualization, expiry countdown                                                                                |
+| `/validation` | Validation lab: whitelist matrix, size limit, magic-byte forgery demo                                                                                     |
+| `/scanner`    | Scanner lab: verdict cards (clean / infected / unknown), mode + rejectOnUnknown toggles                                                                   |
+| `/tenants`    | Tenant switcher, per-tenant listing, isolation proof                                                                                                      |
+| `/errors`     | Error explorer: all 17 codes, response envelope panel                                                                                                     |
+| `/system`     | Health, resolved config (redacted), provider recipes, versioning status                                                                                   |
 
 ### 13.3 Signature components
 
@@ -681,10 +681,10 @@ indistinguishable in chrome; only the domain content differs. Brand wordmark:
 
 ## 15 · Buckets & Storage Topology
 
-| Bucket            | Purpose                                                             |
-| ----------------- | -------------------------------------------------------------------- |
-| `vault`           | default bucket, all primary demos                                     |
-| `vault-archive`   | cross-bucket `copy()` target (matrix #38)                             |
+| Bucket            | Purpose                                                                 |
+| ----------------- | ----------------------------------------------------------------------- |
+| `vault`           | default bucket, all primary demos                                       |
+| `vault-archive`   | cross-bucket `copy()` target (matrix #38)                               |
 | `vault-versioned` | versioning enabled at bootstrap; `download({ versionId })` (matrix #31) |
 
 A `minio-setup` one-shot compose service (using `mc`) creates the buckets, enables versioning on
@@ -771,7 +771,7 @@ services:
   minio-setup:
     image: minio/mc:latest
     depends_on: { minio: { condition: service_healthy } }
-    entrypoint: /docker/minio/setup.sh   # buckets + versioning + seed objects
+    entrypoint: /docker/minio/setup.sh # buckets + versioning + seed objects
 ```
 
 Ports: API `3001`, web `3000`, MinIO S3 `9000`, MinIO console `9001`. Root scripts:
@@ -785,15 +785,15 @@ open `http://localhost:3000`.
 Full library-grade bar, identical to the sibling reference apps (this repo is copied as a
 template, and the library is proven here before publish):
 
-| Tier            | Tool                                                             | Bar                                     |
-| --------------- | ----------------------------------------------------------------- | ---------------------------------------- |
-| API unit        | Jest (`tsconfig.spec.json` with metadata off)                     | **100/100/100/100** coverage             |
-| Web unit        | Vitest + coverage-v8                                              | **100/100/100/100** coverage             |
-| API e2e         | supertest + Testcontainers MinIO (`minio/minio`)                  | every HTTP route + every error path      |
+| Tier              | Tool                                                            | Bar                                      |
+| ----------------- | --------------------------------------------------------------- | ---------------------------------------- |
+| API unit          | Jest (`tsconfig.spec.json` with metadata off)                   | **100/100/100/100** coverage             |
+| Web unit          | Vitest + coverage-v8                                            | **100/100/100/100** coverage             |
+| API e2e           | supertest + Testcontainers MinIO (`minio/minio`)                | every HTTP route + every error path      |
 | Direct-upload e2e | real `fetch` PUT against the container using issued signed URLs | signed GET/PUT/multipart round-trips     |
-| Web build/smoke | `next build` + Playwright journeys                                | shell, vault browse, upload, error panel |
-| Mutation        | Stryker (api `break: 100`, web `break: 90`, lib code 100)         | survivors documented as equivalents      |
-| Export audit    | `scripts/audit-library-exports.mjs`                               | every library export demonstrated        |
+| Web build/smoke   | `next build` + Playwright journeys                              | shell, vault browse, upload, error panel |
+| Mutation          | Stryker (api `break: 100`, web `break: 90`, lib code 100)       | survivors documented as equivalents      |
+| Export audit      | `scripts/audit-library-exports.mjs`                             | every library export demonstrated        |
 
 Every `it()` carries a scenario comment. Suites run sequentially with bounded workers
 (`maxWorkers: '50%'`); one Testcontainers MinIO at a time.
@@ -836,17 +836,17 @@ Every `it()` carries a scenario comment. Suites run sequentially with bounded wo
 The authoritative decomposition lives in [`DEVELOPMENT_PLAN.md`](DEVELOPMENT_PLAN.md) (10 phases,
 P0 to P9) with per-phase task files under [`tasks/`](tasks/). Coarse shape:
 
-| Phase | Focus                                                        |
-| ----- | ------------------------------------------------------------- |
-| 0     | Repository foundation, toolchain, **CI from day one**          |
-| 1     | MinIO stack (3 buckets, versioning, seed) + library link + subpath probes |
+| Phase | Focus                                                                              |
+| ----- | ---------------------------------------------------------------------------------- |
+| 0     | Repository foundation, toolchain, **CI from day one**                              |
+| 1     | MinIO stack (3 buckets, versioning, seed) + library link + subpath probes          |
 | 2     | API skeleton: env schema, canonical `forRootAsync` wiring, filter, health, recipes |
-| 3     | Core object operations: uploads (all strategies) + downloads   |
-| 4     | Listing, folders, lifecycle ops (delete/deleteMany/copy/exists/head/publicUrl) |
-| 5     | Signed URLs + direct browser upload (+ confirm pattern)        |
-| 6     | Validation pipeline + scanner lab                              |
-| 7     | Tenants, raw-client advanced ops, error explorer, provider quirks |
-| 8     | Web dashboard: design system + all pages                       |
+| 3     | Core object operations: uploads (all strategies) + downloads                       |
+| 4     | Listing, folders, lifecycle ops (delete/deleteMany/copy/exists/head/publicUrl)     |
+| 5     | Signed URLs + direct browser upload (+ confirm pattern)                            |
+| 6     | Validation pipeline + scanner lab                                                  |
+| 7     | Tenants, raw-client advanced ops, error explorer, provider quirks                  |
+| 8     | Web dashboard: design system + all pages                                           |
 | 9     | Quality: 100% unit, full e2e, Stryker, export audit, README, public-flip checklist |
 
 ---
@@ -872,8 +872,8 @@ and authentication. Each exclusion mirrors the library's own scope decisions or 
 
 ## 27 · Document Status
 
-| Version | Date       | Status                        |
-| ------- | ---------- | ------------------------------ |
+| Version | Date       | Status                                         |
+| ------- | ---------- | ---------------------------------------------- |
 | 1.0.0   | 2026-07-06 | Draft for implementation, authored before code |
 
 This document is the contract. Reconcile drift here first, then in code.

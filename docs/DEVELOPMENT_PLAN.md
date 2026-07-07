@@ -25,22 +25,22 @@
 
 ## 1. Progress Dashboard
 
-> **Progress:** 0 / 10 phases complete (0%) · 0 / 54 tasks
-> **Active phase:** none (awaiting kickoff)
+> **Progress:** 0 / 10 phases complete (0%) · 6 / 54 tasks
+> **Active phase:** P0 repo-foundation-ci
 > **Blockers:** none
 
-| ID | Phase                        | Tasks file                            | Status  | Progress | Size | Last updated |
-| -- | ---------------------------- | ------------------------------------- | ------- | -------- | ---- | ------------ |
-| P0 | repo-foundation-ci           | `phase-00-repo-foundation-ci.md`      | 📋 ToDo | 0/6      | M    | 2026-07-06   |
-| P1 | minio-stack-library-link     | `phase-01-minio-stack-library-link.md`| 📋 ToDo | 0/5      | M    | 2026-07-06   |
-| P2 | api-skeleton-wiring          | `phase-02-api-skeleton-wiring.md`     | 📋 ToDo | 0/6      | L    | 2026-07-06   |
-| P3 | core-object-operations       | `phase-03-core-object-operations.md`  | 📋 ToDo | 0/5      | L    | 2026-07-06   |
-| P4 | listing-lifecycle            | `phase-04-listing-lifecycle.md`       | 📋 ToDo | 0/5      | M    | 2026-07-06   |
-| P5 | signed-urls-direct-upload    | `phase-05-signed-urls-direct-upload.md` | 📋 ToDo | 0/5    | M    | 2026-07-06   |
-| P6 | validation-scanner           | `phase-06-validation-scanner.md`      | 📋 ToDo | 0/5      | M    | 2026-07-06   |
-| P7 | tenants-advanced-errors      | `phase-07-tenants-advanced-errors.md` | 📋 ToDo | 0/5      | M    | 2026-07-06   |
-| P8 | web-dashboard                | `phase-08-web-dashboard.md`           | 📋 ToDo | 0/6      | L    | 2026-07-06   |
-| P9 | quality-docs-readiness       | `phase-09-quality-docs-readiness.md`  | 📋 ToDo | 0/6      | L    | 2026-07-06   |
+| ID  | Phase                     | Tasks file                              | Status    | Progress | Size | Last updated |
+| --- | ------------------------- | --------------------------------------- | --------- | -------- | ---- | ------------ |
+| P0  | repo-foundation-ci        | `phase-00-repo-foundation-ci.md`        | 👀 Review | 6/6      | M    | 2026-07-07   |
+| P1  | minio-stack-library-link  | `phase-01-minio-stack-library-link.md`  | 📋 ToDo   | 0/5      | M    | 2026-07-06   |
+| P2  | api-skeleton-wiring       | `phase-02-api-skeleton-wiring.md`       | 📋 ToDo   | 0/6      | L    | 2026-07-06   |
+| P3  | core-object-operations    | `phase-03-core-object-operations.md`    | 📋 ToDo   | 0/5      | L    | 2026-07-06   |
+| P4  | listing-lifecycle         | `phase-04-listing-lifecycle.md`         | 📋 ToDo   | 0/5      | M    | 2026-07-06   |
+| P5  | signed-urls-direct-upload | `phase-05-signed-urls-direct-upload.md` | 📋 ToDo   | 0/5      | M    | 2026-07-06   |
+| P6  | validation-scanner        | `phase-06-validation-scanner.md`        | 📋 ToDo   | 0/5      | M    | 2026-07-06   |
+| P7  | tenants-advanced-errors   | `phase-07-tenants-advanced-errors.md`   | 📋 ToDo   | 0/5      | M    | 2026-07-06   |
+| P8  | web-dashboard             | `phase-08-web-dashboard.md`             | 📋 ToDo   | 0/6      | L    | 2026-07-06   |
+| P9  | quality-docs-readiness    | `phase-09-quality-docs-readiness.md`    | 📋 ToDo   | 0/6      | L    | 2026-07-06   |
 
 ---
 
@@ -239,22 +239,22 @@ Zod-validated in `apps/api/src/config/env.schema.ts`.
 
 ## Appendix B: Quality Gates
 
-| Gate            | Tool / config                                                    | Threshold                                | Enforced from |
-| --------------- | ----------------------------------------------------------------- | ----------------------------------------- | ------------- |
-| Lint            | ESLint 9 flat                                                     | zero errors                                | CI `lint` (P0) |
-| Typecheck       | `tsc --noEmit` per package                                        | zero errors                                | CI `typecheck` (P0) |
-| Format          | Prettier `--check`                                                | clean                                      | CI `format` (P0) |
-| API unit + cov  | Jest (`tsconfig.spec.json`, decorators metadata off)              | **100/100/100/100**                        | CI `test:cov` (P9) |
-| Web unit + cov  | Vitest + coverage-v8                                              | **100/100/100/100**                        | CI `test:cov` (P9) |
-| API e2e         | supertest + Testcontainers MinIO + real-fetch signed URLs         | every route + every error path             | CI `e2e` (P9) |
-| Web build/smoke | `next build` + Playwright journeys                                | green                                      | CI `web-build` (P9) |
-| API mutation    | Stryker (jest runner)                                             | `break: 100`                               | CI `mutation:api` (P9) |
-| Web mutation    | Stryker (vitest runner)                                           | `break: 90` (`lib/**` at 100)              | CI `mutation:web` (P9) |
-| Export usage    | `scripts/audit-library-exports.mjs` + `.audit-ignore.json`        | every library export demonstrated          | CI `export-usage` (P9) |
-| CodeQL          | `codeql.yml`, **conditional on public visibility**                | no new alerts                              | activates on flip |
-| Scorecard       | `scorecard.yml`, **conditional on public visibility**             | reported                                   | activates on flip |
-| Pre-commit      | husky + lint-staged                                               | prettier + eslint --fix on staged          | local (P0) |
-| Commit message  | commitlint (`config-conventional`)                                | Conventional Commits                       | local (P0) |
+| Gate            | Tool / config                                              | Threshold                         | Enforced from          |
+| --------------- | ---------------------------------------------------------- | --------------------------------- | ---------------------- |
+| Lint            | ESLint 9 flat                                              | zero errors                       | CI `lint` (P0)         |
+| Typecheck       | `tsc --noEmit` per package                                 | zero errors                       | CI `typecheck` (P0)    |
+| Format          | Prettier `--check`                                         | clean                             | CI `format` (P0)       |
+| API unit + cov  | Jest (`tsconfig.spec.json`, decorators metadata off)       | **100/100/100/100**               | CI `test:cov` (P9)     |
+| Web unit + cov  | Vitest + coverage-v8                                       | **100/100/100/100**               | CI `test:cov` (P9)     |
+| API e2e         | supertest + Testcontainers MinIO + real-fetch signed URLs  | every route + every error path    | CI `e2e` (P9)          |
+| Web build/smoke | `next build` + Playwright journeys                         | green                             | CI `web-build` (P9)    |
+| API mutation    | Stryker (jest runner)                                      | `break: 100`                      | CI `mutation:api` (P9) |
+| Web mutation    | Stryker (vitest runner)                                    | `break: 90` (`lib/**` at 100)     | CI `mutation:web` (P9) |
+| Export usage    | `scripts/audit-library-exports.mjs` + `.audit-ignore.json` | every library export demonstrated | CI `export-usage` (P9) |
+| CodeQL          | `codeql.yml`, **conditional on public visibility**         | no new alerts                     | activates on flip      |
+| Scorecard       | `scorecard.yml`, **conditional on public visibility**      | reported                          | activates on flip      |
+| Pre-commit      | husky + lint-staged                                        | prettier + eslint --fix on staged | local (P0)             |
+| Commit message  | commitlint (`config-conventional`)                         | Conventional Commits              | local (P0)             |
 
 > **Memory safety.** One suite at a time, `maxWorkers: '50%'` in every Jest/Vitest config,
 > `NODE_OPTIONS=--max-old-space-size=4096`, one Testcontainers MinIO at a time, and never a fan-out

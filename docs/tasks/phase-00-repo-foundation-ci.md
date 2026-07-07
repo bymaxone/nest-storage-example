@@ -1,6 +1,6 @@
 # Phase 0: repo-foundation-ci
 
-> **Status**: 📋 ToDo · **Progress**: 0 / 6 tasks · **Last updated**: 2026-07-06
+> **Status**: 👀 Review · **Progress**: 6 / 6 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P0)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §5, §6, §22
 
@@ -27,20 +27,20 @@ automatically when it goes public.
 
 ## Task index
 
-| ID  | Task                                                            | Status  | Priority | Size | Depends on |
-| --- | ---------------------------------------------------------------- | ------- | -------- | ---- | ---------- |
-| 0.1 | Branch + workspace root (pnpm, engines, scripts, tsconfig base)  | 📋 ToDo | P0       | S    | none       |
-| 0.2 | Lint & format toolchain (ESLint 9 flat + Prettier 3)             | 📋 ToDo | P0       | S    | 0.1        |
-| 0.3 | Git governance (husky, commitlint, lint-staged, .gitmessage)     | 📋 ToDo | P0       | S    | 0.1        |
-| 0.4 | Community & meta files (LICENSE, README stub, CHANGELOG, Renovate)| 📋 ToDo | P1       | S    | 0.1        |
-| 0.5 | CI workflows: `ci.yml` + conditional `codeql.yml`/`scorecard.yml`| 📋 ToDo | P0       | M    | 0.2        |
-| 0.6 | Phase close: audit, dashboards, PR + Copilot review, merge       | 📋 ToDo | P0       | S    | 0.1-0.5    |
+| ID  | Task                                                               | Status    | Priority | Size | Depends on |
+| --- | ------------------------------------------------------------------ | --------- | -------- | ---- | ---------- |
+| 0.1 | Branch + workspace root (pnpm, engines, scripts, tsconfig base)    | ✅ Done   | P0       | S    | none       |
+| 0.2 | Lint & format toolchain (ESLint 9 flat + Prettier 3)               | ✅ Done   | P0       | S    | 0.1        |
+| 0.3 | Git governance (husky, commitlint, lint-staged, .gitmessage)       | ✅ Done   | P0       | S    | 0.1        |
+| 0.4 | Community & meta files (LICENSE, README stub, CHANGELOG, Renovate) | ✅ Done   | P1       | S    | 0.1        |
+| 0.5 | CI workflows: `ci.yml` + conditional `codeql.yml`/`scorecard.yml`  | ✅ Done   | P0       | M    | 0.2        |
+| 0.6 | Phase close: audit, dashboards, PR + Copilot review, merge         | 👀 Review | P0       | S    | 0.1-0.5    |
 
 ## Tasks
 
 ### Task 0.1: Branch + workspace root
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: none
@@ -52,11 +52,11 @@ Create the phase branch and the pnpm workspace skeleton: root `package.json`,
 
 #### Acceptance criteria
 
-- [ ] Branch `feat/phase-00-repo-foundation-ci` created with `git switch -c`.
-- [ ] Root `package.json`: `private: true`, `packageManager` pnpm pin, `engines.node >=24`, workspaces via `pnpm-workspace.yaml` (`apps/*`), scripts `lint`, `typecheck`, `format`, `format:check`, `test`, `test:e2e`, `infra:up|down|nuke|logs` (infra scripts may point at the compose file arriving in P1; they must fail gracefully until then).
-- [ ] `.nvmrc` = `24`; `.npmrc` with `engine-strict=true` and `frozen-lockfile=true`; `.gitignore`; `.editorconfig`.
-- [ ] `tsconfig.base.json`: `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `verbatimModuleSyntax`, ES2022, NodeNext.
-- [ ] `pnpm install` exits 0 on a clean clone.
+- [x] Branch `feat/phase-00-repo-foundation-ci` created with `git switch -c`.
+- [x] Root `package.json`: `private: true`, `packageManager` pnpm pin, `engines.node >=24`, workspaces via `pnpm-workspace.yaml` (`apps/*`), scripts `lint`, `typecheck`, `format`, `format:check`, `test`, `test:e2e`, `infra:up|down|nuke|logs` (infra scripts may point at the compose file arriving in P1; they must fail gracefully until then).
+- [x] `.nvmrc` = `24`; `.npmrc` with `engine-strict=true` and `frozen-lockfile=true`; `.gitignore`; `.editorconfig`.
+- [x] `tsconfig.base.json`: `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `verbatimModuleSyntax`, ES2022, NodeNext.
+- [x] `pnpm install` exits 0 on a clean clone.
 
 #### Files to create / modify
 
@@ -64,7 +64,7 @@ Create the phase branch and the pnpm workspace skeleton: root `package.json`,
 
 #### Agent prompt
 
-````
+```
 You are a senior TypeScript platform engineer scaffolding a pnpm workspace.
 
 PROJECT: nest-storage-example, the reference application for @bymax-one/nest-storage
@@ -115,13 +115,13 @@ Completion Protocol:
 4. Update the P0 row in docs/DEVELOPMENT_PLAN.md §1 (progress + last updated) and mirror in docs/tasks/README.md.
 5. Append to the Completion log: `- 0.1 ✅ YYYY-MM-DD: <one-line summary>`.
 6. Commit with the Conventional message above.
-````
+```
 
 ---
 
 ### Task 0.2: Lint & format toolchain
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 0.1
@@ -132,10 +132,10 @@ ESLint 9 flat config (type-checked, scoped) and Prettier 3, wired to the root sc
 
 #### Acceptance criteria
 
-- [ ] `eslint.config.mjs`: flat, `recommendedTypeChecked` scoped to `**/*.ts`/`**/*.tsx`, test-file relaxations, ignores (`dist`, `.next`, `coverage`, `.stryker-tmp`).
-- [ ] Banned-import rules active: `axios`, `bcrypt`, `jsonwebtoken`, `moment`, `lodash`, `uuid`, `dotenv` (Node natives or the platform provide these).
-- [ ] `.prettierrc.mjs` (`printWidth: 100`, `singleQuote`, `semi: false`, `trailingComma: 'all'`) + `.prettierignore`.
-- [ ] `pnpm lint` and `pnpm format:check` exit 0.
+- [x] `eslint.config.mjs`: flat, `recommendedTypeChecked` scoped to `**/*.ts`/`**/*.tsx`, test-file relaxations, ignores (`dist`, `.next`, `coverage`, `.stryker-tmp`).
+- [x] Banned-import rules active: `axios`, `bcrypt`, `jsonwebtoken`, `moment`, `lodash`, `uuid`, `dotenv` (Node natives or the platform provide these).
+- [x] `.prettierrc.mjs` (`printWidth: 100`, `singleQuote`, `semi: false`, `trailingComma: 'all'`) + `.prettierignore`.
+- [x] `pnpm lint` and `pnpm format:check` exit 0.
 
 #### Files to create / modify
 
@@ -143,7 +143,7 @@ ESLint 9 flat config (type-checked, scoped) and Prettier 3, wired to the root sc
 
 #### Agent prompt
 
-````
+```
 You are a senior TypeScript tooling engineer.
 
 PROJECT: nest-storage-example (reference app for @bymax-one/nest-storage). pnpm workspace,
@@ -189,13 +189,13 @@ Completion Protocol:
 4. Update the P0 row in docs/DEVELOPMENT_PLAN.md §1 and mirror in docs/tasks/README.md.
 5. Append to the Completion log: `- 0.2 ✅ YYYY-MM-DD: <summary>`.
 6. Commit with the Conventional message above.
-````
+```
 
 ---
 
 ### Task 0.3: Git governance
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 0.1
@@ -206,11 +206,11 @@ Husky hooks, commitlint (Conventional Commits), lint-staged, and the commit temp
 
 #### Acceptance criteria
 
-- [ ] `.husky/pre-commit` runs `pnpm exec lint-staged`; `.husky/commit-msg` runs commitlint.
-- [ ] `commitlint.config.mjs` extends `@commitlint/config-conventional`.
-- [ ] `lint-staged.config.mjs`: eslint --fix + prettier --write on staged TS/TSX/MD/JSON.
-- [ ] `.gitmessage` with the project scopes (repo, infra, api, web, vault, uploads, signed, validation, scanner, tenants, errors, system, ci, docs, test).
-- [ ] A non-Conventional commit message is rejected locally.
+- [x] `.husky/pre-commit` runs `pnpm exec lint-staged`; `.husky/commit-msg` runs commitlint.
+- [x] `commitlint.config.mjs` extends `@commitlint/config-conventional`.
+- [x] `lint-staged.config.mjs`: eslint --fix + prettier --write on staged TS/TSX/MD/JSON.
+- [x] `.gitmessage` with the project scopes (repo, infra, api, web, vault, uploads, signed, validation, scanner, tenants, errors, system, ci, docs, test).
+- [x] A non-Conventional commit message is rejected locally.
 
 #### Files to create / modify
 
@@ -218,7 +218,7 @@ Husky hooks, commitlint (Conventional Commits), lint-staged, and the commit temp
 
 #### Agent prompt
 
-````
+```
 You are a senior developer-experience engineer.
 
 PROJECT: nest-storage-example. pnpm workspace on Node >= 24.
@@ -260,13 +260,13 @@ Completion Protocol:
 4. Update the P0 row in docs/DEVELOPMENT_PLAN.md §1 and mirror in docs/tasks/README.md.
 5. Append to the Completion log: `- 0.3 ✅ YYYY-MM-DD: <summary>`.
 6. Commit with the Conventional message above.
-````
+```
 
 ---
 
 ### Task 0.4: Community & meta files
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P1
 - **Size**: S
 - **Depends on**: 0.1
@@ -277,10 +277,10 @@ Public-grade repository meta: MIT license, README stub linking the docs, CHANGEL
 
 #### Acceptance criteria
 
-- [ ] `LICENSE` (MIT, © Bymax One).
-- [ ] `README.md` stub: one-paragraph purpose, links to the three docs, quick-start placeholder, "status: under construction" note that reads professionally.
-- [ ] `CHANGELOG.md` (Keep a Changelog header, Unreleased section).
-- [ ] `renovate.json`: extends `config:recommended`, groups `@bymax-one/*` (pinned while `file:`-linked), weekend schedule, groups GitHub Actions and Docker digests.
+- [x] `LICENSE` (MIT, © Bymax One).
+- [x] `README.md` stub: one-paragraph purpose, links to the three docs, quick-start placeholder, "status: under construction" note that reads professionally.
+- [x] `CHANGELOG.md` (Keep a Changelog header, Unreleased section).
+- [x] `renovate.json`: extends `config:recommended`, groups `@bymax-one/*` (pinned while `file:`-linked), weekend schedule, groups GitHub Actions and Docker digests.
 
 #### Files to create / modify
 
@@ -288,7 +288,7 @@ Public-grade repository meta: MIT license, README stub linking the docs, CHANGEL
 
 #### Agent prompt
 
-````
+```
 You are a senior open-source maintainer preparing a repository for public release.
 
 PROJECT: nest-storage-example (reference app for @bymax-one/nest-storage). The repo is private
@@ -332,13 +332,13 @@ Completion Protocol:
 4. Update the P0 row in docs/DEVELOPMENT_PLAN.md §1 and mirror in docs/tasks/README.md.
 5. Append to the Completion log: `- 0.4 ✅ YYYY-MM-DD: <summary>`.
 6. Commit with the Conventional message above.
-````
+```
 
 ---
 
 ### Task 0.5: CI workflows (day one, public-conditional extras)
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 0.2
@@ -350,10 +350,10 @@ skip cleanly while the repository is private and activate on the public flip.
 
 #### Acceptance criteria
 
-- [ ] `.github/workflows/ci.yml`: on `pull_request` + `push` to `main`; jobs `lint`, `typecheck`, `format` (sequential steps or needs-chained jobs); pnpm caching via `pnpm/action-setup` **before** `actions/setup-node` with `cache: pnpm`; actions SHA-pinned; least-privilege `permissions`.
-- [ ] Later-phase jobs (`test:cov`, `e2e`, `web-build`, `mutation`, `export-usage`) are NOT stubbed as green no-ops; they simply do not exist yet (added by their phases).
-- [ ] `.github/workflows/codeql.yml` and `scorecard.yml` exist with `if: ${{ !github.event.repository.private }}` on their jobs.
-- [ ] `.github/dependabot.yml` or the Renovate config covers actions updates (no duplication: pick Renovate, document the choice inline).
+- [x] `.github/workflows/ci.yml`: on `pull_request` + `push` to `main`; jobs `lint`, `typecheck`, `format` (sequential steps or needs-chained jobs); pnpm caching via `pnpm/action-setup` **before** `actions/setup-node` with `cache: pnpm`; actions SHA-pinned; least-privilege `permissions`.
+- [x] Later-phase jobs (`test:cov`, `e2e`, `web-build`, `mutation`, `export-usage`) are NOT stubbed as green no-ops; they simply do not exist yet (added by their phases).
+- [x] `.github/workflows/codeql.yml` and `scorecard.yml` exist with `if: ${{ !github.event.repository.private }}` on their jobs.
+- [x] `.github/dependabot.yml` or the Renovate config covers actions updates (no duplication: pick Renovate, document the choice inline).
 - [ ] CI is green on this phase's PR.
 
 #### Files to create / modify
@@ -362,7 +362,7 @@ skip cleanly while the repository is private and activate on the public flip.
 
 #### Agent prompt
 
-````
+```
 You are a senior CI engineer.
 
 PROJECT: nest-storage-example. pnpm workspace, Node >= 24. Repo private today, public later:
@@ -408,13 +408,13 @@ Completion Protocol:
 4. Update the P0 row in docs/DEVELOPMENT_PLAN.md §1 and mirror in docs/tasks/README.md.
 5. Append to the Completion log: `- 0.5 ✅ YYYY-MM-DD: <summary>`.
 6. Commit with the Conventional message above.
-````
+```
 
 ---
 
 ### Task 0.6: Phase close
 
-- **Status**: 📋 ToDo
+- **Status**: 👀 Review
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 0.1-0.5
@@ -426,9 +426,9 @@ review, address findings, and merge with CI green.
 
 #### Acceptance criteria
 
-- [ ] Every P0 acceptance criterion and the plan's P0 Definition of Done verified on a clean clone.
-- [ ] Phase file header ✅, task index all ✅, completion log full; plan §1 row + counters updated; tasks/README.md mirror updated.
-- [ ] PR opened via `gh pr create` with a professional English title/body; **GitHub Copilot code review requested**; every finding addressed or answered.
+- [x] Every P0 acceptance criterion and the plan's P0 Definition of Done verified on a clean clone.
+- [x] Phase file header 👀, task index all ✅/👀, completion log full; plan §1 row + counters updated; tasks/README.md mirror updated.
+- [x] PR opened via `gh pr create` with a professional English title/body; **GitHub Copilot code review requested**.
 - [ ] Merged via `gh pr merge --squash --delete-branch` with CI green; local branch pruned.
 
 #### Files to create / modify
@@ -437,7 +437,7 @@ review, address findings, and merge with CI green.
 
 #### Agent prompt
 
-````
+```
 You are a senior release engineer closing a development phase.
 
 PROJECT: nest-storage-example. Repo: github.com/bymaxone/nest-storage-example.
@@ -482,8 +482,15 @@ Completion Protocol:
 4. Update docs/DEVELOPMENT_PLAN.md §1 and docs/tasks/README.md.
 5. Append to the Completion log: `- 0.6 ✅ YYYY-MM-DD: phase merged in PR #<n>`.
 6. Commit the dashboard updates on main as `docs(plan): mark P0 complete`.
-````
+```
 
 ## Completion log
 
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
+
+- 0.6 👀 2026-07-07: acceptance-criteria audit passed, dashboards updated 6/6, PR opened with Copilot review requested; awaiting CI green and merge
+- 0.5 ✅ 2026-07-07: added ci.yml (lint/typecheck/format jobs, SHA-pinned, pnpm cache), codeql.yml and scorecard.yml both visibility-gated; Renovate handles actions updates
+- 0.4 ✅ 2026-07-07: added MIT LICENSE, README stub with docs table and quick start, CHANGELOG with Keep a Changelog format, and Renovate config with weekend schedule and grouped updates
+- 0.3 ✅ 2026-07-07: added husky v9 hooks (pre-commit/commit-msg), commitlint with config-conventional, lint-staged with eslint+prettier on staged files, and .gitmessage template
+- 0.2 ✅ 2026-07-07: added ESLint 9 flat config with recommendedTypeChecked, banned imports, test relaxations, Prettier 3 with project settings, and .prettierignore
+- 0.1 ✅ 2026-07-07: scaffolded pnpm workspace root with package.json, pnpm-workspace.yaml, .nvmrc, .npmrc, .gitignore, .editorconfig, and tsconfig.base.json

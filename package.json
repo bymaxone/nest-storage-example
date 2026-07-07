@@ -1,0 +1,32 @@
+{
+  "name": "nest-storage-example",
+  "private": true,
+  "packageManager": "pnpm@10.8.1",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "prepare": "husky",
+    "lint": "eslint .",
+    "typecheck": "pnpm -r --workspace-concurrency=1 exec tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "pnpm -r --workspace-concurrency=1 run --if-present test",
+    "test:e2e": "pnpm -r --workspace-concurrency=1 run --if-present test:e2e",
+    "infra:up": "node -e \"require('fs').existsSync('docker-compose.yml')||(console.error('docker-compose.yml not found: the local MinIO stack is not configured in this checkout.'),process.exit(1))\" && docker compose up -d --wait",
+    "infra:down": "node -e \"require('fs').existsSync('docker-compose.yml')||(console.error('docker-compose.yml not found: the local MinIO stack is not configured in this checkout.'),process.exit(1))\" && docker compose down",
+    "infra:nuke": "node -e \"require('fs').existsSync('docker-compose.yml')||(console.error('docker-compose.yml not found: the local MinIO stack is not configured in this checkout.'),process.exit(1))\" && docker compose down -v",
+    "infra:logs": "node -e \"require('fs').existsSync('docker-compose.yml')||(console.error('docker-compose.yml not found: the local MinIO stack is not configured in this checkout.'),process.exit(1))\" && docker compose logs -f"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^21.2.0",
+    "@commitlint/config-conventional": "^21.2.0",
+    "@eslint/js": "^9.39.4",
+    "eslint": "^9.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.8",
+    "prettier": "^3.0.0",
+    "typescript": "^5.9.0",
+    "typescript-eslint": "^8.63.0"
+  }
+}

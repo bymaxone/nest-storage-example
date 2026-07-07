@@ -29,13 +29,13 @@ demonstrations (checksum trap, ACL honesty, timeout knobs), and the raw-client e
 
 ## Task index
 
-| ID  | Task                                                        | Status  | Priority | Size | Depends on |
-| --- | ------------------------------------------------------------ | ------- | -------- | ---- | ---------- |
-| 7.1 | Branch + tenants module with isolation proof                  | 📋 ToDo | P0       | M    | none       |
-| 7.2 | Error explorer: all 17 codes deterministic                    | 📋 ToDo | P0       | L    | none       |
-| 7.3 | Provider quirks: checksum trap, ACL honesty, timeout          | 📋 ToDo | P0       | M    | 7.2        |
-| 7.4 | Raw-client advanced ops + sync forRoot coverage               | 📋 ToDo | P1       | S    | 7.2        |
-| 7.5 | Phase close: audit, dashboards, PR + Copilot review, merge    | 📋 ToDo | P0       | S    | 7.1-7.4    |
+| ID  | Task                                                       | Status  | Priority | Size | Depends on |
+| --- | ---------------------------------------------------------- | ------- | -------- | ---- | ---------- |
+| 7.1 | Branch + tenants module with isolation proof               | 📋 ToDo | P0       | M    | none       |
+| 7.2 | Error explorer: all 17 codes deterministic                 | 📋 ToDo | P0       | L    | none       |
+| 7.3 | Provider quirks: checksum trap, ACL honesty, timeout       | 📋 ToDo | P0       | M    | 7.2        |
+| 7.4 | Raw-client advanced ops + sync forRoot coverage            | 📋 ToDo | P1       | S    | 7.2        |
+| 7.5 | Phase close: audit, dashboards, PR + Copilot review, merge | 📋 ToDo | P0       | S    | 7.1-7.4    |
 
 ## Tasks
 
@@ -65,7 +65,7 @@ listing, per-tenant clearing via `list()` + `deleteMany()`, and the isolation pr
 
 #### Agent prompt
 
-````
+```
 You are a senior NestJS engineer implementing multi-tenant object scoping.
 
 PROJECT: nest-storage-example, reference app for @bymax-one/nest-storage. The library applies ONE
@@ -105,7 +105,7 @@ Completion Protocol:
 2. Update the P7 row in docs/DEVELOPMENT_PLAN.md §1 and the docs/tasks/README.md mirror.
 3. Append `- 7.1 ✅ YYYY-MM-DD: <summary>` to the Completion log.
 4. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -134,7 +134,7 @@ real library, plus `GET /errors` listing every code with its documented status a
 
 #### Agent prompt
 
-````
+```
 You are a senior NestJS engineer building an exhaustive error-catalogue explorer.
 
 PROJECT: nest-storage-example. STORAGE_ERROR_CODES has 17 entries, each with a documented HTTP
@@ -181,7 +181,7 @@ Completion Protocol:
 2. Update the P7 row in docs/DEVELOPMENT_PLAN.md §1 and the docs/tasks/README.md mirror.
 3. Append `- 7.2 ✅ YYYY-MM-DD: <summary>` to the Completion log.
 4. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -210,7 +210,7 @@ ACL card (`publicRead` on ACL-disabled providers), and the timeout/retry knobs c
 
 #### Agent prompt
 
-````
+```
 You are a senior NestJS engineer demonstrating S3-provider compatibility quirks.
 
 PROJECT: nest-storage-example. The library documents three traps: SDK default integrity checksums
@@ -252,7 +252,7 @@ Completion Protocol:
 2. Update the P7 row in docs/DEVELOPMENT_PLAN.md §1 and the docs/tasks/README.md mirror.
 3. Append `- 7.3 ✅ YYYY-MM-DD: <summary>` to the Completion log.
 4. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -281,7 +281,7 @@ escape hatch with its trade-off note), and the sync `forRoot` boot path covered 
 
 #### Agent prompt
 
-````
+```
 You are a senior NestJS engineer demonstrating the raw-client escape hatch.
 
 PROJECT: nest-storage-example. Advanced provider ops (bucket versioning status here) go through
@@ -320,7 +320,7 @@ Completion Protocol:
 2. Update the P7 row in docs/DEVELOPMENT_PLAN.md §1 and the docs/tasks/README.md mirror.
 3. Append `- 7.4 ✅ YYYY-MM-DD: <summary>` to the Completion log.
 4. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -346,7 +346,7 @@ Audit the phase Definition of Done, sync dashboards, PR + GitHub Copilot review,
 
 #### Agent prompt
 
-````
+```
 You are a senior release engineer closing a development phase.
 
 PROJECT: nest-storage-example. Repo: github.com/bymaxone/nest-storage-example.
@@ -383,7 +383,7 @@ Completion Protocol:
 2. Update plan §1 + README mirror.
 3. Append `- 7.5 ✅ YYYY-MM-DD: phase merged in PR #<n>`.
 4. Commit dashboards on main: `docs(plan): mark P7 complete`.
-````
+```
 
 ## Completion log
 

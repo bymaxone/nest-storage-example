@@ -28,14 +28,14 @@ the typed data layer keyed by `STORAGE_ERROR_CODES` from `./shared`, and the ten
 
 ## Task index
 
-| ID  | Task                                                        | Status  | Priority | Size | Depends on |
-| --- | ------------------------------------------------------------ | ------- | -------- | ---- | ---------- |
-| 8.1 | Branch + Next skeleton + verbatim design system + shell       | 📋 ToDo | P0       | L    | none       |
-| 8.2 | Typed data layer: api-client, error union, query hooks        | 📋 ToDo | P0       | M    | 8.1        |
-| 8.3 | Vault browser + detail drawer + lifecycle actions             | 📋 ToDo | P0       | L    | 8.2        |
-| 8.4 | Upload lab + direct upload + signed URLs pages                | 📋 ToDo | P0       | L    | 8.2        |
-| 8.5 | Labs + tenants + errors + system pages                        | 📋 ToDo | P0       | M    | 8.2        |
-| 8.6 | Phase close: audit, dashboards, PR + Copilot review, merge    | 📋 ToDo | P0       | S    | 8.1-8.5    |
+| ID  | Task                                                       | Status  | Priority | Size | Depends on |
+| --- | ---------------------------------------------------------- | ------- | -------- | ---- | ---------- |
+| 8.1 | Branch + Next skeleton + verbatim design system + shell    | 📋 ToDo | P0       | L    | none       |
+| 8.2 | Typed data layer: api-client, error union, query hooks     | 📋 ToDo | P0       | M    | 8.1        |
+| 8.3 | Vault browser + detail drawer + lifecycle actions          | 📋 ToDo | P0       | L    | 8.2        |
+| 8.4 | Upload lab + direct upload + signed URLs pages             | 📋 ToDo | P0       | L    | 8.2        |
+| 8.5 | Labs + tenants + errors + system pages                     | 📋 ToDo | P0       | M    | 8.2        |
+| 8.6 | Phase close: audit, dashboards, PR + Copilot review, merge | 📋 ToDo | P0       | S    | 8.1-8.5    |
 
 ## Tasks
 
@@ -66,7 +66,7 @@ active state, `nest-storage-example` wordmark).
 
 #### Agent prompt
 
-````
+```
 You are a senior frontend engineer replicating a shared design system.
 
 PROJECT: nest-storage-example. The dashboard must be visually indistinguishable from the sibling
@@ -116,7 +116,7 @@ Completion Protocol:
 2. Update the P8 row in docs/DEVELOPMENT_PLAN.md §1 and the docs/tasks/README.md mirror.
 3. Append `- 8.1 ✅ YYYY-MM-DD: <summary>` to the Completion log.
 4. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -146,7 +146,7 @@ TanStack Query hooks per backend area, `nuqs` URL state helpers, and the direct-
 
 #### Agent prompt
 
-````
+```
 You are a senior frontend engineer building a typed API layer.
 
 PROJECT: nest-storage-example. The backend returns library envelopes { error: { code, message,
@@ -191,7 +191,7 @@ Completion Protocol:
 2. Update the P8 row in docs/DEVELOPMENT_PLAN.md §1 and the docs/tasks/README.md mirror.
 3. Append `- 8.2 ✅ YYYY-MM-DD: <summary>` to the Completion log.
 4. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -223,7 +223,7 @@ overview page.
 
 #### Agent prompt
 
-````
+```
 You are a senior frontend engineer building a file-management UI.
 
 PROJECT: nest-storage-example. The vault API provides list (prefix/delimiter/cursor), head,
@@ -268,7 +268,7 @@ Completion Protocol:
 2. Update the P8 row in docs/DEVELOPMENT_PLAN.md §1 and the docs/tasks/README.md mirror.
 3. Append `- 8.3 ✅ YYYY-MM-DD: <summary>` to the Completion log.
 4. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -298,7 +298,7 @@ presigned PUT + multipart from the browser, required-headers inspector, confirm 
 
 #### Agent prompt
 
-````
+```
 You are a senior frontend engineer building upload experiences.
 
 PROJECT: nest-storage-example. Three pages: server-side upload lab (strategy + progress sessions),
@@ -344,7 +344,7 @@ Completion Protocol:
 2. Update the P8 row in docs/DEVELOPMENT_PLAN.md §1 and the docs/tasks/README.md mirror.
 3. Append `- 8.4 ✅ YYYY-MM-DD: <summary>` to the Completion log.
 4. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -377,7 +377,7 @@ checksum demo).
 
 #### Agent prompt
 
-````
+```
 You are a senior frontend engineer completing a reference dashboard.
 
 PROJECT: nest-storage-example. Five pages exposing the labs, tenants, the exhaustive error
@@ -417,7 +417,7 @@ Completion Protocol:
 2. Update the P8 row in docs/DEVELOPMENT_PLAN.md §1 and the docs/tasks/README.md mirror.
 3. Append `- 8.5 ✅ YYYY-MM-DD: <summary>` to the Completion log.
 4. Commit with the Conventional message above.
-````
+```
 
 ---
 
@@ -444,7 +444,7 @@ dashboards, PR + GitHub Copilot review, merge with CI green.
 
 #### Agent prompt
 
-````
+```
 You are a senior release engineer closing a development phase.
 
 PROJECT: nest-storage-example. Repo: github.com/bymaxone/nest-storage-example.
@@ -483,7 +483,7 @@ Completion Protocol:
 2. Update plan §1 + README mirror.
 3. Append `- 8.6 ✅ YYYY-MM-DD: phase merged in PR #<n>`.
 4. Commit dashboards on main: `docs(plan): mark P8 complete`.
-````
+```
 
 ## Completion log
 

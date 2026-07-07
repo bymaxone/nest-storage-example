@@ -1,0 +1,43 @@
+# CodeQL static analysis for JavaScript/TypeScript.
+# This workflow is guarded by a visibility check: it runs only when the repository is public.
+# It will activate automatically when the repository is flipped from private to public,
+# satisfying the requirement of having security scanning from day one without noise while private.
+
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Run weekly on Sunday at 03:00 UTC to catch newly published CVEs
+    - cron: '0 3 * * 0'
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: CodeQL analyze
+    runs-on: ubuntu-latest
+    if: ${{ !github.event.repository.private }}
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@411c4c9a36b3fca4d674f06b6396b2c6d23522c6 # v3.36.3
+        with:
+          languages: javascript-typescript
+          build-mode: none
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@411c4c9a36b3fca4d674f06b6396b2c6d23522c6 # v3.36.3
+        with:
+          category: '/language:javascript-typescript'
