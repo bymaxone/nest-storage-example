@@ -1,6 +1,6 @@
 # Phase 6: validation-scanner
 
-> **Status**: 🔄 In Progress · **Progress**: 4 / 5 tasks · **Last updated**: 2026-07-07
+> **Status**: 👀 Review · **Progress**: 5 / 5 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P6)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §16
 
@@ -28,13 +28,13 @@ seam. Matrix rows 13, 14, 47-53.
 
 ## Task index
 
-| ID  | Task                                                         | Status  | Priority | Size | Depends on |
-| --- | ------------------------------------------------------------ | ------- | -------- | ---- | ---------- |
-| 6.1 | Branch + validation lab: MIME wildcard + size cap paths      | ✅ Done | P0       | M    | none       |
-| 6.2 | Magic-byte forgery demo (declared PDF, fake bytes)           | ✅ Done | P0       | S    | 6.1        |
-| 6.3 | Scanner lab: verdicts, modes, rejectOnUnknown, removal proof | ✅ Done | P0       | M    | 6.1        |
-| 6.4 | Confirm-scanner wiring + config introspection                | ✅ Done | P0       | S    | 6.3        |
-| 6.5 | Phase close: audit, dashboards, PR + Copilot review, merge   | 📋 ToDo | P0       | S    | 6.1-6.4    |
+| ID  | Task                                                         | Status    | Priority | Size | Depends on |
+| --- | ------------------------------------------------------------ | --------- | -------- | ---- | ---------- |
+| 6.1 | Branch + validation lab: MIME wildcard + size cap paths      | ✅ Done   | P0       | M    | none       |
+| 6.2 | Magic-byte forgery demo (declared PDF, fake bytes)           | ✅ Done   | P0       | S    | 6.1        |
+| 6.3 | Scanner lab: verdicts, modes, rejectOnUnknown, removal proof | ✅ Done   | P0       | M    | 6.1        |
+| 6.4 | Confirm-scanner wiring + config introspection                | ✅ Done   | P0       | S    | 6.3        |
+| 6.5 | Phase close: audit, dashboards, PR + Copilot review, merge   | 👀 Review | P0       | S    | 6.1-6.4    |
 
 ## Tasks
 
@@ -333,7 +333,7 @@ Completion Protocol:
 
 ### Task 6.5: Phase close
 
-- **Status**: 📋 ToDo
+- **Status**: 👀 Review
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 6.1-6.4
@@ -395,6 +395,7 @@ Completion Protocol:
 
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
 
+- 6.5 👀 2026-07-07: acceptance-criteria audit passed (MIME/size/magic-byte labs render the real library envelopes 415/413/400/422; scanner verdicts across both modes and both rejectOnUnknown values; real post-upload removal proven via head->not-found; the real MarkerFileScanner wired into the confirm seam so a clean direct upload is confirmed while infected is refused+removed). Inert X-DEMO markers only (grep for EICAR/real-malware is empty). 311 unit tests 100/100/100/100; 21 e2e against Testcontainers MinIO. Dashboards synced; PR opened with Copilot review requested; merge deferred to the orchestrator.
 - 6.4 ✅ 2026-07-07: wired the real confirm-time scanner. `signed/scanner-confirm.ts` `ScannerConfirm` (bound to `CONFIRM_SCANNER` via a `useFactory` over the global `StorageService`) downloads a BOUNDED 4096-byte prefix (Range request) of the landed object, runs the shared inert `MarkerFileScanner`, and on an infected verdict DELETES the object before returning the refusal; clean/unknown pass through. `NoOpConfirmScanner` stays exported as the documented test/no-scanner fallback. `ConfirmService` now yields `confirmed: true` for a clean direct upload (scanClean === clean-only preserved). Updated the P5 confirm e2e (clean PUT now confirmed) and added a direct-PUT infected path proving refusal + removal via `GET /scanner/exists` (head->not-found). Fixed a stale `EICAR` test string to the inert `Demo.Marker.A`. `/system/config` now renders the scanner `impl` by class name with `mode` + `rejectOnUnknown`, and custom validators by name, instead of serialized instances (`config-redactor.ts` introspection rendering). Unit 100/100/100/100.
 - 6.3 ✅ 2026-07-07: `scanner-lab/` module (`ScannerLabController` + `ScannerLabService`) driving the real scanner pipeline under `scanner-lab/` keys. `POST /scanner/upload` (Zod `content` + optional deterministic `keySeed`, always `text/plain` so the MIME stage passes) classifies the body with the SAME inert `MarkerFileScanner` the library runs, reflects the detected marker into the object key (so post-upload mode, which scans the KEY, sees the same marker the pre-upload mode reads from the body), then uploads through the library which is the enforcement authority. Infected -> 422 `STORAGE_SCAN_INFECTED` (`threat: Demo.Marker.A`); unknown -> accepted with a warning or 422 `STORAGE_SCAN_INCONCLUSIVE` per `rejectOnUnknown`. `GET /scanner/exists` probes presence (backs the post-upload removal proof); `GET /scanner/config` renders enabled/mode/rejectOnUnknown from the options token. Marker constants exported from `marker-file.scanner.ts` (single source). Unit 100/100/100/100; `test/scanner.e2e-spec.ts` boots three app instances on ONE MinIO (pre-upload, pre-upload+reject, post-upload) proving every verdict/mode/reject combination incl. real removal via head->not-found. Inert `X-DEMO-*` markers only.
 - 6.2 ✅ 2026-07-07: added the magic-byte forgery demonstration on the same `POST /validation/upload` route. `pdf-samples.ts` fixture builders: `forgedPdf()` (plain text declared `application/pdf`, no `%PDF` prefix) and `genuinePdf()` (real `%PDF-1.7` signature), both marker-free to isolate the content-sniffing stage. The e2e drives both through the real pipeline against MinIO: the forged body maps to 400 `STORAGE_VALIDATION_FAILED` with `details.validator: 'pdf-magic-byte'` and a reason string; the genuine body passes and the response names the validators that ran. Fixture unit tests at 100%.
