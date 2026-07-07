@@ -1,6 +1,6 @@
 # Phase 9: quality-docs-readiness
 
-> **Status**: 🔄 In Progress · **Progress**: 1 / 6 tasks · **Last updated**: 2026-07-07
+> **Status**: 🔄 In Progress · **Progress**: 2 / 6 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P9)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §21, §22, Appendix B of the plan
 
@@ -33,7 +33,7 @@ CodeQL/Scorecard workflows).
 | ID  | Task                                                       | Status  | Priority | Size | Depends on |
 | --- | ---------------------------------------------------------- | ------- | -------- | ---- | ---------- |
 | 9.1 | Branch + api unit suite to 100/100/100/100                 | ✅ Done | P0       | L    | none       |
-| 9.2 | Web unit suite to 100/100/100/100                          | 📋 ToDo | P0       | L    | 9.1        |
+| 9.2 | Web unit suite to 100/100/100/100                          | ✅ Done | P0       | L    | 9.1        |
 | 9.3 | e2e: every route, every error path, Playwright smoke       | 📋 ToDo | P0       | L    | 9.1        |
 | 9.4 | Stryker mutation (api break 100, web break 90) + docs      | 📋 ToDo | P0       | L    | 9.2, 9.3   |
 | 9.5 | Export audit + README + go-public checklist                | 📋 ToDo | P0       | M    | 9.4        |
@@ -115,7 +115,7 @@ Completion Protocol:
 
 ### Task 9.2: Web unit suite to 100%
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: L
 - **Depends on**: 9.1
@@ -127,9 +127,9 @@ shadcn `components/ui/**` and route shells excluded by documented convention.
 
 #### Acceptance criteria
 
-- [ ] `vitest.config.ts`: coverage thresholds 100 on all four metrics; documented excludes limited to `components/ui/**` (vendored) and `app/**` route shells; jsdom + testing-library setup.
-- [ ] All boundaries mocked (fetch, XHR, TanStack Query, nuqs, next/navigation); timers controlled.
-- [ ] `pnpm --filter web test:cov` reports 100/100/100/100 with zero skips/ignores.
+- [x] `vitest.config.ts`: coverage thresholds 100 on all four metrics; documented excludes limited to `components/ui/**` (vendored) and `app/**` route shells; jsdom + testing-library setup.
+- [x] All boundaries mocked (fetch, XHR, TanStack Query, nuqs, next/navigation); timers controlled.
+- [x] `pnpm --filter web test:cov` reports 100/100/100/100 with zero skips/ignores.
 
 #### Files to create / modify
 
@@ -471,4 +471,5 @@ Completion Protocol:
 
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
 
+- 9.2 ✅ 2026-07-07: web unit suite at 100/100/100/100 (1207 stmts, 352 branches, 129 funcs; 244 tests across 26 files). Trimmed vitest coverage excludes to the genuinely-needed set (vendored components/ui/**, the compile-only shared probe, spec files); app/** route shells stay out of the include list; all boundaries mocked.
 - 9.1 ✅ 2026-07-07: api unit suite at 100/100/100/100 (682 stmts, 269 branches, 202 funcs, 642 lines; 369 tests). Added app.factory.spec.ts (NestFactory spy) so the bootstrap seam is unit-proven; trimmed collectCoverageFrom exclusions to the documented *.module.ts / main.ts / *.d.ts only. Unit tsconfig keeps emitDecoratorMetadata off; zero ignore/suppression comments.

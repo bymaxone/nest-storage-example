@@ -30,15 +30,13 @@ export default defineConfig({
       reporter: ['text', 'text-summary', 'json-summary', 'html'],
       include: ['lib/**/*.{ts,tsx}', 'hooks/**/*.{ts,tsx}', 'components/**/*.{ts,tsx}'],
       exclude: [
+        // Vendored shadcn primitives: copied verbatim, owned upstream.
         'components/ui/**',
         // Compile-time-only proof that the browser-safe `./shared` subpath
         // resolves without the library's peers; it has no runtime behavior.
         'lib/storage-shared-probe.ts',
+        // Test files are subjects-under-test, never counted as coverage source.
         '**/*.{test,spec}.{ts,tsx}',
-        '**/index.ts',
-        '**/types.ts',
-        '**/*.types.ts',
-        '**/*.d.ts',
       ],
       thresholds: { branches: 100, functions: 100, lines: 100, statements: 100 },
     },
