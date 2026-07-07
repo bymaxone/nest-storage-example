@@ -1,6 +1,6 @@
 # Phase 3: core-object-operations
 
-> **Status**: 🔄 In Progress · **Progress**: 0 / 5 tasks · **Last updated**: 2026-07-07
+> **Status**: 🔄 In Progress · **Progress**: 4 / 5 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P3)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §11.1, §12.1-§12.3
 
@@ -28,19 +28,19 @@ byte range, versionId). Matrix rows 10, 12, 15, 20-31.
 
 ## Task index
 
-| ID  | Task                                                          | Status  | Priority | Size | Depends on |
-| --- | ------------------------------------------------------------- | ------- | -------- | ---- | ---------- |
-| 3.1 | Branch + uploads module: single-shot + headers + SSE override | 📋 ToDo | P0       | M    | none       |
-| 3.2 | Multipart + progress session store + stream strategies        | 📋 ToDo | P0       | L    | 3.1        |
-| 3.3 | Idempotent upload demo                                        | 📋 ToDo | P0       | S    | 3.1        |
-| 3.4 | Vault downloads: stream, buffer preview, range, versionId     | 📋 ToDo | P0       | M    | 3.1        |
-| 3.5 | Phase close: audit, dashboards, PR + Copilot review, merge    | 📋 ToDo | P0       | S    | 3.1-3.4    |
+| ID  | Task                                                          | Status         | Priority | Size | Depends on |
+| --- | ------------------------------------------------------------- | -------------- | -------- | ---- | ---------- |
+| 3.1 | Branch + uploads module: single-shot + headers + SSE override | ✅ Done        | P0       | M    | none       |
+| 3.2 | Multipart + progress session store + stream strategies        | ✅ Done        | P0       | L    | 3.1        |
+| 3.3 | Idempotent upload demo                                        | ✅ Done        | P0       | S    | 3.1        |
+| 3.4 | Vault downloads: stream, buffer preview, range, versionId     | ✅ Done        | P0       | M    | 3.1        |
+| 3.5 | Phase close: audit, dashboards, PR + Copilot review, merge    | 🔄 In Progress | P0       | S    | 3.1-3.4    |
 
 ## Tasks
 
 ### Task 3.1: Branch + single-shot uploads
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: none
@@ -53,11 +53,11 @@ Buffer), automatic-header round-trip, `x-amz-meta` metadata, and `POST /uploads/
 
 #### Acceptance criteria
 
-- [ ] Branch `feat/phase-03-core-object-operations` created with `git switch -c`.
-- [ ] `POST /uploads/single` accepts a file + category, composes the key (`{category}/{uuid}.{ext}`), returns the full `UploadResult` (`multipart: false` for small files).
-- [ ] Custom `cacheControl`/`contentDisposition`/`metadata` accepted and observable via a follow-up `head()` in the integration test.
-- [ ] `POST /uploads/sse-override` demonstrates per-upload `serverSideEncryption` including the `'NONE'` sentinel.
-- [ ] Unit tests (library mocked via tokens) 100% on new files.
+- [x] Branch `feat/phase-03-core-object-operations` created with `git switch -c`.
+- [x] `POST /uploads/single` accepts a file + category, composes the key (`{category}/{uuid}.{ext}`), returns the full `UploadResult` (`multipart: false` for small files).
+- [x] Custom `cacheControl`/`contentDisposition`/`metadata` accepted and observable via a follow-up `head()` in the integration test.
+- [x] `POST /uploads/sse-override` demonstrates per-upload `serverSideEncryption` including the `'NONE'` sentinel.
+- [x] Unit tests (library mocked via tokens) 100% on new files.
 
 #### Files to create / modify
 
@@ -116,7 +116,7 @@ Completion Protocol:
 
 ### Task 3.2: Multipart, progress, streams
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: L
 - **Depends on**: 3.1
@@ -129,10 +129,10 @@ forcing multipart.
 
 #### Acceptance criteria
 
-- [ ] `POST /uploads/multipart`: a body ≥ threshold returns `multipart: true`; progress snapshots (`loaded`, `total`, `part`, `strategy`) are readable during and after the upload via the session route.
-- [ ] `POST /uploads/stream`: pipes the request stream to `upload()` with `size` from `Content-Length`; `?knownSize=false` omits `size` and the result proves multipart was forced.
-- [ ] Session store is bounded (LRU, documented cap) and pruned; no unbounded memory growth.
-- [ ] Unit tests simulate `onProgress` callbacks and assert snapshot sequences; 100% on new files.
+- [x] `POST /uploads/multipart`: a body ≥ threshold returns `multipart: true`; progress snapshots (`loaded`, `total`, `part`, `strategy`) are readable during and after the upload via the session route.
+- [x] `POST /uploads/stream`: pipes the request stream to `upload()` with `size` from `Content-Length`; `?knownSize=false` omits `size` and the result proves multipart was forced.
+- [x] Session store is bounded (LRU, documented cap) and pruned; no unbounded memory growth.
+- [x] Unit tests simulate `onProgress` callbacks and assert snapshot sequences; 100% on new files.
 
 #### Files to create / modify
 
@@ -192,7 +192,7 @@ Completion Protocol:
 
 ### Task 3.3: Idempotent upload demo
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 3.1
@@ -204,9 +204,9 @@ Completion Protocol:
 
 #### Acceptance criteria
 
-- [ ] First call uploads (`fromIdempotencyCache: false`); an identical second call returns `fromIdempotencyCache: true` without a second provider write (asserted via mock call count in unit tests and via provider listing in the live check).
-- [ ] Response includes a `note` field restating the documented per-instance in-memory boundary.
-- [ ] Unit tests 100%.
+- [x] First call uploads (`fromIdempotencyCache: false`); an identical second call returns `fromIdempotencyCache: true` without a second provider write (asserted via mock call count in unit tests and via provider listing in the live check).
+- [x] Response includes a `note` field restating the documented per-instance in-memory boundary.
+- [x] Unit tests 100%.
 
 #### Files to create / modify
 
@@ -260,7 +260,7 @@ Completion Protocol:
 
 ### Task 3.4: Vault downloads
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 3.1
@@ -272,11 +272,11 @@ download for the hex panel, and `versionId` download against the versioned bucke
 
 #### Acceptance criteria
 
-- [ ] `GET /vault/object/download?key=`: streams with `Content-Type`/`Content-Length`/`Content-Disposition` from `ObjectMetadata`; missing key → `STORAGE_OBJECT_NOT_FOUND` 404 through the filter.
-- [ ] `GET /vault/object/preview?key=`: `downloadBuffer()` guarded to ≤ 10 MiB (larger → 413-style structured refusal before calling the library).
-- [ ] `GET /vault/object/range?key=&start=&end=`: returns `{ base64, metadata }` for exactly the requested bytes.
-- [ ] `GET /vault/object/version?key=&versionId=`: retrieves a prior version from `vault-versioned` (two writes to the same key in the live check).
-- [ ] Unit tests 100% on new files.
+- [x] `GET /vault/object/download?key=`: streams with `Content-Type`/`Content-Length`/`Content-Disposition` from `ObjectMetadata`; missing key → `STORAGE_OBJECT_NOT_FOUND` 404 through the filter.
+- [x] `GET /vault/object/preview?key=`: `downloadBuffer()` guarded to ≤ 10 MiB (larger → 413-style structured refusal before calling the library).
+- [x] `GET /vault/object/range?key=&start=&end=`: returns `{ base64, metadata }` for exactly the requested bytes.
+- [x] `GET /vault/object/version?key=&versionId=`: retrieves a prior version from `vault-versioned` (two writes to the same key in the live check).
+- [x] Unit tests 100% on new files.
 
 #### Files to create / modify
 
@@ -397,3 +397,8 @@ Completion Protocol:
 ## Completion log
 
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
+
+- 3.4 ✅ 2026-07-07: Vault module with stream proxy, size-guarded buffer preview, byte-range, and versioned-bucket download; 100% coverage.
+- 3.3 ✅ 2026-07-07: Idempotent upload route with SHA-256 key, per-instance cache boundary note, 100% coverage.
+- 3.2 ✅ 2026-07-07: Multipart and stream upload strategies with bounded LRU progress session store (cap 100); 100% coverage.
+- 3.1 ✅ 2026-07-07: Uploads module with single-shot, SSE-override, header/metadata pass-through; branch created; 100% coverage.

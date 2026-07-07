@@ -25,7 +25,7 @@
 
 ## 1. Progress Dashboard
 
-> **Progress:** 3 / 10 phases complete (30%) · 17 / 54 tasks
+> **Progress:** 3 / 10 phases complete (30%) · 21 / 54 tasks
 > **Active phase:** P3 core-object-operations
 > **Blockers:** none
 
@@ -34,7 +34,7 @@
 | P0  | repo-foundation-ci        | `phase-00-repo-foundation-ci.md`        | ✅ Done        | 6/6      | M    | 2026-07-07   |
 | P1  | minio-stack-library-link  | `phase-01-minio-stack-library-link.md`  | ✅ Done        | 5/5      | M    | 2026-07-07   |
 | P2  | api-skeleton-wiring       | `phase-02-api-skeleton-wiring.md`       | ✅ Done        | 6/6      | L    | 2026-07-07   |
-| P3  | core-object-operations    | `phase-03-core-object-operations.md`    | 🔄 In Progress | 0/5      | L    | 2026-07-07   |
+| P3  | core-object-operations    | `phase-03-core-object-operations.md`    | 🔄 In Progress | 4/5      | L    | 2026-07-07   |
 | P4  | listing-lifecycle         | `phase-04-listing-lifecycle.md`         | 📋 ToDo        | 0/5      | M    | 2026-07-06   |
 | P5  | signed-urls-direct-upload | `phase-05-signed-urls-direct-upload.md` | 📋 ToDo        | 0/5      | M    | 2026-07-06   |
 | P6  | validation-scanner        | `phase-06-validation-scanner.md`        | 📋 ToDo        | 0/5      | M    | 2026-07-06   |
