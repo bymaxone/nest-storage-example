@@ -1,6 +1,6 @@
 # Phase 7: tenants-advanced-errors
 
-> **Status**: 🔄 In Progress · **Progress**: 4 / 5 tasks · **Last updated**: 2026-07-07
+> **Status**: 👀 Review · **Progress**: 5 / 5 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P7)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §12.6-§12.8, §18
 
@@ -29,13 +29,13 @@ demonstrations (checksum trap, ACL honesty, timeout knobs), and the raw-client e
 
 ## Task index
 
-| ID  | Task                                                       | Status  | Priority | Size | Depends on |
-| --- | ---------------------------------------------------------- | ------- | -------- | ---- | ---------- |
-| 7.1 | Branch + tenants module with isolation proof               | ✅ Done | P0       | M    | none       |
-| 7.2 | Error explorer: all 17 codes deterministic                 | ✅ Done | P0       | L    | none       |
-| 7.3 | Provider quirks: checksum trap, ACL honesty, timeout       | ✅ Done | P0       | M    | 7.2        |
-| 7.4 | Raw-client advanced ops + sync forRoot coverage            | ✅ Done | P1       | S    | 7.2        |
-| 7.5 | Phase close: audit, dashboards, PR + Copilot review, merge | 📋 ToDo | P0       | S    | 7.1-7.4    |
+| ID  | Task                                                       | Status    | Priority | Size | Depends on |
+| --- | ---------------------------------------------------------- | --------- | -------- | ---- | ---------- |
+| 7.1 | Branch + tenants module with isolation proof               | ✅ Done   | P0       | M    | none       |
+| 7.2 | Error explorer: all 17 codes deterministic                 | ✅ Done   | P0       | L    | none       |
+| 7.3 | Provider quirks: checksum trap, ACL honesty, timeout       | ✅ Done   | P0       | M    | 7.2        |
+| 7.4 | Raw-client advanced ops + sync forRoot coverage            | ✅ Done   | P1       | S    | 7.2        |
+| 7.5 | Phase close: audit, dashboards, PR + Copilot review, merge | 👀 Review | P0       | S    | 7.1-7.4    |
 
 ## Tasks
 
@@ -326,7 +326,7 @@ Completion Protocol:
 
 ### Task 7.5: Phase close
 
-- **Status**: 📋 ToDo
+- **Status**: 👀 Review
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 7.1-7.4
@@ -388,6 +388,8 @@ Completion Protocol:
 ## Completion log
 
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
+
+- 7.5 👀 2026-07-07: acceptance-criteria audit passed (tenant key scoping under the instance keyPrefix with an isolation proof - A cannot read/list/clear B, clearing strictly inside the tenant prefix, tenant slug validated; the deterministic 17-code error explorer with real library envelopes; provider quirks checksum/ACL/timeout; raw S3Client ops + sync forRoot). 365 unit tests 100/100/100/100; 32 e2e against Testcontainers MinIO. Tenant isolation framed honestly as app-level prefix composition. Dashboards synced; PR opened with Copilot review requested; merge deferred to the orchestrator.
 
 - 7.4 ✅ 2026-07-07: raw-client escape hatch on the system module. `GET /system/versioning` (`VersioningController` + `VersioningService`) injects the raw `BYMAX_STORAGE_S3_CLIENT` and issues `GetBucketVersioningCommand` for the three application buckets (from the validated env), returning `{ buckets: [{ bucket, status }], tradeOffNote }` where an absent provider Status maps to `Unversioned`; a null raw client (unconfigured) raises `STORAGE_NOT_CONFIGURED`. JSDoc + the response `tradeOffNote` carry the abstraction-loss caveat (reaching past the facade couples the call to the AWS SDK and forgoes the key-prefix/error-mapping/provider-agnostic guarantees). Unit 100% (status mapping + not-configured). `test/sync-forroot.e2e-spec.ts` proves the synchronous `forRoot(inlineOptions)` boot path via `@nestjs/testing` with a real upload+head round-trip (matrix #2) and exercises the live `GET /system/versioning` route against Testcontainers MinIO.
 - 7.3 ✅ 2026-07-07: provider-quirk demos on the system module (`QuirksController` + `QuirksService`, `/system/quirks/*`). `POST /system/quirks/checksum-demo` uploads the same body twice - a scoped `WHEN_SUPPORTED` instance (built from the resolved options with the checksum mode flipped) and the running `WHEN_REQUIRED` module - and renders BOTH real outcomes side by side with a `diverged` flag; honest by design (captures the real StorageException code for display without faking a failure, and reports agreement when a newer MinIO accepts the SDK default checksums). `GET /system/quirks/acl` restates the library's documented ACL behavior (public-read -> HTTP 400 AccessControlListNotSupported on modern AWS, no-op on R2) mapped to `STORAGE_PROVIDER_ERROR`, with the bucket-policy/CDN/signed-URL alternatives. `GET /system/quirks/network` renders maxAttempts/requestTimeoutMs with attempts = retries + 1 AND the honest caveat that the shipped library resolves but does not wire requestTimeoutMs. Unit 100%; `test/quirks.e2e-spec.ts` asserts WHEN_REQUIRED always succeeds and branches skip-with-reason when the local MinIO accepts both modes.
