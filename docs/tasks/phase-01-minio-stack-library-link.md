@@ -1,6 +1,6 @@
 # Phase 1: minio-stack-library-link
 
-> **Status**: 🔄 In Progress · **Progress**: 4 / 5 tasks · **Last updated**: 2026-07-07
+> **Status**: 👀 Review · **Progress**: 5 / 5 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P1)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §8, §15, §20
 
@@ -29,13 +29,13 @@ typed subpath probes. At the end of the phase there is still no application logi
 
 ## Task index
 
-| ID  | Task                                                          | Status  | Priority | Size | Depends on |
-| --- | ------------------------------------------------------------- | ------- | -------- | ---- | ---------- |
-| 1.1 | Branch + docker-compose MinIO + bucket bootstrap script       | ✅ Done | P0       | M    | none       |
-| 1.2 | Env examples + infra scripts verified                         | ✅ Done | P0       | S    | 1.1        |
-| 1.3 | `apps/api` package: library link + peers + dual-subpath probe | ✅ Done | P0       | S    | 1.1        |
-| 1.4 | `apps/web` package: library link + `./shared`-only probe      | ✅ Done | P0       | S    | 1.1        |
-| 1.5 | Phase close: audit, dashboards, PR + Copilot review, merge    | 📋 ToDo | P0       | S    | 1.1-1.4    |
+| ID  | Task                                                          | Status    | Priority | Size | Depends on |
+| --- | ------------------------------------------------------------- | --------- | -------- | ---- | ---------- |
+| 1.1 | Branch + docker-compose MinIO + bucket bootstrap script       | ✅ Done   | P0       | M    | none       |
+| 1.2 | Env examples + infra scripts verified                         | ✅ Done   | P0       | S    | 1.1        |
+| 1.3 | `apps/api` package: library link + peers + dual-subpath probe | ✅ Done   | P0       | S    | 1.1        |
+| 1.4 | `apps/web` package: library link + `./shared`-only probe      | ✅ Done   | P0       | S    | 1.1        |
+| 1.5 | Phase close: audit, dashboards, PR + Copilot review, merge    | 👀 Review | P0       | S    | 1.1-1.4    |
 
 ## Tasks
 
@@ -410,6 +410,8 @@ Completion Protocol:
 ## Completion log
 
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
+
+- 1.5 👀 2026-07-07: acceptance-criteria audit passed (MinIO healthy with 3 buckets + versioning, both subpaths typecheck in both apps, web declares no peers, CI composite provisions the public sibling lib); dashboards updated 5/5; PR opened with Copilot review requested; awaiting CI green and merge
 
 - 1.4 ✅ 2026-07-07: added apps/web package (@nest-storage-example/web) consuming only @bymax-one/nest-storage/shared with zero library peers, plus storage-shared-probe.ts importing STORAGE_ERROR_CODES, DEFAULT_IMAGE_MIME_WHITELIST, DEFAULT_SIGNED_URL_TTL_SECONDS and the UploadResult type; `tsc --noEmit` passes, no bare-server import present, and the peer-absence guard holds
 - 1.3 ✅ 2026-07-07: added apps/api package (@nest-storage-example/api) consuming @bymax-one/nest-storage via file:../../../nest-storage plus the six peers, tsconfig extending the base with decorator metadata, and library-probe.ts importing from both `.` and `./shared`; `tsc --noEmit` passes and @aws-sdk/client-s3@3.1080.0 resolves to a single copy shared with the library peer
