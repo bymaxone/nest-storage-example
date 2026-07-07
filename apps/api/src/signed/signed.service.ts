@@ -116,6 +116,11 @@ export function readSignedUrlExpiry(signedUrl: string): {
   }
   const effectiveTtlSeconds = Number(expires)
   const signedAt = parseAmzDate(amzDate)
+  if (!Number.isFinite(signedAt) || !Number.isFinite(effectiveTtlSeconds)) {
+    throw new StorageException(STORAGE_ERROR_CODES.STORAGE_PROVIDER_ERROR, undefined, {
+      reason: 'presigned URL carries an unparseable SigV4 expiry',
+    })
+  }
   return {
     expiresAt: new Date(signedAt + effectiveTtlSeconds * MS_PER_SECOND),
     effectiveTtlSeconds,
@@ -171,7 +176,7 @@ export class SignedService {
       url: result.url,
       method: 'GET',
       requiredHeaders: result.requiredHeaders,
-      ...this.buildTtlView(requested, result.expiresAt),
+      ...this.buildTtlView(requested, result.url),
     }
   }
 
@@ -202,7 +207,7 @@ export class SignedService {
       requiredHeaders: result.requiredHeaders,
       contentLengthRange: this.buildContentLengthRange(body.maxSizeBytes),
       note: 'This direct PUT bypasses server-side MIME/size validation by design. After the PUT, the client MUST call POST /signed/confirm to verify the landed object (size, MIME, scan). The range is advisory: it is enforced at confirm, not at presign.',
-      ...this.buildTtlView(requested, result.expiresAt),
+      ...this.buildTtlView(requested, result.url),
     }
   }
 
@@ -278,16 +283,17 @@ export class SignedService {
   }
 
   /**
-   * Builds the requested-vs-effective TTL view from the library's `expiresAt`.
-   * The effective TTL is derived from what the library signed (round to the
-   * nearest second), never by recomputing the clamp in app code.
+   * Builds the requested-vs-effective TTL view by reading the effective TTL the
+   * library signed into the URL (`X-Amz-Expires`), the same authoritative source
+   * the multipart path uses. This never recomputes the clamp in app code and is
+   * immune to wall-clock skew between signing and this call.
    *
    * @param requestedTtlSeconds - The TTL the caller asked for (or the default).
-   * @param expiresAt - The absolute expiry the library returned.
+   * @param signedUrl - The presigned URL the library returned.
    * @returns The TTL view fields.
    */
-  private buildTtlView(requestedTtlSeconds: number, expiresAt: Date): TtlView {
-    const effectiveTtlSeconds = Math.round((expiresAt.getTime() - Date.now()) / MS_PER_SECOND)
+  private buildTtlView(requestedTtlSeconds: number, signedUrl: string): TtlView {
+    const { expiresAt, effectiveTtlSeconds } = readSignedUrlExpiry(signedUrl)
     return {
       expiresAt: expiresAt.toISOString(),
       requestedTtlSeconds,

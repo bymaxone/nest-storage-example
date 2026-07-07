@@ -44,10 +44,14 @@ function fakeSignedUrl(
   return `https://minio.local/vault/key?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=${amzDate(signedAt)}&X-Amz-Expires=${expiresSeconds}&X-Amz-Signature=redacted`
 }
 
-/** Builds a `SignedUrlResult` stub with an expiry relative to now. */
+/**
+ * Builds a `SignedUrlResult` stub whose URL carries the SigV4 expiry params, so
+ * the service reads the effective TTL from what the library signed (as it does
+ * in production) rather than from wall-clock arithmetic.
+ */
 function makeResult(method: 'GET' | 'PUT', ttlSeconds: number): SignedUrlResult {
   return {
-    url: `https://minio.local/vault/key?X-Amz-Expires=${ttlSeconds}`,
+    url: fakeSignedUrl(ttlSeconds),
     expiresAt: new Date(Date.now() + ttlSeconds * 1000),
     method,
     requiredHeaders: method === 'PUT' ? { 'Content-Type': 'image/png' } : {},
@@ -374,6 +378,25 @@ describe('SignedService (unit)', () => {
        * Rule it protects: a contract violation surfaces the provider-error envelope.
        */
       expect(() => readSignedUrlExpiry('https://minio.local/vault/key')).toThrow(StorageException)
+    })
+
+    it('throws when the X-Amz-Date is present but unparseable', () => {
+      /*
+       * Scenario: the date param does not match the SigV4 basic format.
+       * Rule it protects: a malformed signing time surfaces the provider error
+       * rather than producing an Invalid Date.
+       */
+      const url = 'https://minio.local/vault/key?X-Amz-Date=notadate&X-Amz-Expires=300'
+      expect(() => readSignedUrlExpiry(url)).toThrow(StorageException)
+    })
+
+    it('throws when the X-Amz-Expires is present but non-numeric', () => {
+      /*
+       * Scenario: the expires param is not a number.
+       * Rule it protects: a malformed lifetime surfaces the provider error.
+       */
+      const url = 'https://minio.local/vault/key?X-Amz-Date=20260707T100000Z&X-Amz-Expires=abc'
+      expect(() => readSignedUrlExpiry(url)).toThrow(StorageException)
     })
   })
 })

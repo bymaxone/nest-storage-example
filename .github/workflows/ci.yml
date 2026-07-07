@@ -80,7 +80,9 @@ jobs:
   e2e:
     name: E2E
     runs-on: ubuntu-latest
-    needs: lint
+    # Gate on the unit tier too so a coverage regression fails before the slower
+    # container-backed e2e runs and can never report green alongside a red unit job.
+    needs: [lint, unit]
     permissions:
       contents: read
     timeout-minutes: 20

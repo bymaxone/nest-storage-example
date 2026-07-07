@@ -8,17 +8,7 @@ import { z } from 'zod'
 import { objectKeySchema } from '../../vault/dto/object-key.js'
 import { ttlSecondsSchema } from './download-url.dto.js'
 import { SIGNED_UPLOAD_CATEGORIES } from './upload-url.dto.js'
-
-/** Printable ASCII only (space through tilde); rejects CR/LF and control bytes. */
-const PRINTABLE_ASCII = /^[\x20-\x7E]+$/
-
-/** MIME type folded into every presigned part signature. */
-const contentTypeSchema = z
-  .string()
-  .min(1)
-  .max(255)
-  .regex(PRINTABLE_ASCII)
-  .regex(/^[^/]+\/[^/]+$/, 'contentType must be a valid type/subtype')
+import { PRINTABLE_ASCII, contentTypeSchema } from './shared.js'
 
 /**
  * Maximum parts presigned in one request. S3 allows up to 10000 parts per

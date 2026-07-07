@@ -7,6 +7,7 @@
  */
 import { z } from 'zod'
 import { objectKeySchema } from '../../vault/dto/object-key.js'
+import { PRINTABLE_ASCII } from './shared.js'
 
 /**
  * Integer TTL in seconds. Deliberately NOT constrained to positive here: a
@@ -16,9 +17,6 @@ import { objectKeySchema } from '../../vault/dto/object-key.js'
  * only rejects non-integers, NaN, and Infinity, which the library never sees.
  */
 export const ttlSecondsSchema = z.number().int()
-
-/** Printable ASCII only (space through tilde); rejects CR/LF and control bytes. */
-const PRINTABLE_ASCII = /^[\x20-\x7E]+$/
 
 /**
  * Response-header override value: printable ASCII, bounded length. Excluding

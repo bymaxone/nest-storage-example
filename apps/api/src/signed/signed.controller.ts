@@ -27,7 +27,17 @@ import {
   type MultipartAbortBody,
 } from './dto/multipart-urls.dto.js'
 
-/** Presigned surface: all `/signed/*` routes. */
+/**
+ * Presigned surface: all `/signed/*` routes.
+ *
+ * SECURITY NOTE (production hardening required): these routes issue S3
+ * credentials (presigned GET/PUT/multipart URLs). Like the rest of this
+ * reference app they are unauthenticated for demonstration. Before any
+ * production deployment, protect them with an authentication guard
+ * (e.g. `@UseGuards(JwtAuthGuard)`) and a rate limiter (e.g. NestJS Throttler)
+ * so an open endpoint cannot be abused as an anonymous S3 proxy or flooded to
+ * mint credentials.
+ */
 @Controller('signed')
 export class SignedController {
   constructor(

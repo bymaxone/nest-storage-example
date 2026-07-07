@@ -17,6 +17,6 @@ describe('NoOpConfirmScanner (unit)', () => {
      * inspected rather than implying it is clean.
      */
     const scanner = new NoOpConfirmScanner()
-    await expect(scanner.scan('avatars/x.png', 'vault')).resolves.toEqual({ status: 'skipped' })
+    await expect(scanner.scan()).resolves.toEqual({ status: 'skipped' })
   })
 })

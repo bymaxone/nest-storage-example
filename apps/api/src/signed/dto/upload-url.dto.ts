@@ -9,6 +9,7 @@
  */
 import { z } from 'zod'
 import { ttlSecondsSchema } from './download-url.dto.js'
+import { contentTypeSchema } from './shared.js'
 
 /**
  * Direct-upload categories forming the first key segment. Kept local to the
@@ -16,21 +17,6 @@ import { ttlSecondsSchema } from './download-url.dto.js'
  * server-mediated upload categories.
  */
 export const SIGNED_UPLOAD_CATEGORIES = ['avatars', 'invoices', 'attachments', 'media'] as const
-
-/** Printable ASCII only (space through tilde); rejects CR/LF and control bytes. */
-const PRINTABLE_ASCII = /^[\x20-\x7E]+$/
-
-/**
- * MIME type the client commits to sending. Bounded and control-free because the
- * value is signed into the URL and echoed as a required `Content-Type` header;
- * a mismatch at PUT time yields `SignatureDoesNotMatch`.
- */
-const contentTypeSchema = z
-  .string()
-  .min(1)
-  .max(255)
-  .regex(PRINTABLE_ASCII)
-  .regex(/^[^/]+\/[^/]+$/, 'contentType must be a valid type/subtype')
 
 /** Body schema for `POST /signed/upload-url`. */
 export const uploadUrlBodySchema = z.object({

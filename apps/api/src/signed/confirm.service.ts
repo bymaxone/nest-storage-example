@@ -60,7 +60,7 @@ export function isMimeAllowed(
       return true
     }
     if (entry.endsWith('/*')) {
-      return contentType.startsWith(`${entry.slice(0, -1)}`)
+      return contentType.startsWith(entry.slice(0, -1))
     }
     return entry === contentType
   })
