@@ -1,0 +1,45 @@
+# Local S3-compatible storage substrate for nest-storage-example.
+#
+# `minio` runs the object server plus its web console; `minio-setup` is a
+# one-shot `mc` job that provisions the three demo buckets, enables versioning
+# on the versioned bucket, and seeds sample objects so the vault renders on the
+# first application boot. Dev credentials only; every port is bound to the
+# loopback interface so nothing is exposed off the host.
+services:
+  minio:
+    image: minio/minio:latest@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - '127.0.0.1:9000:9000'
+      - '127.0.0.1:9001:9001'
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+    volumes:
+      - minio-data:/data
+
+  minio-setup:
+    image: minio/mc:latest@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727
+    # A one-shot provisioning job: run once and exit. `infra:up` starts `minio`
+    # with `--wait`, then invokes this job explicitly via
+    # `docker compose run --rm minio-setup`, whose exit code surfaces directly.
+    # `restart: no` marks it as a one-shot so it is never restarted as a service.
+    restart: 'no'
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - ./docker/minio:/docker/minio:ro
+    entrypoint: ['/docker/minio/setup.sh']
+
+volumes:
+  minio-data:

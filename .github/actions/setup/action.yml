@@ -1,0 +1,53 @@
+name: Setup workspace
+description: >-
+  Set up pnpm + Node, provision the local @bymax-one/nest-storage library
+  (checked out beside the repo to satisfy the `file:` dependency and built with
+  tsup), then install the workspace with a frozen lockfile.
+
+runs:
+  using: composite
+  steps:
+    # No `version:` key: the pnpm version is derived from the root package.json
+    # `packageManager` field, so the two never drift (a hard-coded pin here would
+    # risk ERR_PNPM_BAD_PM_VERSION).
+    - name: Set up pnpm
+      uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+
+    - name: Set up Node.js
+      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      with:
+        node-version: 24
+        cache: pnpm
+
+    # The apps consume @bymax-one/nest-storage via `file:../../../nest-storage`, a
+    # sibling of the repo checkout, so the lockfile cannot resolve until the library
+    # is on disk. Check it out (public repo, tokenless), move it into place beside the
+    # workspace, then build it (it ships `dist/` via tsup). Once the library is
+    # published to npm and the dependency becomes a registry range, these three steps
+    # can be dropped and jobs install straight from the store.
+    - name: Check out the @bymax-one/nest-storage library
+      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      with:
+        repository: bymaxone/nest-storage
+        # Pinned to a specific commit for reproducible builds; bump intentionally
+        # to consume upstream library changes (a floating ref would let upstream
+        # silently change what CI builds).
+        ref: 9fd67705d9973320556a3a1e22b6311dc5d1b4cf
+        path: .nest-storage-lib
+
+    - name: Position the library beside the workspace
+      shell: bash
+      run: |
+        rm -rf "${GITHUB_WORKSPACE}/../nest-storage"
+        mv "${GITHUB_WORKSPACE}/.nest-storage-lib" "${GITHUB_WORKSPACE}/../nest-storage"
+
+    - name: Build the library
+      shell: bash
+      working-directory: ${{ github.workspace }}/../nest-storage
+      run: |
+        pnpm install --frozen-lockfile
+        pnpm build
+
+    - name: Install workspace dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile

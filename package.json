@@ -13,7 +13,7 @@
     "format:check": "prettier --check .",
     "test": "pnpm -r --workspace-concurrency=1 run --if-present test",
     "test:e2e": "pnpm -r --workspace-concurrency=1 run --if-present test:e2e",
-    "infra:up": "node -e \"require('fs').existsSync('docker-compose.yml')||(console.error('docker-compose.yml not found: the local MinIO stack is not configured in this checkout.'),process.exit(1))\" && docker compose up -d --wait",
+    "infra:up": "node -e \"require('fs').existsSync('docker-compose.yml')||(console.error('docker-compose.yml not found: the local MinIO stack is not configured in this checkout.'),process.exit(1))\" && docker compose up -d --wait minio && docker compose run --rm minio-setup",
     "infra:down": "node -e \"require('fs').existsSync('docker-compose.yml')||(console.error('docker-compose.yml not found: the local MinIO stack is not configured in this checkout.'),process.exit(1))\" && docker compose down",
     "infra:nuke": "node -e \"require('fs').existsSync('docker-compose.yml')||(console.error('docker-compose.yml not found: the local MinIO stack is not configured in this checkout.'),process.exit(1))\" && docker compose down -v",
     "infra:logs": "node -e \"require('fs').existsSync('docker-compose.yml')||(console.error('docker-compose.yml not found: the local MinIO stack is not configured in this checkout.'),process.exit(1))\" && docker compose logs -f"

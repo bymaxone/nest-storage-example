@@ -1,6 +1,6 @@
 # Phase 1: minio-stack-library-link
 
-> **Status**: 📋 ToDo · **Progress**: 0 / 5 tasks · **Last updated**: 2026-07-06
+> **Status**: 👀 Review · **Progress**: 5 / 5 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P1)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §8, §15, §20
 
@@ -29,19 +29,19 @@ typed subpath probes. At the end of the phase there is still no application logi
 
 ## Task index
 
-| ID  | Task                                                          | Status  | Priority | Size | Depends on |
-| --- | ------------------------------------------------------------- | ------- | -------- | ---- | ---------- |
-| 1.1 | Branch + docker-compose MinIO + bucket bootstrap script       | 📋 ToDo | P0       | M    | none       |
-| 1.2 | Env examples + infra scripts verified                         | 📋 ToDo | P0       | S    | 1.1        |
-| 1.3 | `apps/api` package: library link + peers + dual-subpath probe | 📋 ToDo | P0       | S    | 1.1        |
-| 1.4 | `apps/web` package: library link + `./shared`-only probe      | 📋 ToDo | P0       | S    | 1.1        |
-| 1.5 | Phase close: audit, dashboards, PR + Copilot review, merge    | 📋 ToDo | P0       | S    | 1.1-1.4    |
+| ID  | Task                                                          | Status    | Priority | Size | Depends on |
+| --- | ------------------------------------------------------------- | --------- | -------- | ---- | ---------- |
+| 1.1 | Branch + docker-compose MinIO + bucket bootstrap script       | ✅ Done   | P0       | M    | none       |
+| 1.2 | Env examples + infra scripts verified                         | ✅ Done   | P0       | S    | 1.1        |
+| 1.3 | `apps/api` package: library link + peers + dual-subpath probe | ✅ Done   | P0       | S    | 1.1        |
+| 1.4 | `apps/web` package: library link + `./shared`-only probe      | ✅ Done   | P0       | S    | 1.1        |
+| 1.5 | Phase close: audit, dashboards, PR + Copilot review, merge    | 👀 Review | P0       | S    | 1.1-1.4    |
 
 ## Tasks
 
 ### Task 1.1: Branch + MinIO stack + bootstrap
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: none
@@ -53,10 +53,10 @@ Compose file with MinIO and a one-shot `mc`-based setup service creating `vault`
 
 #### Acceptance criteria
 
-- [ ] Branch `feat/phase-01-minio-stack-library-link` created with `git switch -c`.
-- [ ] `docker-compose.yml`: `minio` (server + console, healthcheck, named volume, `127.0.0.1` ports 9000/9001) and `minio-setup` (`minio/mc`, `depends_on: service_healthy`, runs `docker/minio/setup.sh`).
-- [ ] `docker/minio/setup.sh`: idempotent; creates the 3 buckets, enables versioning on `vault-versioned`, seeds ~10 objects across `avatars/`, `invoices/`, `attachments/` prefixes.
-- [ ] `docker compose up -d --wait` exits 0; `vault-versioned` reports versioning enabled.
+- [x] Branch `feat/phase-01-minio-stack-library-link` created with `git switch -c`.
+- [x] `docker-compose.yml`: `minio` (server + console, healthcheck, named volume, `127.0.0.1` ports 9000/9001) and `minio-setup` (`minio/mc`, `depends_on: service_healthy`, runs `docker/minio/setup.sh`).
+- [x] `docker/minio/setup.sh`: idempotent; creates the 3 buckets, enables versioning on `vault-versioned`, seeds ~10 objects across `avatars/`, `invoices/`, `attachments/` prefixes.
+- [x] `docker compose up -d --wait` exits 0; `vault-versioned` reports versioning enabled.
 
 #### Files to create / modify
 
@@ -118,7 +118,7 @@ Completion Protocol:
 
 ### Task 1.2: Env examples + infra scripts
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 1.1
@@ -130,9 +130,9 @@ against the compose file.
 
 #### Acceptance criteria
 
-- [ ] `apps/api/.env.example` lists every variable from spec §9.1 with the dev defaults and a one-line comment each.
-- [ ] `apps/web/.env.example` with `NEXT_PUBLIC_API_URL`.
-- [ ] Root `infra:up|down|nuke|logs` verified working; `infra:nuke` removes the volume.
+- [x] `apps/api/.env.example` lists every variable from spec §9.1 with the dev defaults and a one-line comment each.
+- [x] `apps/web/.env.example` with `NEXT_PUBLIC_API_URL`.
+- [x] Root `infra:up|down|nuke|logs` verified working; `infra:nuke` removes the volume.
 
 #### Files to create / modify
 
@@ -189,7 +189,7 @@ Completion Protocol:
 
 ### Task 1.3: `apps/api` library link + dual-subpath probe
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 1.1
@@ -201,9 +201,9 @@ importing from both `.` and `./shared`.
 
 #### Acceptance criteria
 
-- [ ] `apps/api/package.json`: `"@bymax-one/nest-storage": "file:../../../nest-storage"` plus peers `@nestjs/common ^11`, `@nestjs/core ^11`, `@aws-sdk/client-s3 ^3.700.0`, `@aws-sdk/lib-storage ^3.700.0`, `@aws-sdk/s3-request-presigner ^3.700.0`, `reflect-metadata ^0.2`; `tsconfig.json` extending the base.
-- [ ] `apps/api/src/library-probe.ts` imports `BymaxStorageModule`, `StorageService`, `SignedUrlService`, `providerRecipes` from `.` and `STORAGE_ERROR_CODES`, `DEFAULT_SIGNED_URL_TTL_SECONDS` from `./shared`, referencing each.
-- [ ] `pnpm --filter api exec tsc --noEmit` exits 0; peers resolve to a single copy.
+- [x] `apps/api/package.json`: `"@bymax-one/nest-storage": "file:../../../nest-storage"` plus peers `@nestjs/common ^11`, `@nestjs/core ^11`, `@aws-sdk/client-s3 ^3.700.0`, `@aws-sdk/lib-storage ^3.700.0`, `@aws-sdk/s3-request-presigner ^3.700.0`, `reflect-metadata ^0.2`; `tsconfig.json` extending the base.
+- [x] `apps/api/src/library-probe.ts` imports `BymaxStorageModule`, `StorageService`, `SignedUrlService`, `providerRecipes` from `.` and `STORAGE_ERROR_CODES`, `DEFAULT_SIGNED_URL_TTL_SECONDS` from `./shared`, referencing each.
+- [x] `pnpm --filter api exec tsc --noEmit` exits 0; peers resolve to a single copy.
 
 #### Files to create / modify
 
@@ -269,7 +269,7 @@ Completion Protocol:
 
 ### Task 1.4: `apps/web` library link + shared-only probe
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 1.1
@@ -281,9 +281,9 @@ browser-path proof (matrix #59).
 
 #### Acceptance criteria
 
-- [ ] `apps/web/package.json`: the library `file:` link only; NO NestJS/SDK peers declared.
-- [ ] `apps/web/lib/storage-shared-probe.ts` imports only from `@bymax-one/nest-storage/shared` (`STORAGE_ERROR_CODES`, default whitelist + TTL constants, `UploadResult` type), referencing each; no import from the bare server subpath anywhere in `apps/web`.
-- [ ] `pnpm --filter web exec tsc --noEmit` exits 0.
+- [x] `apps/web/package.json`: the library `file:` link only; NO NestJS/SDK peers declared.
+- [x] `apps/web/lib/storage-shared-probe.ts` imports only from `@bymax-one/nest-storage/shared` (`STORAGE_ERROR_CODES`, default whitelist + TTL constants, `UploadResult` type), referencing each; no import from the bare server subpath anywhere in `apps/web`.
+- [x] `pnpm --filter web exec tsc --noEmit` exits 0.
 
 #### Files to create / modify
 
@@ -410,3 +410,10 @@ Completion Protocol:
 ## Completion log
 
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
+
+- 1.5 👀 2026-07-07: acceptance-criteria audit passed (MinIO healthy with 3 buckets + versioning, both subpaths typecheck in both apps, web declares no peers, CI composite provisions the public sibling lib); dashboards updated 5/5; PR opened with Copilot review requested; awaiting CI green and merge
+
+- 1.4 ✅ 2026-07-07: added apps/web package (@nest-storage-example/web) consuming only @bymax-one/nest-storage/shared with zero library peers, plus storage-shared-probe.ts importing STORAGE_ERROR_CODES, DEFAULT_IMAGE_MIME_WHITELIST, DEFAULT_SIGNED_URL_TTL_SECONDS and the UploadResult type; `tsc --noEmit` passes, no bare-server import present, and the peer-absence guard holds
+- 1.3 ✅ 2026-07-07: added apps/api package (@nest-storage-example/api) consuming @bymax-one/nest-storage via file:../../../nest-storage plus the six peers, tsconfig extending the base with decorator metadata, and library-probe.ts importing from both `.` and `./shared`; `tsc --noEmit` passes and @aws-sdk/client-s3@3.1080.0 resolves to a single copy shared with the library peer
+- 1.2 ✅ 2026-07-07: added apps/api/.env.example (all 21 §9.1 variables with dev defaults + comments) and apps/web/.env.example (NEXT_PUBLIC_API_URL); reconciled infra:up drift (one-shot exits under `--wait`, so it now waits on minio health then runs minio-setup to completion); verified up/down/nuke/logs
+- 1.1 ✅ 2026-07-07: added docker-compose MinIO stack (loopback ports, curl liveness healthcheck, named volume) plus idempotent mc setup service creating vault/vault-archive/vault-versioned, enabling versioning, and seeding 10 objects across avatars/invoices/attachments; `up -d --wait` and re-run both exit 0

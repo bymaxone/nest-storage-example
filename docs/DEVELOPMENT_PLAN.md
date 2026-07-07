@@ -25,14 +25,14 @@
 
 ## 1. Progress Dashboard
 
-> **Progress:** 0 / 10 phases complete (0%) · 6 / 54 tasks
-> **Active phase:** P0 repo-foundation-ci
+> **Progress:** 1 / 10 phases complete (10%) · 11 / 54 tasks
+> **Active phase:** P1 minio-stack-library-link
 > **Blockers:** none
 
 | ID  | Phase                     | Tasks file                              | Status    | Progress | Size | Last updated |
 | --- | ------------------------- | --------------------------------------- | --------- | -------- | ---- | ------------ |
-| P0  | repo-foundation-ci        | `phase-00-repo-foundation-ci.md`        | 👀 Review | 6/6      | M    | 2026-07-07   |
-| P1  | minio-stack-library-link  | `phase-01-minio-stack-library-link.md`  | 📋 ToDo   | 0/5      | M    | 2026-07-06   |
+| P0  | repo-foundation-ci        | `phase-00-repo-foundation-ci.md`        | ✅ Done   | 6/6      | M    | 2026-07-07   |
+| P1  | minio-stack-library-link  | `phase-01-minio-stack-library-link.md`  | 👀 Review | 5/5      | M    | 2026-07-07   |
 | P2  | api-skeleton-wiring       | `phase-02-api-skeleton-wiring.md`       | 📋 ToDo   | 0/6      | L    | 2026-07-06   |
 | P3  | core-object-operations    | `phase-03-core-object-operations.md`    | 📋 ToDo   | 0/5      | L    | 2026-07-06   |
 | P4  | listing-lifecycle         | `phase-04-listing-lifecycle.md`         | 📋 ToDo   | 0/5      | M    | 2026-07-06   |
