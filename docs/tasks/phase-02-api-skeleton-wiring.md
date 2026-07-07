@@ -1,6 +1,6 @@
 # Phase 2: api-skeleton-wiring
 
-> **Status**: 🔄 In Progress · **Progress**: 1 / 6 tasks · **Last updated**: 2026-07-07
+> **Status**: 🔄 In Progress · **Progress**: 2 / 6 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P2)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §9, §10, §18, §19
 
@@ -34,7 +34,7 @@ wiring is honest from day one (the marker scanner and magic-byte validator are s
 | ID  | Task                                                        | Status  | Priority | Size | Depends on |
 | --- | ----------------------------------------------------------- | ------- | -------- | ---- | ---------- |
 | 2.1 | Branch + Nest app shell (`main.ts`, module, boot)           | ✅ Done | P0       | M    | none       |
-| 2.2 | Zod env schema with aggregated fail-fast                    | 📋 ToDo | P0       | S    | 2.1        |
+| 2.2 | Zod env schema with aggregated fail-fast                    | ✅ Done | P0       | S    | 2.1        |
 | 2.3 | Canonical wiring: `storage.config.ts` + validator + scanner | 📋 ToDo | P0       | M    | 2.2        |
 | 2.4 | Cross-cutting: exception filter + validation pipe + health  | 📋 ToDo | P0       | M    | 2.3        |
 | 2.5 | System module: config introspection + provider recipes      | 📋 ToDo | P1       | S    | 2.3        |
@@ -123,7 +123,7 @@ Completion Protocol:
 
 ### Task 2.2: Zod env schema
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 2.1
@@ -135,10 +135,10 @@ fail-fast report that never echoes values, typed `Env` export consumed via `@nes
 
 #### Acceptance criteria
 
-- [ ] Schema covers every spec §9.1 variable with correct types/coercions/defaults (booleans, numbers, enums for `SCANNER_MODE` and `STORAGE_CHECKSUM_MODE`).
-- [ ] Boot with an invalid env prints ONE aggregated report listing every violation by variable name (values never printed) and exits non-zero.
-- [ ] `main.ts`/`app.factory.ts` consume PORT/WEB_ORIGIN through the validated config only; the temporary seam from 2.1 is removed.
-- [ ] Unit tests cover happy path, each failure class, and the no-value-echo guarantee.
+- [x] Schema covers every spec §9.1 variable with correct types/coercions/defaults (booleans, numbers, enums for `SCANNER_MODE` and `STORAGE_CHECKSUM_MODE`).
+- [x] Boot with an invalid env prints ONE aggregated report listing every violation by variable name (values never printed) and exits non-zero.
+- [x] `main.ts`/`app.factory.ts` consume PORT/WEB_ORIGIN through the validated config only; the temporary seam from 2.1 is removed.
+- [x] Unit tests cover happy path, each failure class, and the no-value-echo guarantee.
 
 #### Files to create / modify
 
@@ -496,3 +496,4 @@ Completion Protocol:
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
 
 - 2.1 ✅ 2026-07-07: bootable NestJS 11 shell — main.ts delegates to the exported createApp() seam (CORS + shutdown hooks, fail-fast exit), app.module.ts + root AppController (GET / -> { name, version, docs }), nest-cli.json + build/spec tsconfigs, unit jest.config.cjs (100/100/100/100, maxWorkers 50%, metadata-off spec tsconfig) and jest-e2e.config.mjs; app.controller + library-probe unit specs and a boot e2e smoke all green; lint/typecheck/format clean
+- 2.2 ✅ 2026-07-07: Zod env schema (every §9.1 variable, coerced numbers, coercion-free envBoolean, enums for SCANNER_MODE/STORAGE_CHECKSUM_MODE, empty-or-URL for CDN/SSE); validateEnv throws ONE aggregated report by variable name + issue code (never values); loadEnv is the sole environment reader and namespaces the result under `env`; ConfigModule registers it globally via `load`; app.factory/main now consume the validated config (env.WEB_ORIGIN / env.PORT), 2.1 seam removed; invalid-env boot exits non-zero with one report; unit coverage 100/100/100/100
