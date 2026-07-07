@@ -3,7 +3,7 @@
  * byte string and renders it as a hex/ASCII side-by-side table, matching the
  * classic hex editor format in 16-byte rows.
  *
- * @module components/vault/HexPreview
+ * @layer components/vault/HexPreview
  */
 
 import { cn } from '@/lib/utils'

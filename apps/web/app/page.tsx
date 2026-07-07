@@ -2,7 +2,7 @@
  * @fileoverview Overview dashboard page — bucket stats, config summary,
  * quick actions, and recent uploads.
  *
- * @module app/page
+ * @layer app/page
  */
 
 import { AppShell } from '@/components/layout/AppShell'

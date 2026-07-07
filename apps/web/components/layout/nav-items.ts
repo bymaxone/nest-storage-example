@@ -4,7 +4,7 @@
  * Routes are grouped into four sections: Vault / Transfer / Labs / System.
  * Each item carries its route `href` and a `lucide-react` icon.
  *
- * @module components/layout/nav-items
+ * @layer components/layout/nav-items
  */
 
 import {

@@ -2,7 +2,7 @@
  * @fileoverview Scanner lab page — marker-based scan verdicts, config view, and
  * post-upload removal proof.
  *
- * @module app/scanner/page
+ * @layer app/scanner/page
  */
 
 import { AppShell } from '@/components/layout/AppShell'

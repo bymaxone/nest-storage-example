@@ -15,7 +15,13 @@ function renderTopbar(ui: ReactNode) {
 }
 
 function healthResponse(body: unknown, ok = true): Response {
-  return { ok, status: ok ? 200 : 503, json: () => Promise.resolve(body) } as unknown as Response
+  // Mirror the fields the api-client reads: ok, status, headers.get, and json().
+  return {
+    ok,
+    status: ok ? 200 : 503,
+    headers: { get: () => null },
+    json: () => Promise.resolve(body),
+  } as unknown as Response
 }
 
 describe('Topbar', () => {

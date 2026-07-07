@@ -2,7 +2,7 @@
  * @fileoverview Scanner lab client content — verdict cards for clean/infected/unknown
  * content markers, config view, and post-upload removal proof.
  *
- * @module app/scanner/scanner-content
+ * @layer app/scanner/scanner-content
  */
 
 'use client'

@@ -2,7 +2,7 @@
  * @fileoverview Direct upload page — presigned PUT from the browser, required-headers
  * inspector, confirm step, and multipart variant.
  *
- * @module app/direct/page
+ * @layer app/direct/page
  */
 
 import { AppShell } from '@/components/layout/AppShell'

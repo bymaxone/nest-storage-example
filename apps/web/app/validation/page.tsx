@@ -2,7 +2,7 @@
  * @fileoverview Validation lab page — whitelist matrix, size limit, and
  * magic-byte forgery demo.
  *
- * @module app/validation/page
+ * @layer app/validation/page
  */
 
 import { AppShell } from '@/components/layout/AppShell'

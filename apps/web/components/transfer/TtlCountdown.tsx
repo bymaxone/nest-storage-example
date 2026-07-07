@@ -3,7 +3,7 @@
  * progress indicator that depletes as the URL approaches its expiry time,
  * with a live digital countdown label.
  *
- * @module components/transfer/TtlCountdown
+ * @layer components/transfer/TtlCountdown
  */
 
 'use client'

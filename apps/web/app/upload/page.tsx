@@ -2,7 +2,7 @@
  * @fileoverview Upload lab page — demonstrates all upload strategies: single-shot,
  * multipart (with progress sessions), stream, idempotent, and SSE override.
  *
- * @module app/upload/page
+ * @layer app/upload/page
  */
 
 import { AppShell } from '@/components/layout/AppShell'

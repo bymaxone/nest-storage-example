@@ -48,6 +48,12 @@ export interface BulkDeleteResult {
   failed: Array<{ key: string; error: string }>
 }
 
+/** Result of a single delete: idempotent, with a warned flag when the key was absent. */
+export interface DeleteResult {
+  deleted: boolean
+  warned?: boolean
+}
+
 /** Public-URL response. */
 export interface PublicUrlResult {
   publicUrl: string
@@ -88,6 +94,7 @@ export function useVaultList(params: VaultListParams) {
 export function useObjectMeta(key: string | null) {
   return useQuery({
     queryKey: ['vault', 'meta', key],
+    // `enabled: key !== null` guards execution, so `key` is non-null in queryFn.
     queryFn: () => apiGet<ObjectMetadata>(`/vault/object?key=${encodeURIComponent(key!)}`),
     enabled: key !== null,
   })
@@ -102,7 +109,7 @@ export function useDeleteObject() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (key: string) =>
-      apiDelete<{ deleted: boolean }>(`/vault/object?key=${encodeURIComponent(key)}`),
+      apiDelete<DeleteResult>(`/vault/object?key=${encodeURIComponent(key)}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['vault'] }),
   })
 }
@@ -142,6 +149,7 @@ export function useCopyObject() {
 export function usePublicUrl(key: string | null) {
   return useQuery({
     queryKey: ['vault', 'public-url', key],
+    // `enabled: key !== null` guards execution, so `key` is non-null in queryFn.
     queryFn: () =>
       apiGet<PublicUrlResult>(`/vault/object/public-url?key=${encodeURIComponent(key!)}`),
     enabled: key !== null,

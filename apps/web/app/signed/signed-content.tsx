@@ -2,7 +2,7 @@
  * @fileoverview Signed URLs client content — GET link generator with TTL
  * clamp visualization and expiry countdown ring.
  *
- * @module app/signed/signed-content
+ * @layer app/signed/signed-content
  */
 
 'use client'
@@ -106,16 +106,22 @@ export function SignedContent() {
         <CardContent className="space-y-3">
           <div className="grid gap-2 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs text-white/40">Object Key</label>
+              <label htmlFor="signed-object-key" className="mb-1 block text-xs text-white/40">
+                Object Key
+              </label>
               <Input
+                id="signed-object-key"
                 value={objectKey}
                 onChange={(e) => setObjectKey(e.target.value)}
                 placeholder="key to sign"
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs text-white/40">Requested TTL (seconds)</label>
+              <label htmlFor="signed-requested-ttl" className="mb-1 block text-xs text-white/40">
+                Requested TTL (seconds)
+              </label>
               <Input
+                id="signed-requested-ttl"
                 type="number"
                 value={requestedTtl}
                 onChange={(e) => setRequestedTtl(Number(e.target.value))}

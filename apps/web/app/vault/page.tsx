@@ -2,7 +2,7 @@
  * @fileoverview Vault browser page — folder navigation, virtualized object
  * table, detail drawer, and lifecycle actions (delete, bulk-delete, copy).
  *
- * @module app/vault/page
+ * @layer app/vault/page
  */
 
 import { Suspense } from 'react'

@@ -2,14 +2,14 @@
  * @fileoverview Vault browser client content — folder breadcrumbs, object
  * table with cursor pagination, detail drawer, and lifecycle actions.
  *
- * @module app/vault/vault-content
+ * @layer app/vault/vault-content
  */
 
 'use client'
 
 import { useState } from 'react'
 import { useQueryState } from 'nuqs'
-import { Trash2, Copy, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Trash2, Copy, RefreshCw, ChevronLeft, ChevronRight, Folder } from 'lucide-react'
 import { toast } from 'sonner'
 import { useVaultList, useDeleteObject, useBulkDelete, useCopyObject } from '@/hooks/use-vault'
 import type { ListedObject } from '@bymax-one/nest-storage/shared'
@@ -19,12 +19,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent } from '@/components/ui/card'
-
-function formatBytes(n: number) {
-  if (n < 1024) return `${n} B`
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
-  return `${(n / (1024 * 1024)).toFixed(1)} MB`
-}
+import { formatBytes } from '@/lib/format'
 
 /** Vault browser body with folder nav, object table, drawer, and actions. */
 export function VaultContent() {
@@ -56,11 +51,7 @@ export function VaultContent() {
   async function handleDelete(key: string) {
     try {
       const r = await deleteOne.mutateAsync(key)
-      toast.success(
-        (r as unknown as { warned?: boolean }).warned
-          ? `Deleted ${key} (already absent — idempotent)`
-          : `Deleted ${key}`,
-      )
+      toast.success(r.warned ? `Deleted ${key} (already absent, idempotent)` : `Deleted ${key}`)
       setSelectedKey(null)
     } catch (e) {
       toast.error(`Delete failed: ${(e as Error).message}`)
@@ -72,11 +63,10 @@ export function VaultContent() {
     if (keys.length === 0) return
     try {
       const r = await bulkDelete.mutateAsync(keys)
-      const rr = r as unknown as { deleted: string[]; failed: Array<{ key: string }> }
-      if (rr.failed.length > 0) {
-        toast.warning(`Bulk delete: ${rr.deleted.length} deleted, ${rr.failed.length} failed`)
+      if (r.failed.length > 0) {
+        toast.warning(`Bulk delete: ${r.deleted.length} deleted, ${r.failed.length} failed`)
       } else {
-        toast.success(`Bulk deleted ${rr.deleted.length} objects`)
+        toast.success(`Bulk deleted ${r.deleted.length} objects`)
       }
       setChecked(new Set())
     } catch (e) {
@@ -186,13 +176,14 @@ export function VaultContent() {
                     <td className="p-3">
                       <button
                         type="button"
-                        className="font-mono text-xs text-brand-400 hover:text-brand-300"
+                        className="inline-flex items-center gap-1.5 font-mono text-xs text-brand-400 hover:text-brand-300"
                         onClick={() => {
                           void setPrefix(p)
                           void setCursor('')
                         }}
                       >
-                        📁 {p}
+                        <Folder className="h-3 w-3" aria-hidden="true" />
+                        {p}
                       </button>
                     </td>
                     <td colSpan={3} />

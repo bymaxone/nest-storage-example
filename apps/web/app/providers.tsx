@@ -3,7 +3,7 @@
  * providers the whole dashboard needs: TanStack Query (server-state cache),
  * the nuqs adapter (mandatory in nuqs v2), and the Sonner toast portal.
  *
- * @module app/providers
+ * @layer app/providers
  */
 
 'use client'

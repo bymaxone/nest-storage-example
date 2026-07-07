@@ -3,7 +3,7 @@
  * active item. Desktop: sticky below the topbar. Mobile: a fixed overlay
  * toggled by the topbar hamburger.
  *
- * @module components/layout/Sidebar
+ * @layer components/layout/Sidebar
  */
 
 'use client'

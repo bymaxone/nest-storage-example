@@ -2,7 +2,7 @@
  * @fileoverview Validation lab client content — active rules matrix, size limit,
  * and magic-byte forgery demo that drives the three failure paths.
  *
- * @module app/validation/validation-content
+ * @layer app/validation/validation-content
  */
 
 'use client'

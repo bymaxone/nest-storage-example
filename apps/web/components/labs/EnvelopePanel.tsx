@@ -3,7 +3,7 @@
  * (or an `ApiRequestError`) with the HTTP status, error code, message, and
  * optional details tree — all keyed against `STORAGE_ERROR_CODES`.
  *
- * @module components/labs/EnvelopePanel
+ * @layer components/labs/EnvelopePanel
  */
 
 import { AlertTriangle } from 'lucide-react'

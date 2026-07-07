@@ -2,7 +2,7 @@
  * @fileoverview Overview page client content — bucket stats, config summary,
  * quick action links, and recent uploads.
  *
- * @module app/overview-content
+ * @layer app/overview-content
  */
 
 'use client'
@@ -11,6 +11,7 @@ import Link from 'next/link'
 import { FolderOpen, Upload, Globe, Link as LinkIcon, Server } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { apiGet } from '@/lib/api-client'
+import { formatBytes } from '@/lib/format'
 import { healthStatusDisplay } from '@/lib/storage-status'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -217,10 +218,4 @@ function StatCard({
       </CardContent>
     </Card>
   )
-}
-
-function formatBytes(n: number): string {
-  if (n < 1024) return `${n} B`
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
-  return `${(n / (1024 * 1024)).toFixed(1)} MB`
 }

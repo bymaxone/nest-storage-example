@@ -167,7 +167,11 @@ export default function TenantsPage() {
         </Card>
 
         <div className="flex gap-2">
+          <label htmlFor="add-tenant" className="sr-only">
+            Add tenant identifier
+          </label>
           <Input
+            id="add-tenant"
             placeholder="Add tenant identifier…"
             value={customTenant}
             onChange={(e) => setCustomTenant(e.target.value)}

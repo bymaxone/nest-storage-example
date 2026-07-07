@@ -3,7 +3,7 @@
  * Metadata, Preview (image), Range hex, and URLs (public + signed GET).
  * The signed URL is masked in the UI — a copy button copies the full value.
  *
- * @module components/vault/KeyDetailDrawer
+ * @layer components/vault/KeyDetailDrawer
  */
 
 'use client'
@@ -18,6 +18,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import { formatBytes, formatDate } from '@/lib/format'
 import { HexPreview } from './HexPreview'
 import { TtlCountdown } from '@/components/transfer/TtlCountdown'
 
@@ -43,18 +44,6 @@ interface KeyDetailDrawerProps {
   objectKey: string
   /** Called when the drawer should close. */
   onClose: () => void
-}
-
-/** Formats bytes to human-readable string. */
-function fmtBytes(n: number): string {
-  if (n < 1024) return `${n} B`
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
-  return `${(n / (1024 * 1024)).toFixed(1)} MB`
-}
-
-/** Formats a date-like value to a locale string. */
-function fmtDate(d: Date | string): string {
-  return new Date(d).toLocaleString()
 }
 
 /** Masks the query string of a URL for safe display. */
@@ -128,6 +117,7 @@ export function KeyDetailDrawer({ objectKey, onClose }: KeyDetailDrawerProps) {
     <div
       className="fixed inset-y-0 right-0 z-300 flex w-full max-w-xl flex-col border-l border-(--glass-border) bg-(--color-bg-primary) shadow-2xl"
       role="dialog"
+      aria-modal="true"
       aria-label="Object details"
     >
       {/* Header */}
@@ -163,10 +153,10 @@ export function KeyDetailDrawer({ objectKey, onClose }: KeyDetailDrawerProps) {
                 {[
                   ['Key', meta.data.key],
                   ['Bucket', meta.data.bucket],
-                  ['Size', fmtBytes(meta.data.size)],
+                  ['Size', formatBytes(meta.data.size)],
                   ['Content-Type', meta.data.contentType],
                   ['ETag', meta.data.etag],
-                  ['Last Modified', fmtDate(meta.data.lastModified)],
+                  ['Last Modified', formatDate(meta.data.lastModified)],
                   ...(meta.data.cacheControl
                     ? [['Cache-Control', meta.data.cacheControl] as const]
                     : []),

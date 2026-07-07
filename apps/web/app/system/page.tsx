@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Settings, Layers, GitBranch } from 'lucide-react'
+import { Settings, Layers, GitBranch, TriangleAlert } from 'lucide-react'
 
 /** Renders one config label/value row. */
 function ConfigRow({ label, value }: { label: string; value: string }) {
@@ -130,9 +130,12 @@ export default function SystemPage() {
                       </pre>
                       {recipe.quirks.length > 0 && (
                         <div className="space-y-1">
-                          {recipe.quirks.map((q, i) => (
-                            <div key={i} className="flex items-start gap-2 text-xs text-white/45">
-                              <span className="text-amber-400/60 shrink-0">⚠</span>
+                          {recipe.quirks.map((q) => (
+                            <div key={q} className="flex items-start gap-2 text-xs text-white/45">
+                              <TriangleAlert
+                                className="h-3 w-3 shrink-0 text-amber-400/60"
+                                aria-hidden="true"
+                              />
                               <span>{q}</span>
                             </div>
                           ))}

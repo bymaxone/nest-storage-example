@@ -5,7 +5,7 @@
  * `globals.css` is the only live one). All client providers live in `<Providers>`,
  * keeping this layout a Server Component.
  *
- * @module app/layout
+ * @layer app/layout
  */
 
 import type { Metadata } from 'next'

@@ -3,7 +3,7 @@
  * storage prefix string (e.g. `"foo/bar/"`) into clickable path segments so
  * users can navigate up the delimiter-based folder hierarchy.
  *
- * @module components/vault/FolderBreadcrumbs
+ * @layer components/vault/FolderBreadcrumbs
  */
 
 import { ChevronRight, Home } from 'lucide-react'

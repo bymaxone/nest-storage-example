@@ -89,16 +89,35 @@ describe('useTriggerError', () => {
     expect(captured?.details).toBeUndefined()
   })
 
-  it('handles generic (non-StorageApiError) errors by reading their properties', async () => {
-    // Any thrown error is cast to StorageApiError; undefined properties are read.
-    const plainErr = new Error('unexpected')
+  it('maps a generic Error (e.g. a network TypeError) to a safe UNKNOWN snapshot', async () => {
+    // Scenario: fetch itself rejects with a plain Error rather than a StorageApiError.
+    // Rule it protects: the snapshot stays well-formed — UNKNOWN code, status 0, the
+    // Error's message preserved — so the TriggeredError contract never carries undefined.
+    const plainErr = new Error('network down')
     mockPost.mockRejectedValueOnce(plainErr)
     const { result } = renderHook(() => useTriggerError(), { wrapper: wrapper() })
     let captured: Awaited<ReturnType<typeof result.current.mutateAsync>> | undefined
     await act(async () => {
       captured = await result.current.mutateAsync('STORAGE_TIMEOUT')
     })
-    // code and status will be undefined when cast from a plain Error.
-    expect(captured?.message).toBe('unexpected')
+    expect(captured?.code).toBe('UNKNOWN')
+    expect(captured?.message).toBe('network down')
+    expect(captured?.status).toBe(0)
+    expect(captured?.details).toBeUndefined()
+  })
+
+  it('maps a non-Error thrown value to the "Unknown error" fallback message', async () => {
+    // Scenario: a non-Error value is thrown (a string), the pathological worst case.
+    // Rule it protects: the else branch of the message guard produces a stable label
+    // instead of leaking a raw stringified value or throwing again.
+    mockPost.mockRejectedValueOnce('boom')
+    const { result } = renderHook(() => useTriggerError(), { wrapper: wrapper() })
+    let captured: Awaited<ReturnType<typeof result.current.mutateAsync>> | undefined
+    await act(async () => {
+      captured = await result.current.mutateAsync('STORAGE_TIMEOUT')
+    })
+    expect(captured?.code).toBe('UNKNOWN')
+    expect(captured?.message).toBe('Unknown error')
+    expect(captured?.status).toBe(0)
   })
 })

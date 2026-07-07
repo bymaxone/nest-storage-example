@@ -2,7 +2,7 @@
  * @fileoverview Upload lab client content — single-shot upload with strategy
  * indicator, progress bar, idempotency card, and SSE selector.
  *
- * @module app/upload/upload-lab-content
+ * @layer app/upload/upload-lab-content
  */
 
 'use client'
@@ -20,20 +20,19 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { formatBytes } from '@/lib/format'
 import type { UploadResult } from '@bymax-one/nest-storage/shared'
-
-function formatBytes(n: number) {
-  if (n < 1024) return `${n} B`
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
-  return `${(n / (1024 * 1024)).toFixed(1)} MB`
-}
 
 /** Upload lab body showing all server-side upload strategies. */
 export function UploadLabContent() {
   const [lastResult, setLastResult] = useState<UploadResult | null>(null)
   const [strategy, setStrategy] = useState<UploadStrategy>('idle')
   const [idempotencyKey, setIdempotencyKey] = useState('demo-key-001')
-  const [idempotencyResults, setIdempotencyResults] = useState<UploadResult[]>([])
+  // Idempotency demo issues the SAME key twice, so results are not distinguishable
+  // by their storage key; a monotonic call id gives each log row a stable identity.
+  const [idempotencyResults, setIdempotencyResults] = useState<
+    Array<{ callId: number; result: UploadResult }>
+  >([])
   const [sseMode, setSseMode] = useState<'AES256' | 'NONE'>('NONE')
   const [sseResult, setSseResult] = useState<UploadResult | null>(null)
 
@@ -59,7 +58,7 @@ export function UploadLabContent() {
     async (file: File) => {
       try {
         const result = await idempotent.mutateAsync({ file, idempotencyKey })
-        setIdempotencyResults((prev) => [...prev, result])
+        setIdempotencyResults((prev) => [...prev, { callId: prev.length + 1, result }])
         toast.success(
           result.fromIdempotencyCache
             ? `Idempotency cache HIT — key: ${result.key}`
@@ -145,7 +144,11 @@ export function UploadLabContent() {
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex gap-2">
+            <label htmlFor="idempotency-key" className="sr-only">
+              Idempotency key
+            </label>
             <Input
+              id="idempotency-key"
               value={idempotencyKey}
               onChange={(e) => setIdempotencyKey(e.target.value)}
               placeholder="Idempotency key"
@@ -155,14 +158,14 @@ export function UploadLabContent() {
           <UploadDropzone onFile={handleIdempotentUpload} isPending={idempotent.isPending} />
           {idempotencyResults.length > 0 && (
             <div className="space-y-2">
-              {idempotencyResults.map((r, i) => (
+              {idempotencyResults.map(({ callId, result }) => (
                 <div
-                  key={i}
+                  key={callId}
                   className="flex items-center justify-between rounded-lg bg-(--glass-bg) px-3 py-2 font-mono text-xs"
                 >
-                  <span className="text-white/60">Call #{i + 1}</span>
-                  <Badge variant={r.fromIdempotencyCache ? 'default' : 'outline'}>
-                    {r.fromIdempotencyCache ? 'CACHE HIT' : 'Stored'}
+                  <span className="text-white/60">Call #{callId}</span>
+                  <Badge variant={result.fromIdempotencyCache ? 'default' : 'outline'}>
+                    {result.fromIdempotencyCache ? 'CACHE HIT' : 'Stored'}
                   </Badge>
                 </div>
               ))}

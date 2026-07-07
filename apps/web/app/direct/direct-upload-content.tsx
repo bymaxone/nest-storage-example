@@ -3,7 +3,7 @@
  * display the required-headers inspector, perform the browser XHR PUT with
  * progress, and confirm the upload with a server-side verify step.
  *
- * @module app/direct/direct-upload-content
+ * @layer app/direct/direct-upload-content
  */
 
 'use client'
@@ -19,6 +19,12 @@ import { Button } from '@/components/ui/button'
 import type { ConfirmResult } from '@/hooks/use-signed'
 
 type Step = 'idle' | 'issued' | 'uploading' | 'confirming' | 'done'
+
+/** Upper bound (25 MiB) enforced by the presigned PUT length policy for the demo. */
+const MAX_DIRECT_UPLOAD_BYTES = 25 * 1024 * 1024
+
+/** TTL (seconds) requested for the demo presigned PUT URL. */
+const DIRECT_UPLOAD_TTL_SECONDS = 300
 
 interface UploadUrlResponse {
   url: string
@@ -49,8 +55,8 @@ export function DirectUploadContent() {
         const result = await issueUrl.mutateAsync({
           key: `direct/${file.name}`,
           contentType: file.type || 'application/octet-stream',
-          ttlSeconds: 300,
-          maxSizeBytes: 26_214_400,
+          ttlSeconds: DIRECT_UPLOAD_TTL_SECONDS,
+          maxSizeBytes: MAX_DIRECT_UPLOAD_BYTES,
         })
         setIssued(result)
         setStep('issued')

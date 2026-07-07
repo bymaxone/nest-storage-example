@@ -5,35 +5,17 @@
  * `nest-storage-example` wordmark on the left. The right cluster renders a
  * health status chip that polls `GET /health`, a hamburger for mobile sidebar.
  *
- * @module components/layout/Topbar
+ * @layer components/layout/Topbar
  */
 
 'use client'
 
 import type { ReactNode } from 'react'
 import { Menu, Circle } from 'lucide-react'
-import { useQuery } from '@tanstack/react-query'
-import { API_BASE_URL } from '@/lib/constants'
+import { useHealth } from '@/hooks/use-health'
 
-interface HealthResponse {
-  status: string
-  latencyMs: number
-  bucket: string
-}
-
-/** Polls the health endpoint once and refreshes every 30 s. */
-function useHealthStatus() {
-  return useQuery<HealthResponse>({
-    queryKey: ['health'],
-    queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/health`)
-      if (!res.ok) throw new Error('unhealthy')
-      return res.json() as Promise<HealthResponse>
-    },
-    refetchInterval: 30_000,
-    retry: 1,
-  })
-}
+/** Poll interval (ms) for the topbar health chip. */
+const HEALTH_POLL_INTERVAL_MS = 30_000
 
 interface TopbarProps {
   /** Called when the hamburger is pressed to open the mobile sidebar. */
@@ -44,7 +26,7 @@ interface TopbarProps {
 
 /** Fixed 64px dark-glass top bar — brand identity (left) + health chip + mobile hamburger. */
 export function Topbar({ onMenuOpen, right }: TopbarProps) {
-  const health = useHealthStatus()
+  const health = useHealth(HEALTH_POLL_INTERVAL_MS)
 
   const chipColor = health.isLoading
     ? 'text-white/40'

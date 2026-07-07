@@ -2,7 +2,7 @@
  * @fileoverview App chrome — fixed topbar + sticky sidebar + the page content
  * well. Owns the mobile sidebar open/close state.
  *
- * @module components/layout/AppShell
+ * @layer components/layout/AppShell
  */
 
 'use client'

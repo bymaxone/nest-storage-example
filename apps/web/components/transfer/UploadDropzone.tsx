@@ -3,7 +3,7 @@
  * Accepts file drops and click-to-browse; posts to the API and shows the
  * upload result including the multipart strategy flag.
  *
- * @module components/transfer/UploadDropzone
+ * @layer components/transfer/UploadDropzone
  */
 
 'use client'
@@ -35,19 +35,6 @@ interface UploadDropzoneProps {
   isPending?: boolean
   /** Optional extra class names. */
   className?: string
-}
-
-/**
- * Formats bytes into a human-readable size string.
- *
- * @param bytes - Raw byte count.
- * @returns Formatted string like `1.2 MB`.
- */
-export function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`
 }
 
 /**

@@ -83,6 +83,7 @@ export function useMultipartUpload() {
 export function useUploadSession(sessionId: string | null) {
   return useQuery({
     queryKey: ['uploads', 'session', sessionId],
+    // `enabled: sessionId !== null` guards execution, so `sessionId` is non-null here.
     queryFn: () => apiGet<ProgressSnapshot>(`/uploads/sessions/${sessionId!}`),
     enabled: sessionId !== null,
     refetchInterval: 500,

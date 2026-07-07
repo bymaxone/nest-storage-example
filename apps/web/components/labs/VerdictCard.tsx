@@ -2,7 +2,7 @@
  * @fileoverview Scanner verdict card. Renders a clean/infected/unknown verdict
  * with contextual colour, icon, and optional threat metadata.
  *
- * @module components/labs/VerdictCard
+ * @layer components/labs/VerdictCard
  */
 
 import { ShieldCheck, ShieldX, ShieldAlert } from 'lucide-react'
