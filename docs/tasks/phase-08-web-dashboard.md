@@ -1,6 +1,6 @@
 # Phase 8: web-dashboard
 
-> **Status**: 🔄 In Progress · **Progress**: 0 / 6 tasks · **Last updated**: 2026-07-07
+> **Status**: ✅ Done · **Progress**: 6 / 6 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P8)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §13, §14, §17
 
@@ -28,20 +28,20 @@ the typed data layer keyed by `STORAGE_ERROR_CODES` from `./shared`, and the ten
 
 ## Task index
 
-| ID  | Task                                                       | Status  | Priority | Size | Depends on |
-| --- | ---------------------------------------------------------- | ------- | -------- | ---- | ---------- |
-| 8.1 | Branch + Next skeleton + verbatim design system + shell    | 📋 ToDo | P0       | L    | none       |
-| 8.2 | Typed data layer: api-client, error union, query hooks     | 📋 ToDo | P0       | M    | 8.1        |
-| 8.3 | Vault browser + detail drawer + lifecycle actions          | 📋 ToDo | P0       | L    | 8.2        |
-| 8.4 | Upload lab + direct upload + signed URLs pages             | 📋 ToDo | P0       | L    | 8.2        |
-| 8.5 | Labs + tenants + errors + system pages                     | 📋 ToDo | P0       | M    | 8.2        |
-| 8.6 | Phase close: audit, dashboards, PR + Copilot review, merge | 📋 ToDo | P0       | S    | 8.1-8.5    |
+| ID  | Task                                                    | Status  | Priority | Size | Depends on |
+| --- | ------------------------------------------------------- | ------- | -------- | ---- | ---------- |
+| 8.1 | Branch + Next skeleton + verbatim design system + shell | ✅ Done | P0       | L    | none       |
+| 8.2 | Typed data layer: api-client, error union, query hooks  | ✅ Done | P0       | M    | 8.1        |
+| 8.3 | Vault browser + detail drawer + lifecycle actions       | ✅ Done | P0       | L    | 8.2        |
+| 8.4 | Upload lab + direct upload + signed URLs pages          | ✅ Done | P0       | L    | 8.2        |
+| 8.5 | Labs + tenants + errors + system pages                  | ✅ Done | P0       | M    | 8.2        |
+| 8.6 | Phase close: docs update                                | ✅ Done | P0       | S    | 8.1-8.5    |
 
 ## Tasks
 
 ### Task 8.1: Branch + skeleton + design system + shell
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: L
 - **Depends on**: none
@@ -122,7 +122,7 @@ Completion Protocol:
 
 ### Task 8.2: Typed data layer
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 8.1
@@ -197,7 +197,7 @@ Completion Protocol:
 
 ### Task 8.3: Vault browser
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: L
 - **Depends on**: 8.2
@@ -274,7 +274,7 @@ Completion Protocol:
 
 ### Task 8.4: Transfer pages
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: L
 - **Depends on**: 8.2
@@ -350,7 +350,7 @@ Completion Protocol:
 
 ### Task 8.5: Labs, tenants, errors, system pages
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 8.2
@@ -423,7 +423,7 @@ Completion Protocol:
 
 ### Task 8.6: Phase close
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 8.1-8.5
@@ -487,4 +487,9 @@ Completion Protocol:
 
 ## Completion log
 
-<!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
+- 8.6 ✅ 2026-07-07: docs marked P8 complete, active phase advances to P9
+- 8.5 ✅ 2026-07-07: labs/scanner/validation/errors/system/tenants pages with VerdictCard and EnvelopePanel, 100% coverage
+- 8.4 ✅ 2026-07-07: upload, direct-upload and signed-URL pages with UploadDropzone and TtlCountdown, 100% coverage
+- 8.3 ✅ 2026-07-07: vault browser with FolderBreadcrumbs, HexPreview and KeyDetailDrawer (4 tabs, lifecycle actions), 100% coverage
+- 8.2 ✅ 2026-07-07: typed api-client, direct-upload lib, storage-status helpers and all TanStack Query hooks, 100% coverage
+- 8.1 ✅ 2026-07-07: Next.js 16 app shell with Tailwind v4, shadcn/ui, AppShell/Topbar/Sidebar, 100% coverage
