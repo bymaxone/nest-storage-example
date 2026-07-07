@@ -11,7 +11,7 @@
 | Phase | File                                    | Tasks    | Status  | Scope                                                                                                |
 | ----- | --------------------------------------- | -------- | ------- | ---------------------------------------------------------------------------------------------------- |
 | P0    | `phase-00-repo-foundation-ci.md`        | 6/6      | ✅ Done | pnpm workspace, toolchain, husky/commitlint, **CI from day one** (conditional CodeQL/Scorecard)      |
-| P1    | `phase-01-minio-stack-library-link.md`  | 1/5      | 🔄      | docker-compose MinIO (3 buckets, versioning, seed) + `file:` link + subpath probes                   |
+| P1    | `phase-01-minio-stack-library-link.md`  | 2/5      | 🔄      | docker-compose MinIO (3 buckets, versioning, seed) + `file:` link + subpath probes                   |
 | P2    | `phase-02-api-skeleton-wiring.md`       | 0/6      | 📋 ToDo | NestJS 11 skeleton, Zod env, canonical `forRootAsync`, filter, health, recipes                       |
 | P3    | `phase-03-core-object-operations.md`    | 0/5      | 📋 ToDo | uploads (single/multipart/stream/progress/idempotency/SSE) + downloads (stream/buffer/range/version) |
 | P4    | `phase-04-listing-lifecycle.md`         | 0/5      | 📋 ToDo | list/folders/pagination, head/exists, delete/deleteMany, copy, public URLs                           |
@@ -20,7 +20,7 @@
 | P7    | `phase-07-tenants-advanced-errors.md`   | 0/5      | 📋 ToDo | tenant prefixes, raw S3Client ops, all 17 error codes, provider quirks                               |
 | P8    | `phase-08-web-dashboard.md`             | 0/6      | 📋 ToDo | Next.js 16 dashboard, verbatim design system, all pages                                              |
 | P9    | `phase-09-quality-docs-readiness.md`    | 0/6      | 📋 ToDo | 100% unit coverage, full e2e, Stryker, export audit, README, public-flip checklist                   |
-|       | **Total**                               | **7/54** | 🔄      |                                                                                                      |
+|       | **Total**                               | **8/54** | 🔄      |                                                                                                      |
 
 ## Task-file anatomy
 

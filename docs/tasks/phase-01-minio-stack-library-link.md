@@ -1,6 +1,6 @@
 # Phase 1: minio-stack-library-link
 
-> **Status**: 🔄 In Progress · **Progress**: 1 / 5 tasks · **Last updated**: 2026-07-07
+> **Status**: 🔄 In Progress · **Progress**: 2 / 5 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P1)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §8, §15, §20
 
@@ -32,7 +32,7 @@ typed subpath probes. At the end of the phase there is still no application logi
 | ID  | Task                                                          | Status  | Priority | Size | Depends on |
 | --- | ------------------------------------------------------------- | ------- | -------- | ---- | ---------- |
 | 1.1 | Branch + docker-compose MinIO + bucket bootstrap script       | ✅ Done | P0       | M    | none       |
-| 1.2 | Env examples + infra scripts verified                         | 📋 ToDo | P0       | S    | 1.1        |
+| 1.2 | Env examples + infra scripts verified                         | ✅ Done | P0       | S    | 1.1        |
 | 1.3 | `apps/api` package: library link + peers + dual-subpath probe | 📋 ToDo | P0       | S    | 1.1        |
 | 1.4 | `apps/web` package: library link + `./shared`-only probe      | 📋 ToDo | P0       | S    | 1.1        |
 | 1.5 | Phase close: audit, dashboards, PR + Copilot review, merge    | 📋 ToDo | P0       | S    | 1.1-1.4    |
@@ -118,7 +118,7 @@ Completion Protocol:
 
 ### Task 1.2: Env examples + infra scripts
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 1.1
@@ -130,9 +130,9 @@ against the compose file.
 
 #### Acceptance criteria
 
-- [ ] `apps/api/.env.example` lists every variable from spec §9.1 with the dev defaults and a one-line comment each.
-- [ ] `apps/web/.env.example` with `NEXT_PUBLIC_API_URL`.
-- [ ] Root `infra:up|down|nuke|logs` verified working; `infra:nuke` removes the volume.
+- [x] `apps/api/.env.example` lists every variable from spec §9.1 with the dev defaults and a one-line comment each.
+- [x] `apps/web/.env.example` with `NEXT_PUBLIC_API_URL`.
+- [x] Root `infra:up|down|nuke|logs` verified working; `infra:nuke` removes the volume.
 
 #### Files to create / modify
 
@@ -411,4 +411,5 @@ Completion Protocol:
 
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
 
+- 1.2 ✅ 2026-07-07: added apps/api/.env.example (all 21 §9.1 variables with dev defaults + comments) and apps/web/.env.example (NEXT_PUBLIC_API_URL); reconciled infra:up drift (one-shot exits under `--wait`, so it now waits on minio health then runs minio-setup to completion); verified up/down/nuke/logs
 - 1.1 ✅ 2026-07-07: added docker-compose MinIO stack (loopback ports, curl liveness healthcheck, named volume) plus idempotent mc setup service creating vault/vault-archive/vault-versioned, enabling versioning, and seeding 10 objects across avatars/invoices/attachments; `up -d --wait` and re-run both exit 0

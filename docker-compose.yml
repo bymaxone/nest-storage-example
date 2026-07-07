@@ -26,6 +26,10 @@ services:
 
   minio-setup:
     image: minio/mc:latest
+    # A one-shot provisioning job: run once and exit. `restart: no` marks it as
+    # expected to complete so `docker compose up --wait` treats a clean exit as
+    # success and surfaces a non-zero exit as a failure instead of masking it.
+    restart: 'no'
     depends_on:
       minio:
         condition: service_healthy
