@@ -1,6 +1,6 @@
 # Phase 7: tenants-advanced-errors
 
-> **Status**: 👀 Review · **Progress**: 5 / 5 tasks · **Last updated**: 2026-07-07
+> **Status**: ✅ Done · **Progress**: 5 / 5 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P7)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §12.6-§12.8, §18
 
@@ -29,13 +29,13 @@ demonstrations (checksum trap, ACL honesty, timeout knobs), and the raw-client e
 
 ## Task index
 
-| ID  | Task                                                       | Status    | Priority | Size | Depends on |
-| --- | ---------------------------------------------------------- | --------- | -------- | ---- | ---------- |
-| 7.1 | Branch + tenants module with isolation proof               | ✅ Done   | P0       | M    | none       |
-| 7.2 | Error explorer: all 17 codes deterministic                 | ✅ Done   | P0       | L    | none       |
-| 7.3 | Provider quirks: checksum trap, ACL honesty, timeout       | ✅ Done   | P0       | M    | 7.2        |
-| 7.4 | Raw-client advanced ops + sync forRoot coverage            | ✅ Done   | P1       | S    | 7.2        |
-| 7.5 | Phase close: audit, dashboards, PR + Copilot review, merge | 👀 Review | P0       | S    | 7.1-7.4    |
+| ID  | Task                                                       | Status  | Priority | Size | Depends on |
+| --- | ---------------------------------------------------------- | ------- | -------- | ---- | ---------- |
+| 7.1 | Branch + tenants module with isolation proof               | ✅ Done | P0       | M    | none       |
+| 7.2 | Error explorer: all 17 codes deterministic                 | ✅ Done | P0       | L    | none       |
+| 7.3 | Provider quirks: checksum trap, ACL honesty, timeout       | ✅ Done | P0       | M    | 7.2        |
+| 7.4 | Raw-client advanced ops + sync forRoot coverage            | ✅ Done | P1       | S    | 7.2        |
+| 7.5 | Phase close: audit, dashboards, PR + Copilot review, merge | ✅ Done | P0       | S    | 7.1-7.4    |
 
 ## Tasks
 
@@ -326,7 +326,7 @@ Completion Protocol:
 
 ### Task 7.5: Phase close
 
-- **Status**: 👀 Review
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 7.1-7.4
@@ -388,6 +388,8 @@ Completion Protocol:
 ## Completion log
 
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
+
+- 7.5 ✅ 2026-07-07: phase merged in PR #8 (squash); CI green incl. e2e; Copilot round addressed (checksum-mode label from resolved options, scoped-instance knob forwarding, tenant slash-rejection e2e, non-reproducible-codes doc plural); 367 unit tests 100%, 32 e2e
 
 - 7.5 👀 2026-07-07: acceptance-criteria audit passed (tenant key scoping under the instance keyPrefix with an isolation proof - A cannot read/list/clear B, clearing strictly inside the tenant prefix, tenant slug validated; the deterministic 17-code error explorer with real library envelopes; provider quirks checksum/ACL/timeout; raw S3Client ops + sync forRoot). 365 unit tests 100/100/100/100; 32 e2e against Testcontainers MinIO. Tenant isolation framed honestly as app-level prefix composition. Dashboards synced; PR opened with Copilot review requested; merge deferred to the orchestrator.
 
