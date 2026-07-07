@@ -3,7 +3,8 @@
  * `/system/config` endpoint proves what the module resolved to, but must never
  * expose secrets: `accessKeyId` is masked to its first four characters,
  * `secretAccessKey` and any `sessionToken` are replaced by a redaction marker.
- * The function is pure and clones its input, so the live options are untouched.
+ * The function never mutates its input: when credentials are present it returns
+ * a redacted copy, and when they are absent it returns the options unchanged.
  * @layer api/system
  */
 import type { BymaxStorageModuleOptions } from '@bymax-one/nest-storage'
@@ -32,12 +33,15 @@ function maskAccessKeyId(accessKeyId: string): string {
 }
 
 /**
- * Returns a redacted clone of the storage options: the access key id is masked,
- * the secret access key and any session token are fully redacted. Options
- * without credentials (an unconfigured module) are returned unchanged.
+ * Redacts the storage options for safe serialization: the access key id is
+ * masked and the secret access key and any session token are fully redacted.
+ * When credentials are present a redacted copy is returned; when they are absent
+ * (an unconfigured module) the input options are returned unchanged. The input
+ * is never mutated either way.
  *
  * @param options - The resolved storage options to redact.
- * @returns A clone safe to serialize in an introspection response.
+ * @returns Options safe to serialize: a redacted copy when credentials are
+ *   present, otherwise the input options unchanged.
  */
 export function redactStorageOptions(options: RedactableStorageOptions): RedactableStorageOptions {
   if (!options.credentials) {

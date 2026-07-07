@@ -61,8 +61,9 @@ export class MarkerFileScanner implements IFileScanner {
 
   /**
    * Reads at most `MAX_SCAN_BYTES` from the body as UTF-8 text. A `Buffer` is
-   * sliced directly; a stream is drained chunk-by-chunk until the bound is hit,
-   * so a large upload never buffers unboundedly.
+   * sliced directly; a stream is drained chunk-by-chunk, and each chunk is
+   * truncated to the remaining budget before it is retained, so buffered memory
+   * stays capped at `MAX_SCAN_BYTES` even when the first chunk is very large.
    *
    * @param body - The upload body - a `Buffer` or a readable stream.
    * @returns The decoded leading prefix of the body.
@@ -75,12 +76,14 @@ export class MarkerFileScanner implements IFileScanner {
     let total = 0
     for await (const chunk of body as AsyncIterable<Buffer | string>) {
       const buffer = typeof chunk === 'string' ? Buffer.from(chunk) : chunk
-      chunks.push(buffer)
-      total += buffer.length
+      const remaining = MAX_SCAN_BYTES - total
+      const slice = buffer.length > remaining ? buffer.subarray(0, remaining) : buffer
+      chunks.push(slice)
+      total += slice.length
       if (total >= MAX_SCAN_BYTES) {
         break
       }
     }
-    return Buffer.concat(chunks).subarray(0, MAX_SCAN_BYTES).toString('utf8')
+    return Buffer.concat(chunks, total).toString('utf8')
   }
 }
