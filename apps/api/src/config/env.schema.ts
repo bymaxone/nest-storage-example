@@ -23,8 +23,14 @@ const envBoolean = (defaultValue: boolean) =>
     .default(defaultValue)
     .transform((value) => value === true || value === 'true' || value === '1')
 
+/**
+ * Well-known local MinIO factory credential. Convenient for local development
+ * but unsafe on the public network, so production must override it.
+ */
+const DEV_CREDENTIAL_DEFAULT = 'minioadmin'
+
 /** Zod schema for every API environment variable (spec §9.1). */
-export const envSchema = z.object({
+const baseEnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3001),
   WEB_ORIGIN: z.string().url().default('http://localhost:3000'),
@@ -36,8 +42,8 @@ export const envSchema = z.object({
   // Dev-only defaults (local MinIO factory credentials). Production deployments
   // MUST override these via environment variables or a secrets manager — never
   // ship with the well-known minioadmin password exposed to the network.
-  STORAGE_ACCESS_KEY_ID: z.string().min(1).default('minioadmin'),
-  STORAGE_SECRET_ACCESS_KEY: z.string().min(1).default('minioadmin'),
+  STORAGE_ACCESS_KEY_ID: z.string().min(1).default(DEV_CREDENTIAL_DEFAULT),
+  STORAGE_SECRET_ACCESS_KEY: z.string().min(1).default(DEV_CREDENTIAL_DEFAULT),
   STORAGE_FORCE_PATH_STYLE: envBoolean(true),
   STORAGE_PUBLIC_BASE_URL: z.string().url().default('http://localhost:9000/vault'),
   // Empty means "no CDN"; a non-empty value must be a valid URL.
@@ -53,13 +59,37 @@ export const envSchema = z.object({
   UPLOAD_MAX_SIZE_BYTES: z.coerce.number().int().positive().default(26_214_400),
 })
 
+/**
+ * The complete environment schema. Layers a cross-field guard onto the base
+ * object: the dev-convenience `minioadmin` credential defaults stay valid for
+ * non-production, but a `production` boot that still carries either default is
+ * rejected so the well-known password can never reach a public deployment. Each
+ * offending credential is reported by name for the aggregated boot error.
+ */
+export const envSchema = baseEnvSchema.superRefine((env, ctx) => {
+  if (env.NODE_ENV !== 'production') {
+    return
+  }
+  const credentials = ['STORAGE_ACCESS_KEY_ID', 'STORAGE_SECRET_ACCESS_KEY'] as const
+  for (const name of credentials) {
+    if (env[name] === DEV_CREDENTIAL_DEFAULT) {
+      ctx.addIssue({
+        code: 'custom',
+        path: [name],
+        message: `${name} must not use the dev default in production`,
+      })
+    }
+  }
+})
+
 /** Fully-typed, validated environment shape. */
 export type Env = z.infer<typeof envSchema>
 
 /**
  * Validates raw environment input and returns the typed `Env`, or throws ONE
- * aggregated error. The message lists every offending variable by NAME and issue
- * code only - never the received value - so secrets can never leak into logs.
+ * aggregated error. The message lists every offending variable by NAME plus its
+ * issue code - and, for the value-free cross-field guards, a short explanation -
+ * but never the received value, so secrets can never leak into logs.
  *
  * @param config - The raw `process.env`-shaped record to validate.
  * @returns The parsed, typed environment.
@@ -72,7 +102,10 @@ export function validateEnv(config: Record<string, unknown>): Env {
   }
   const lines = parsed.error.issues.map((issue) => {
     const name = issue.path.length > 0 ? issue.path.join('.') : '(root)'
-    return `  - ${name}: ${issue.code}`
+    // Custom guards carry a static, value-free message worth surfacing; all
+    // other issues are reported by code only to avoid echoing any input.
+    const detail = issue.code === 'custom' ? `${issue.code} (${issue.message})` : issue.code
+    return `  - ${name}: ${detail}`
   })
   throw new Error(`Invalid environment configuration:\n${lines.join('\n')}`)
 }

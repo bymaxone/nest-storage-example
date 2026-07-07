@@ -398,7 +398,7 @@ Completion Protocol:
 
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
 
-- 3.5 👀 2026-07-07: acceptance-criteria audit passed (all upload strategies + download shapes, multipart flag surfaced from UploadResult, progress fed by onProgress); 135 tests, 100% coverage; dashboards synced; PR #4 opened with Copilot review requested; awaiting CI green and merge.
+- 3.5 👀 2026-07-07: acceptance-criteria audit passed (all upload strategies + download shapes, multipart flag surfaced from UploadResult, progress fed by onProgress); 146 tests, 100% coverage; dashboards synced; PR #4 opened with Copilot review requested; awaiting CI green and merge.
 - 3.4 ✅ 2026-07-07: Vault module with stream proxy, size-guarded buffer preview, byte-range, and versioned-bucket download; 100% coverage.
 - 3.3 ✅ 2026-07-07: Idempotent upload route with SHA-256 key, per-instance cache boundary note, 100% coverage.
 - 3.2 ✅ 2026-07-07: Multipart and stream upload strategies with bounded LRU progress session store (cap 100); 100% coverage.

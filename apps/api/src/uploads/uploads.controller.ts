@@ -42,9 +42,6 @@ import {
 } from './dto/idempotent-upload.dto.js'
 import type { MulterFile } from './uploads.service.js'
 
-/** Maximum file size accepted by multer memory storage (matches UPLOAD_MAX_SIZE_BYTES default). */
-const MULTER_MAX_FILE_BYTES = 26_214_400
-
 /**
  * Normalizes a possibly-multivalued request header to a single string. Node's
  * `IncomingHttpHeaders` typings allow `string | string[] | undefined`; when a
@@ -78,9 +75,7 @@ export class UploadsController {
    * @returns The library `UploadResult`.
    */
   @Post('single')
-  @UseInterceptors(
-    FileInterceptor('file', { storage: undefined, limits: { fileSize: MULTER_MAX_FILE_BYTES } }),
-  )
+  @UseInterceptors(FileInterceptor('file'))
   @HttpCode(201)
   async uploadSingle(
     @UploadedFile() file: MulterFile,
@@ -105,9 +100,7 @@ export class UploadsController {
    * @returns `{ sessionId, result }` where `result` is the `UploadResult`.
    */
   @Post('multipart')
-  @UseInterceptors(
-    FileInterceptor('file', { storage: undefined, limits: { fileSize: MULTER_MAX_FILE_BYTES } }),
-  )
+  @UseInterceptors(FileInterceptor('file'))
   @HttpCode(201)
   async uploadMultipart(
     @UploadedFile() file: MulterFile,
@@ -201,9 +194,7 @@ export class UploadsController {
    * @returns The library `UploadResult`.
    */
   @Post('sse-override')
-  @UseInterceptors(
-    FileInterceptor('file', { storage: undefined, limits: { fileSize: MULTER_MAX_FILE_BYTES } }),
-  )
+  @UseInterceptors(FileInterceptor('file'))
   @HttpCode(201)
   async uploadWithSseOverride(
     @UploadedFile() file: MulterFile,

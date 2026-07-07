@@ -150,6 +150,46 @@ describe('validateEnv', () => {
   })
 })
 
+describe('production credential guard', () => {
+  it('fails when production still carries the dev-default credentials', () => {
+    /*
+     * Scenario: NODE_ENV=production while both credentials keep the well-known
+     * minioadmin default (the value applied when the vars are absent).
+     * Rule it protects: the cross-field guard rejects the boot and names BOTH
+     * offending credentials so the dev password can never reach a public deploy.
+     */
+    const run = () => validateEnv({ NODE_ENV: 'production' })
+    expect(run).toThrow(/STORAGE_ACCESS_KEY_ID/)
+    expect(run).toThrow(/STORAGE_SECRET_ACCESS_KEY/)
+  })
+
+  it('passes when production supplies real credentials', () => {
+    /*
+     * Scenario: NODE_ENV=production with genuine, overridden credentials.
+     * Rule it protects: the guard only triggers on the dev default, so a properly
+     * configured production environment validates and returns the typed env.
+     */
+    const env = validateEnv({
+      NODE_ENV: 'production',
+      STORAGE_ACCESS_KEY_ID: 'AKIAREALACCESSKEY',
+      STORAGE_SECRET_ACCESS_KEY: 'a-real-production-secret',
+    })
+    expect(env.NODE_ENV).toBe('production')
+    expect(env.STORAGE_ACCESS_KEY_ID).toBe('AKIAREALACCESSKEY')
+  })
+
+  it('allows the dev-default credentials outside production', () => {
+    /*
+     * Scenario: development boot with the minioadmin defaults intact.
+     * Rule it protects: the guard's non-production early return keeps the local
+     * convenience defaults valid so dev needs no credential configuration.
+     */
+    const env = validateEnv({ NODE_ENV: 'development' })
+    expect(env.STORAGE_ACCESS_KEY_ID).toBe('minioadmin')
+    expect(env.STORAGE_SECRET_ACCESS_KEY).toBe('minioadmin')
+  })
+})
+
 describe('loadEnv', () => {
   it('reads and validates the OS environment under the env namespace', () => {
     /*
