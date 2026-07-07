@@ -1,6 +1,6 @@
 # Phase 7: tenants-advanced-errors
 
-> **Status**: 🔄 In Progress · **Progress**: 1 / 5 tasks · **Last updated**: 2026-07-07
+> **Status**: 🔄 In Progress · **Progress**: 2 / 5 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P7)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §12.6-§12.8, §18
 
@@ -32,7 +32,7 @@ demonstrations (checksum trap, ACL honesty, timeout knobs), and the raw-client e
 | ID  | Task                                                       | Status  | Priority | Size | Depends on |
 | --- | ---------------------------------------------------------- | ------- | -------- | ---- | ---------- |
 | 7.1 | Branch + tenants module with isolation proof               | ✅ Done | P0       | M    | none       |
-| 7.2 | Error explorer: all 17 codes deterministic                 | 📋 ToDo | P0       | L    | none       |
+| 7.2 | Error explorer: all 17 codes deterministic                 | ✅ Done | P0       | L    | none       |
 | 7.3 | Provider quirks: checksum trap, ACL honesty, timeout       | 📋 ToDo | P0       | M    | 7.2        |
 | 7.4 | Raw-client advanced ops + sync forRoot coverage            | 📋 ToDo | P1       | S    | 7.2        |
 | 7.5 | Phase close: audit, dashboards, PR + Copilot review, merge | 📋 ToDo | P0       | S    | 7.1-7.4    |
@@ -111,7 +111,7 @@ Completion Protocol:
 
 ### Task 7.2: Error explorer
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: L
 - **Depends on**: none
@@ -123,10 +123,10 @@ real library, plus `GET /errors` listing every code with its documented status a
 
 #### Acceptance criteria
 
-- [ ] All 17 codes return their documented HTTP status and the untouched envelope: NOT_CONFIGURED (scoped credential-less module instance), KEY_INVALID (`../` traversal), BODY_MISSING, CONTENT_TYPE_REQUIRED, MIME_NOT_ALLOWED, SIZE_EXCEEDED, VALIDATION_FAILED, SCAN_INFECTED, SCAN_INCONCLUSIVE, OBJECT_NOT_FOUND, PROVIDER_ERROR (scoped wrong-credentials instance), SIGNED_URL_TTL_INVALID, PART_TOO_SMALL, BUCKET_UNDEFINED, MULTIPART_ABORTED (raw presigned abort flow), INVALID_CONFIG (boot probe of a broken options object), TIMEOUT (scoped instance with 1 ms timeout at an unroutable address).
-- [ ] `GET /errors` returns the catalogue table (code, status, trigger summary) sourced from `STORAGE_ERROR_CODES`.
-- [ ] Scoped auxiliary module instances are created once and torn down cleanly (no leaked clients).
-- [ ] Unit tests 100% on new files; an e2e spec walks every code asserting status + envelope.
+- [x] Every reproducible code returns its documented HTTP status and the untouched envelope through the global filter. Reconciled drift (see PR body): the shipped library exports 18 codes (spec §18 lists 17, omitting `STORAGE_INVALID_PART_COUNT`); 16 are reproducible on demand. Two are defined-but-unreachable and flagged `reproducible: false` honestly rather than faked: `STORAGE_PART_TOO_SMALL` (no public part-size guard) and `STORAGE_TIMEOUT` (`requestTimeoutMs` is resolved but never wired into the shipped S3 client, so no `TimeoutError` can arise).
+- [x] `GET /errors` returns the exhaustive catalogue (code, status, message, trigger summary, reproducible) sourced from `STORAGE_ERROR_CODES` with status/message read from the library's own `StorageException`.
+- [x] Scoped auxiliary module instances are created once (lazily, cached by label) and torn down cleanly on application shutdown (no leaked clients).
+- [x] Unit tests 100% on new files; `test/errors.e2e-spec.ts` walks every code twice asserting status + envelope (determinism).
 
 #### Files to create / modify
 
@@ -389,4 +389,5 @@ Completion Protocol:
 
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
 
+- 7.2 ✅ 2026-07-07: `errors-demo/` explorer (`ErrorsDemoController` + `ErrorsDemoService`) plus the reusable `common/ScopedStorageFactory` (global `ScopedStorageModule`) that lazily builds and caches misconfigured `BymaxStorageModule` instances and closes them on shutdown. `GET /errors` renders the exhaustive 18-code catalogue with status + message read from the library's own `StorageException` (no hardcoded status copy) and a per-code trigger recipe + reproducible flag. `POST /errors/:code` (Zod enum over `STORAGE_ERROR_CODES`) runs `trigger.registry.ts`: crafted inputs on the running module (KEY_INVALID `../`, BODY_MISSING, CONTENT_TYPE_REQUIRED, MIME_NOT_ALLOWED zip, SIZE_EXCEEDED, VALIDATION_FAILED forged pdf, SCAN_INFECTED marker, OBJECT_NOT_FOUND, BUCKET_UNDEFINED empty-bucket override, SIGNED_URL_TTL_INVALID, INVALID_PART_COUNT parts=0), scoped misconfigured instances (NOT_CONFIGURED empty creds, PROVIDER_ERROR wrong creds, SCAN_INCONCLUSIVE rejectOnUnknown, MULTIPART_ABORTED wrong-creds forced multipart), and the real synchronous `forRoot({})` probe (INVALID_CONFIG). Each reproducible code renders its real library envelope through the global filter (never caught-and-rewritten). RECONCILED DRIFT (docs-first vs the shipped d.ts/build): the library exports 18 codes (spec §18 lists 17, omitting `STORAGE_INVALID_PART_COUNT`); two are defined-but-unreachable and honestly flagged `reproducible: false` rather than faked - `STORAGE_PART_TOO_SMALL` (no public part-size guard; real sub-5MiB parts surface as the provider's EntityTooSmall -> PROVIDER_ERROR) and `STORAGE_TIMEOUT` (`requestTimeoutMs` is resolved in options but never wired into the S3 client request handler, so no library-issued request raises the SDK `TimeoutError` the code maps from). Unit 100% on new files; `test/errors.e2e-spec.ts` walks all 18 codes TWICE against Testcontainers MinIO (16 real envelopes + 2 honest 200 outcomes) proving determinism.
 - 7.1 ✅ 2026-07-07: `tenants/` module (`TenantsController` + `TenantsService`) composing app-level tenant keys `{tenant}/{category}/{uuid}.{ext}` under the single instance `keyPrefix`. Zod-validated slug `^[a-z0-9-]{2,32}$` (character class alone excludes `/`, `..`, and control chars). `POST /tenants/:t/upload` stores a `text/plain` body (whitelisted MIME, so the main pipeline passes) and renders both the app key and the full `{keyPrefix}/{tenant}/...` composition; `GET /tenants/:t/objects` lists strictly within `{tenant}/` (optional category, cursor, maxKeys); `DELETE /tenants/:t/objects` pages the scoped listing and deletes ONLY those keys, so the clear can never escape into a sibling tenant. Every response carries the honest app-level-prefix note (never claims library-enforced isolation). Unit 100% (service + controller + slug validation); `test/tenants.e2e-spec.ts` seeds `acme` + `globex`, proves cross-tenant listing isolation and that clearing `acme` leaves `globex` intact, and rejects a hostile slug with 400.

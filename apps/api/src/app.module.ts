@@ -9,6 +9,7 @@ import { ConfigService } from '@nestjs/config'
 import { BymaxStorageModule } from '@bymax-one/nest-storage'
 import type { BymaxStorageModuleOptions } from '@bymax-one/nest-storage'
 import { ConfigModule } from './config/config.module.js'
+import { ScopedStorageModule } from './common/scoped-storage.module.js'
 import { buildStorageOptions } from './config/storage.config.js'
 import { AppController } from './app.controller.js'
 import { SystemModule } from './system/system.module.js'
@@ -18,12 +19,14 @@ import { SignedModule } from './signed/signed.module.js'
 import { ValidationLabModule } from './validation-lab/validation-lab.module.js'
 import { ScannerLabModule } from './scanner-lab/scanner-lab.module.js'
 import { TenantsModule } from './tenants/tenants.module.js'
+import { ErrorsDemoModule } from './errors-demo/errors-demo.module.js'
 import type { Env } from './config/env.schema.js'
 
 /** Root module of the nest-storage-example API. */
 @Module({
   imports: [
     ConfigModule,
+    ScopedStorageModule,
     BymaxStorageModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -42,6 +45,7 @@ import type { Env } from './config/env.schema.js'
     ValidationLabModule,
     ScannerLabModule,
     TenantsModule,
+    ErrorsDemoModule,
   ],
   controllers: [AppController],
 })
