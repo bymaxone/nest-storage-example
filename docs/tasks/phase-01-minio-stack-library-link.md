@@ -1,6 +1,6 @@
 # Phase 1: minio-stack-library-link
 
-> **Status**: 🔄 In Progress · **Progress**: 2 / 5 tasks · **Last updated**: 2026-07-07
+> **Status**: 🔄 In Progress · **Progress**: 3 / 5 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P1)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §8, §15, §20
 
@@ -33,7 +33,7 @@ typed subpath probes. At the end of the phase there is still no application logi
 | --- | ------------------------------------------------------------- | ------- | -------- | ---- | ---------- |
 | 1.1 | Branch + docker-compose MinIO + bucket bootstrap script       | ✅ Done | P0       | M    | none       |
 | 1.2 | Env examples + infra scripts verified                         | ✅ Done | P0       | S    | 1.1        |
-| 1.3 | `apps/api` package: library link + peers + dual-subpath probe | 📋 ToDo | P0       | S    | 1.1        |
+| 1.3 | `apps/api` package: library link + peers + dual-subpath probe | ✅ Done | P0       | S    | 1.1        |
 | 1.4 | `apps/web` package: library link + `./shared`-only probe      | 📋 ToDo | P0       | S    | 1.1        |
 | 1.5 | Phase close: audit, dashboards, PR + Copilot review, merge    | 📋 ToDo | P0       | S    | 1.1-1.4    |
 
@@ -189,7 +189,7 @@ Completion Protocol:
 
 ### Task 1.3: `apps/api` library link + dual-subpath probe
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 1.1
@@ -201,9 +201,9 @@ importing from both `.` and `./shared`.
 
 #### Acceptance criteria
 
-- [ ] `apps/api/package.json`: `"@bymax-one/nest-storage": "file:../../../nest-storage"` plus peers `@nestjs/common ^11`, `@nestjs/core ^11`, `@aws-sdk/client-s3 ^3.700.0`, `@aws-sdk/lib-storage ^3.700.0`, `@aws-sdk/s3-request-presigner ^3.700.0`, `reflect-metadata ^0.2`; `tsconfig.json` extending the base.
-- [ ] `apps/api/src/library-probe.ts` imports `BymaxStorageModule`, `StorageService`, `SignedUrlService`, `providerRecipes` from `.` and `STORAGE_ERROR_CODES`, `DEFAULT_SIGNED_URL_TTL_SECONDS` from `./shared`, referencing each.
-- [ ] `pnpm --filter api exec tsc --noEmit` exits 0; peers resolve to a single copy.
+- [x] `apps/api/package.json`: `"@bymax-one/nest-storage": "file:../../../nest-storage"` plus peers `@nestjs/common ^11`, `@nestjs/core ^11`, `@aws-sdk/client-s3 ^3.700.0`, `@aws-sdk/lib-storage ^3.700.0`, `@aws-sdk/s3-request-presigner ^3.700.0`, `reflect-metadata ^0.2`; `tsconfig.json` extending the base.
+- [x] `apps/api/src/library-probe.ts` imports `BymaxStorageModule`, `StorageService`, `SignedUrlService`, `providerRecipes` from `.` and `STORAGE_ERROR_CODES`, `DEFAULT_SIGNED_URL_TTL_SECONDS` from `./shared`, referencing each.
+- [x] `pnpm --filter api exec tsc --noEmit` exits 0; peers resolve to a single copy.
 
 #### Files to create / modify
 
@@ -411,5 +411,6 @@ Completion Protocol:
 
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
 
+- 1.3 ✅ 2026-07-07: added apps/api package (@nest-storage-example/api) consuming @bymax-one/nest-storage via file:../../../nest-storage plus the six peers, tsconfig extending the base with decorator metadata, and library-probe.ts importing from both `.` and `./shared`; `tsc --noEmit` passes and @aws-sdk/client-s3@3.1080.0 resolves to a single copy shared with the library peer
 - 1.2 ✅ 2026-07-07: added apps/api/.env.example (all 21 §9.1 variables with dev defaults + comments) and apps/web/.env.example (NEXT_PUBLIC_API_URL); reconciled infra:up drift (one-shot exits under `--wait`, so it now waits on minio health then runs minio-setup to completion); verified up/down/nuke/logs
 - 1.1 ✅ 2026-07-07: added docker-compose MinIO stack (loopback ports, curl liveness healthcheck, named volume) plus idempotent mc setup service creating vault/vault-archive/vault-versioned, enabling versioning, and seeding 10 objects across avatars/invoices/attachments; `up -d --wait` and re-run both exit 0
