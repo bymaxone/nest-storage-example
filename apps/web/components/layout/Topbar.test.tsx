@@ -15,8 +15,7 @@ function renderTopbar(ui: ReactNode) {
 }
 
 function healthResponse(body: unknown, ok = true): Response {
-  // eslint-disable-next-line @typescript-eslint/require-await
-  return { ok, status: ok ? 200 : 503, json: async () => body } as unknown as Response
+  return { ok, status: ok ? 200 : 503, json: () => Promise.resolve(body) } as unknown as Response
 }
 
 describe('Topbar', () => {
