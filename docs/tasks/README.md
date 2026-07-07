@@ -20,7 +20,7 @@
 | P7    | `phase-07-tenants-advanced-errors.md`   | 0/5      | 📋 ToDo   | tenant prefixes, raw S3Client ops, all 17 error codes, provider quirks                               |
 | P8    | `phase-08-web-dashboard.md`             | 0/6      | 📋 ToDo   | Next.js 16 dashboard, verbatim design system, all pages                                              |
 | P9    | `phase-09-quality-docs-readiness.md`    | 0/6      | 📋 ToDo   | 100% unit coverage, full e2e, Stryker, export audit, README, public-flip checklist                   |
-|       | **Total**                               | **0/54** | 📋        |                                                                                                      |
+|       | **Total**                               | **6/54** | 🔄        |                                                                                                      |
 
 ## Task-file anatomy
 

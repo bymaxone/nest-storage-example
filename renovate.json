@@ -7,7 +7,7 @@
       "description": "Group @bymax-one/* packages together; these are pinned via file: links until published to npm",
       "matchPackageNames": ["@bymax-one/**"],
       "groupName": "bymax-one libraries",
-      "pinVersions": true
+      "rangeStrategy": "pin"
     },
     {
       "description": "Group all GitHub Actions updates together",

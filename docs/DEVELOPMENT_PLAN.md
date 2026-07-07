@@ -25,7 +25,7 @@
 
 ## 1. Progress Dashboard
 
-> **Progress:** 0 / 10 phases complete (0%) · 0 / 54 tasks
+> **Progress:** 0 / 10 phases complete (0%) · 6 / 54 tasks
 > **Active phase:** P0 repo-foundation-ci
 > **Blockers:** none
 

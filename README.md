@@ -26,8 +26,9 @@ adopting `@bymax-one/nest-storage`.
 
 ## Quick Start
 
-> Full setup requires Docker (for MinIO) and Node >= 24. This section will be expanded when the
-> infrastructure and application phases land.
+> Full setup requires Docker (for MinIO) and Node >= 24. The commands below describe the target
+> workflow; `pnpm infra:up` becomes usable once the MinIO stack is added, and `pnpm dev` once the
+> API and dashboard land. This section is expanded as those pieces arrive.
 
 ```sh
 # Start MinIO (three buckets, versioning enabled on vault-versioned)
