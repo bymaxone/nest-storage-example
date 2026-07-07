@@ -1,7 +1,7 @@
 /**
  * @fileoverview Zero-dependency browser-path proof for `@bymax-one/nest-storage`.
- * The web app consumes ONLY the shared subpath (`./shared`) — types and
- * constants carrying no NestJS or AWS-SDK code — and declares NONE of the
+ * The web app consumes ONLY the shared subpath (`./shared`), which carries
+ * types and constants but no NestJS or AWS-SDK code, and declares NONE of the
  * library's peers. Importing exclusively from `./shared` and referencing every
  * symbol proves the shared entry is self-contained and safe for a browser
  * bundle; the absence of the peers in this package is the proof. Never import

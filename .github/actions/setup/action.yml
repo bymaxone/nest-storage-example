@@ -19,8 +19,8 @@ runs:
         node-version: 24
         cache: pnpm
 
-    # The apps consume @bymax-one/nest-storage via `file:../../../nest-storage` — a
-    # sibling of the repo checkout — so the lockfile cannot resolve until the library
+    # The apps consume @bymax-one/nest-storage via `file:../../../nest-storage`, a
+    # sibling of the repo checkout, so the lockfile cannot resolve until the library
     # is on disk. Check it out (public repo, tokenless), move it into place beside the
     # workspace, then build it (it ships `dist/` via tsup). Once the library is
     # published to npm and the dependency becomes a registry range, these three steps
