@@ -1,6 +1,6 @@
 # Phase 1: minio-stack-library-link
 
-> **Status**: 🔄 In Progress · **Progress**: 0 / 5 tasks · **Last updated**: 2026-07-07
+> **Status**: 🔄 In Progress · **Progress**: 1 / 5 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P1)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §8, §15, §20
 
@@ -31,7 +31,7 @@ typed subpath probes. At the end of the phase there is still no application logi
 
 | ID  | Task                                                          | Status  | Priority | Size | Depends on |
 | --- | ------------------------------------------------------------- | ------- | -------- | ---- | ---------- |
-| 1.1 | Branch + docker-compose MinIO + bucket bootstrap script       | 📋 ToDo | P0       | M    | none       |
+| 1.1 | Branch + docker-compose MinIO + bucket bootstrap script       | ✅ Done | P0       | M    | none       |
 | 1.2 | Env examples + infra scripts verified                         | 📋 ToDo | P0       | S    | 1.1        |
 | 1.3 | `apps/api` package: library link + peers + dual-subpath probe | 📋 ToDo | P0       | S    | 1.1        |
 | 1.4 | `apps/web` package: library link + `./shared`-only probe      | 📋 ToDo | P0       | S    | 1.1        |
@@ -41,7 +41,7 @@ typed subpath probes. At the end of the phase there is still no application logi
 
 ### Task 1.1: Branch + MinIO stack + bootstrap
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: none
@@ -53,10 +53,10 @@ Compose file with MinIO and a one-shot `mc`-based setup service creating `vault`
 
 #### Acceptance criteria
 
-- [ ] Branch `feat/phase-01-minio-stack-library-link` created with `git switch -c`.
-- [ ] `docker-compose.yml`: `minio` (server + console, healthcheck, named volume, `127.0.0.1` ports 9000/9001) and `minio-setup` (`minio/mc`, `depends_on: service_healthy`, runs `docker/minio/setup.sh`).
-- [ ] `docker/minio/setup.sh`: idempotent; creates the 3 buckets, enables versioning on `vault-versioned`, seeds ~10 objects across `avatars/`, `invoices/`, `attachments/` prefixes.
-- [ ] `docker compose up -d --wait` exits 0; `vault-versioned` reports versioning enabled.
+- [x] Branch `feat/phase-01-minio-stack-library-link` created with `git switch -c`.
+- [x] `docker-compose.yml`: `minio` (server + console, healthcheck, named volume, `127.0.0.1` ports 9000/9001) and `minio-setup` (`minio/mc`, `depends_on: service_healthy`, runs `docker/minio/setup.sh`).
+- [x] `docker/minio/setup.sh`: idempotent; creates the 3 buckets, enables versioning on `vault-versioned`, seeds ~10 objects across `avatars/`, `invoices/`, `attachments/` prefixes.
+- [x] `docker compose up -d --wait` exits 0; `vault-versioned` reports versioning enabled.
 
 #### Files to create / modify
 
@@ -410,3 +410,5 @@ Completion Protocol:
 ## Completion log
 
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
+
+- 1.1 ✅ 2026-07-07: added docker-compose MinIO stack (loopback ports, curl liveness healthcheck, named volume) plus idempotent mc setup service creating vault/vault-archive/vault-versioned, enabling versioning, and seeding 10 objects across avatars/invoices/attachments; `up -d --wait` and re-run both exit 0
