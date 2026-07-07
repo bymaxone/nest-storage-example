@@ -107,21 +107,9 @@ function nonReproducible(code: StorageErrorCode): TriggerOutcome {
   }
 }
 
-/**
- * Builds the full registry mapping every shipped error code to a deterministic
- * trigger. Reproducible triggers throw a real `StorageException`; the single
- * non-reproducible code resolves to an explanatory outcome.
- *
- * @param deps - The collaborators the triggers drive.
- * @returns A total map from error code to its trigger.
- */
-export function buildTriggerRegistry(deps: TriggerDeps): Record<StorageErrorCode, Trigger> {
-  const { storage, signedUrls, scoped, connection } = deps
+/** Crafted-input triggers that the running module rejects before any provider call. */
+function guardTriggers(storage: StorageService) {
   return {
-    STORAGE_NOT_CONFIGURED: async () => {
-      const instance = await scoped.storage('unconfigured', unconfiguredOptions(connection))
-      await instance.head('errors-demo/probe')
-    },
     STORAGE_KEY_INVALID: async () => {
       await storage.upload({
         key: 'errors-demo/../escape',
@@ -141,6 +129,18 @@ export function buildTriggerRegistry(deps: TriggerDeps): Record<StorageErrorCode
         size: 1,
       })
     },
+    STORAGE_OBJECT_NOT_FOUND: async () => {
+      await storage.head(`errors-demo/missing-${randomUUID()}`)
+    },
+    STORAGE_BUCKET_UNDEFINED: async () => {
+      await storage.head('errors-demo/bucket', { bucket: '' })
+    },
+  }
+}
+
+/** Crafted-input triggers that fail inside the validation/scanner pipeline. */
+function pipelineTriggers(storage: StorageService) {
+  return {
     STORAGE_MIME_NOT_ALLOWED: async () => {
       await storage.upload({
         key: 'errors-demo/disallowed',
@@ -175,6 +175,39 @@ export function buildTriggerRegistry(deps: TriggerDeps): Record<StorageErrorCode
         size: body.byteLength,
       })
     },
+  }
+}
+
+/** Signed-URL triggers (invalid TTL and invalid part count). */
+function signedTriggers(signedUrls: SignedUrlService) {
+  return {
+    STORAGE_SIGNED_URL_TTL_INVALID: async () => {
+      await signedUrls.getDownloadUrl({ key: 'errors-demo/ttl', ttlSeconds: 0 })
+    },
+    STORAGE_INVALID_PART_COUNT: async () => {
+      await signedUrls.getMultipartUploadUrls({
+        key: 'errors-demo/parts',
+        contentType: 'text/plain',
+        parts: 0,
+      })
+    },
+  }
+}
+
+/** Triggers driven by a scoped, deliberately-misconfigured module instance. */
+function scopedTriggers(scoped: ScopedStorageFactory, connection: TriggerConnection) {
+  return {
+    STORAGE_NOT_CONFIGURED: async () => {
+      const instance = await scoped.storage('unconfigured', unconfiguredOptions(connection))
+      await instance.head('errors-demo/probe')
+    },
+    STORAGE_PROVIDER_ERROR: async () => {
+      const instance = await scoped.storage(
+        'wrong-credentials',
+        wrongCredentialsOptions(connection),
+      )
+      await instance.head('errors-demo/probe')
+    },
     STORAGE_SCAN_INCONCLUSIVE: async () => {
       const instance = await scoped.storage('reject-unknown', rejectUnknownOptions(connection))
       const body = Buffer.from('X-DEMO-UNKNOWN sample payload')
@@ -184,30 +217,6 @@ export function buildTriggerRegistry(deps: TriggerDeps): Record<StorageErrorCode
         contentType: 'text/plain',
         size: body.byteLength,
       })
-    },
-    STORAGE_OBJECT_NOT_FOUND: async () => {
-      await storage.head(`errors-demo/missing-${randomUUID()}`)
-    },
-    STORAGE_PROVIDER_ERROR: async () => {
-      const instance = await scoped.storage(
-        'wrong-credentials',
-        wrongCredentialsOptions(connection),
-      )
-      await instance.head('errors-demo/probe')
-    },
-    STORAGE_SIGNED_URL_TTL_INVALID: async () => {
-      await signedUrls.getDownloadUrl({ key: 'errors-demo/ttl', ttlSeconds: 0 })
-    },
-    STORAGE_PART_TOO_SMALL: () => Promise.resolve(nonReproducible('STORAGE_PART_TOO_SMALL')),
-    STORAGE_INVALID_PART_COUNT: async () => {
-      await signedUrls.getMultipartUploadUrls({
-        key: 'errors-demo/parts',
-        contentType: 'text/plain',
-        parts: 0,
-      })
-    },
-    STORAGE_BUCKET_UNDEFINED: async () => {
-      await storage.head('errors-demo/bucket', { bucket: '' })
     },
     STORAGE_MULTIPART_ABORTED: async () => {
       // The multipart path wraps ANY failure of the underlying upload as
@@ -223,6 +232,12 @@ export function buildTriggerRegistry(deps: TriggerDeps): Record<StorageErrorCode
         contentType: 'text/plain',
       })
     },
+  }
+}
+
+/** The boot-probe and the two reconciled non-reproducible codes. */
+function staticTriggers() {
+  return {
     // forRoot validates synchronously and throws STORAGE_INVALID_CONFIG for an
     // options object missing the required fields; the deferred call turns that
     // synchronous throw into a rejected promise the filter renders.
@@ -230,10 +245,29 @@ export function buildTriggerRegistry(deps: TriggerDeps): Record<StorageErrorCode
       Promise.resolve().then(() => {
         BymaxStorageModule.forRoot({} as BymaxStorageModuleOptions)
       }),
-    // Reconciled drift: STORAGE_TIMEOUT maps only from an SDK `TimeoutError`, but
-    // the shipped library never wires `requestTimeoutMs` into the S3 client's
-    // request handler, so no library-issued request can produce one. See the
-    // catalogue for the full explanation.
+    // Reconciled drift: neither maps to a code the shipped library can raise from
+    // a library-issued request (see the catalogue), so both return an honest outcome.
+    STORAGE_PART_TOO_SMALL: () => Promise.resolve(nonReproducible('STORAGE_PART_TOO_SMALL')),
     STORAGE_TIMEOUT: () => Promise.resolve(nonReproducible('STORAGE_TIMEOUT')),
+  }
+}
+
+/**
+ * Builds the full registry mapping every shipped error code to a deterministic
+ * trigger. Reproducible triggers throw a real `StorageException`; the two
+ * non-reproducible codes resolve to an explanatory outcome. The return annotation
+ * enforces that every shipped code is present.
+ *
+ * @param deps - The collaborators the triggers drive.
+ * @returns A total map from error code to its trigger.
+ */
+export function buildTriggerRegistry(deps: TriggerDeps): Record<StorageErrorCode, Trigger> {
+  const { storage, signedUrls, scoped, connection } = deps
+  return {
+    ...guardTriggers(storage),
+    ...pipelineTriggers(storage),
+    ...signedTriggers(signedUrls),
+    ...scopedTriggers(scoped, connection),
+    ...staticTriggers(),
   }
 }

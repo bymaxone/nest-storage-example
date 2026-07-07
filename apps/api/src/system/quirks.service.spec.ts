@@ -97,6 +97,30 @@ describe('QuirksService (unit)', () => {
     await expect(service.checksumDemo()).rejects.toThrow('socket hang up')
   })
 
+  it('forwards a session token into the scoped WHEN_SUPPORTED instance when present', async () => {
+    /*
+     * Scenario: the resolved credentials carry an STS session token.
+     * Rule it protects: the scoped checksum instance inherits the session token.
+     */
+    const upload = jest.fn<StorageService['upload']>((o) => Promise.resolve(uploadResult(o.key)))
+    const storage = { upload } as unknown as StorageService
+    const scopedUpload = jest.fn<StorageService['upload']>((o) =>
+      Promise.resolve(uploadResult(o.key)),
+    )
+    const scopedStorage = { upload: scopedUpload } as unknown as StorageService
+    const scopedFactory = jest
+      .fn<ScopedStorageFactory['storage']>()
+      .mockResolvedValue(scopedStorage)
+    const scoped = { storage: scopedFactory } as unknown as ScopedStorageFactory
+    const withToken: QuirksResolvedOptions = {
+      ...OPTIONS,
+      credentials: { accessKeyId: 'key', secretAccessKey: 'secret', sessionToken: 'sts-token' },
+    }
+    const service = new QuirksService(storage, scoped, withToken)
+    await service.checksumDemo()
+    expect(scopedFactory.mock.calls[0]?.[1]?.credentials.sessionToken).toBe('sts-token')
+  })
+
   it('renders the ACL honesty card with the mapped error code', () => {
     /*
      * Scenario: the ACL card is requested.
