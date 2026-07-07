@@ -5,7 +5,7 @@
  * public-url, single delete) live in `VaultController` (`vault/object`).
  * @layer api/vault
  */
-import { Body, Controller, Get, Post, Query } from '@nestjs/common'
+import { Body, Controller, Get, HttpCode, Post, Query } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { ZodValidationPipe } from '../common/zod-validation.pipe.js'
 import type { Env } from '../config/env.schema.js'
@@ -53,6 +53,7 @@ export class VaultBrowseController {
    * @returns `{ deleted: string[], failed: FailedDeletion[] }` from the library.
    */
   @Post('bulk-delete')
+  @HttpCode(200)
   async bulkDelete(
     @Body(new ZodValidationPipe(bulkDeleteBodySchema)) body: BulkDeleteBody,
   ): Promise<DeleteManyResult> {
