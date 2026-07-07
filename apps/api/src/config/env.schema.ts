@@ -3,7 +3,7 @@
  * (spec §9.1) is declared, typed, coerced, and defaulted here with Zod, and this
  * is the ONLY module in the app permitted to read `process.env`. `loadEnv`
  * namespaces the validated result under an `env` key so the rest of the app
- * consumes it through `ConfigService<{ env: Env }, true>` — never a raw process
+ * consumes it through `ConfigService<{ env: Env }, true>` - never a raw process
  * lookup. A misconfiguration throws one aggregated, value-free report at boot.
  * @layer api/config
  */
@@ -56,7 +56,7 @@ export type Env = z.infer<typeof envSchema>
 /**
  * Validates raw environment input and returns the typed `Env`, or throws ONE
  * aggregated error. The message lists every offending variable by NAME and issue
- * code only — never the received value — so secrets can never leak into logs.
+ * code only - never the received value - so secrets can never leak into logs.
  *
  * @param config - The raw `process.env`-shaped record to validate.
  * @returns The parsed, typed environment.

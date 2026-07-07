@@ -56,7 +56,7 @@ describe('envBoolean transform', () => {
   ])('parses STORAGE_FORCE_PATH_STYLE=%p as %p', (raw, expected) => {
     /*
      * Scenario: the boolean var arrives as each meaningful string.
-     * Rule it protects: only `'true'`/`'1'` are truthy — `'false'` and other
+     * Rule it protects: only `'true'`/`'1'` are truthy - `'false'` and other
      * strings are false, dodging the `Boolean('false') === true` coercion trap
      * (exercises the `'true'` and `'1'` operands and the final false arm).
      */

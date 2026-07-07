@@ -33,7 +33,7 @@
 | --- | ------------------------- | --------------------------------------- | -------------- | -------- | ---- | ------------ |
 | P0  | repo-foundation-ci        | `phase-00-repo-foundation-ci.md`        | ✅ Done        | 6/6      | M    | 2026-07-07   |
 | P1  | minio-stack-library-link  | `phase-01-minio-stack-library-link.md`  | ✅ Done        | 5/5      | M    | 2026-07-07   |
-| P2  | api-skeleton-wiring       | `phase-02-api-skeleton-wiring.md`       | 🔄 In Progress | 2/6      | L    | 2026-07-07   |
+| P2  | api-skeleton-wiring       | `phase-02-api-skeleton-wiring.md`       | 🔄 In Progress | 3/6      | L    | 2026-07-07   |
 | P3  | core-object-operations    | `phase-03-core-object-operations.md`    | 📋 ToDo        | 0/5      | L    | 2026-07-06   |
 | P4  | listing-lifecycle         | `phase-04-listing-lifecycle.md`         | 📋 ToDo        | 0/5      | M    | 2026-07-06   |
 | P5  | signed-urls-direct-upload | `phase-05-signed-urls-direct-upload.md` | 📋 ToDo        | 0/5      | M    | 2026-07-06   |

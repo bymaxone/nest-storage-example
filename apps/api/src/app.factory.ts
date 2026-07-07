@@ -15,7 +15,7 @@ import type { Env } from './config/env.schema.js'
 
 /**
  * Builds the configured Nest application: CORS for the validated dashboard
- * origin and graceful shutdown hooks. Does NOT call `listen()` — the caller
+ * origin and graceful shutdown hooks. Does NOT call `listen()` - the caller
  * owns the port.
  *
  * @returns The constructed, not-yet-listening application instance.

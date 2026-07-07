@@ -1,5 +1,5 @@
 /**
- * Unit: AppController — the root service-identity surface.
+ * Unit: AppController - the root service-identity surface.
  *
  * Constructs the controller directly (no Nest DI) and pins both the returned
  * body shape and the route metadata so a mutant on the literals or the HTTP

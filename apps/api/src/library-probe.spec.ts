@@ -3,7 +3,7 @@
  *
  * Importing the probe executes its object literal, proving every symbol pulled
  * from both `@bymax-one/nest-storage` subpaths (`.` and `./shared`) is a live
- * runtime value — not just a type — so a broken `exports` map or dual build
+ * runtime value - not just a type - so a broken `exports` map or dual build
  * fails here as well as under `tsc`.
  *
  * @module library-probe.spec
