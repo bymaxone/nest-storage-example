@@ -29,7 +29,10 @@ runs:
       uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       with:
         repository: bymaxone/nest-storage
-        ref: main
+        # Pinned to a specific commit for reproducible builds; bump intentionally
+        # to consume upstream library changes (a floating ref would let upstream
+        # silently change what CI builds).
+        ref: 9fd67705d9973320556a3a1e22b6311dc5d1b4cf
         path: .nest-storage-lib
 
     - name: Position the library beside the workspace
