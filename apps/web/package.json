@@ -1,15 +1,90 @@
 {
   "name": "@nest-storage-example/web",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
+  "description": "Next.js 16 storage dashboard for @bymax-one/nest-storage — Vault browser, Upload lab, Direct upload, Signed URLs, Validation, Scanner, Tenants, Error explorer, and System pages.",
+  "keywords": [
+    "bymax",
+    "bymax-one",
+    "nest-storage",
+    "nextjs",
+    "react",
+    "s3",
+    "minio",
+    "storage",
+    "dashboard",
+    "tailwindcss",
+    "shadcn",
+    "tanstack-query",
+    "example"
+  ],
+  "homepage": "https://github.com/bymaxone/nest-storage-example/tree/main/apps/web#readme",
+  "bugs": {
+    "url": "https://github.com/bymaxone/nest-storage-example/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bymaxone/nest-storage-example.git",
+    "directory": "apps/web"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Bymax One",
+    "url": "https://github.com/bymaxone"
+  },
   "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "lint": "eslint app components lib hooks",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:cov": "vitest run --coverage",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@bymax-one/nest-storage": "file:../../../nest-storage"
+    "@bymax-one/nest-storage": "file:../../../nest-storage",
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-dropdown-menu": "^2.1.16",
+    "@radix-ui/react-label": "^2.1.8",
+    "@radix-ui/react-popover": "^1.1.14",
+    "@radix-ui/react-scroll-area": "^1.2.9",
+    "@radix-ui/react-select": "^2.2.5",
+    "@radix-ui/react-slot": "^1.2.4",
+    "@radix-ui/react-tabs": "^1.1.13",
+    "@radix-ui/react-tooltip": "^1.2.8",
+    "cmdk": "^1.1.1",
+    "@tanstack/react-query": "^5",
+    "@tanstack/react-table": "^8",
+    "@tanstack/react-virtual": "^3",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "geist": "^1.7.0",
+    "lucide-react": "^1.17.0",
+    "next": "^16.2.4",
+    "nuqs": "^2",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "sonner": "^2.0.7",
+    "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
-    "typescript": "^5.9.0"
+    "@tailwindcss/postcss": "^4.2.2",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/node": "^25.6.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.2.0",
+    "@vitest/coverage-v8": "^3",
+    "jsdom": "^29.1.1",
+    "tailwindcss": "^4.2.2",
+    "typescript": "^5.9.0",
+    "vitest": "^3"
   }
 }
