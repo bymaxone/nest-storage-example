@@ -1,0 +1,25 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "schedule": ["after 6pm on saturday", "before 6am on monday"],
+  "packageRules": [
+    {
+      "description": "Group @bymax-one/* packages together; these are pinned via file: links until published to npm",
+      "matchPackageNames": ["@bymax-one/**"],
+      "groupName": "bymax-one libraries",
+      "pinVersions": true
+    },
+    {
+      "description": "Group all GitHub Actions updates together",
+      "matchManagers": ["github-actions"],
+      "groupName": "github actions",
+      "pinDigests": true
+    },
+    {
+      "description": "Group Docker image digest updates together",
+      "matchManagers": ["dockerfile", "docker-compose"],
+      "groupName": "docker digests",
+      "pinDigests": true
+    }
+  ]
+}
