@@ -1,6 +1,6 @@
 # Phase 3: core-object-operations
 
-> **Status**: 🔄 In Progress · **Progress**: 4 / 5 tasks · **Last updated**: 2026-07-07
+> **Status**: 👀 Review · **Progress**: 5 / 5 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P3)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §11.1, §12.1-§12.3
 
@@ -28,13 +28,13 @@ byte range, versionId). Matrix rows 10, 12, 15, 20-31.
 
 ## Task index
 
-| ID  | Task                                                          | Status         | Priority | Size | Depends on |
-| --- | ------------------------------------------------------------- | -------------- | -------- | ---- | ---------- |
-| 3.1 | Branch + uploads module: single-shot + headers + SSE override | ✅ Done        | P0       | M    | none       |
-| 3.2 | Multipart + progress session store + stream strategies        | ✅ Done        | P0       | L    | 3.1        |
-| 3.3 | Idempotent upload demo                                        | ✅ Done        | P0       | S    | 3.1        |
-| 3.4 | Vault downloads: stream, buffer preview, range, versionId     | ✅ Done        | P0       | M    | 3.1        |
-| 3.5 | Phase close: audit, dashboards, PR + Copilot review, merge    | 🔄 In Progress | P0       | S    | 3.1-3.4    |
+| ID  | Task                                                          | Status    | Priority | Size | Depends on |
+| --- | ------------------------------------------------------------- | --------- | -------- | ---- | ---------- |
+| 3.1 | Branch + uploads module: single-shot + headers + SSE override | ✅ Done   | P0       | M    | none       |
+| 3.2 | Multipart + progress session store + stream strategies        | ✅ Done   | P0       | L    | 3.1        |
+| 3.3 | Idempotent upload demo                                        | ✅ Done   | P0       | S    | 3.1        |
+| 3.4 | Vault downloads: stream, buffer preview, range, versionId     | ✅ Done   | P0       | M    | 3.1        |
+| 3.5 | Phase close: audit, dashboards, PR + Copilot review, merge    | 👀 Review | P0       | S    | 3.1-3.4    |
 
 ## Tasks
 
@@ -332,7 +332,7 @@ Completion Protocol:
 
 ### Task 3.5: Phase close
 
-- **Status**: 📋 ToDo
+- **Status**: 👀 Review
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 3.1-3.4
@@ -398,6 +398,7 @@ Completion Protocol:
 
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
 
+- 3.5 👀 2026-07-07: acceptance-criteria audit passed (all upload strategies + download shapes, multipart flag surfaced from UploadResult, progress fed by onProgress); 135 tests, 100% coverage; dashboards synced; PR #4 opened with Copilot review requested; awaiting CI green and merge.
 - 3.4 ✅ 2026-07-07: Vault module with stream proxy, size-guarded buffer preview, byte-range, and versioned-bucket download; 100% coverage.
 - 3.3 ✅ 2026-07-07: Idempotent upload route with SHA-256 key, per-instance cache boundary note, 100% coverage.
 - 3.2 ✅ 2026-07-07: Multipart and stream upload strategies with bounded LRU progress session store (cap 100); 100% coverage.
