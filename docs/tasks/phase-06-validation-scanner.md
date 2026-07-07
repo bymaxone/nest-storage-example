@@ -1,6 +1,6 @@
 # Phase 6: validation-scanner
 
-> **Status**: 🔄 In Progress · **Progress**: 2 / 5 tasks · **Last updated**: 2026-07-07
+> **Status**: 🔄 In Progress · **Progress**: 3 / 5 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P6)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §16
 
@@ -32,7 +32,7 @@ seam. Matrix rows 13, 14, 47-53.
 | --- | ------------------------------------------------------------ | ------- | -------- | ---- | ---------- |
 | 6.1 | Branch + validation lab: MIME wildcard + size cap paths      | ✅ Done | P0       | M    | none       |
 | 6.2 | Magic-byte forgery demo (declared PDF, fake bytes)           | ✅ Done | P0       | S    | 6.1        |
-| 6.3 | Scanner lab: verdicts, modes, rejectOnUnknown, removal proof | 📋 ToDo | P0       | M    | 6.1        |
+| 6.3 | Scanner lab: verdicts, modes, rejectOnUnknown, removal proof | ✅ Done | P0       | M    | 6.1        |
 | 6.4 | Confirm-scanner wiring + config introspection                | 📋 ToDo | P0       | S    | 6.3        |
 | 6.5 | Phase close: audit, dashboards, PR + Copilot review, merge   | 📋 ToDo | P0       | S    | 6.1-6.4    |
 
@@ -187,7 +187,7 @@ Completion Protocol:
 
 ### Task 6.3: Scanner lab
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 6.1
@@ -199,11 +199,11 @@ rejection vs post-upload removal with an `exists()` proof), and both `rejectOnUn
 
 #### Acceptance criteria
 
-- [ ] `POST /scanner/upload` with an `X-DEMO-INFECTED` body → 422 `STORAGE_SCAN_INFECTED` with `details.threat: 'Demo.Marker.A'`; clean body passes.
-- [ ] Post-upload mode (env or a scoped module instance, per the spec's honest design): the infected object is uploaded then removed, and the lab proves removal (`exists()` false) in the response.
-- [ ] `X-DEMO-UNKNOWN`: passes with a `warning` field by default; 422 `STORAGE_SCAN_INCONCLUSIVE` when `rejectOnUnknown: true`.
-- [ ] `GET /scanner/config` renders the active mode + rejectOnUnknown from the resolved options.
-- [ ] Unit tests 100% on new files.
+- [x] `POST /scanner/upload` with an `X-DEMO-INFECTED` body → 422 `STORAGE_SCAN_INFECTED` with `details.threat: 'Demo.Marker.A'`; clean body passes.
+- [x] Post-upload mode (env or a scoped module instance, per the spec's honest design): the infected object is uploaded then removed, and the lab proves removal (`exists()` false) via a dedicated existence probe.
+- [x] `X-DEMO-UNKNOWN`: passes with a `warning` field by default; 422 `STORAGE_SCAN_INCONCLUSIVE` when `rejectOnUnknown: true`.
+- [x] `GET /scanner/config` renders the active mode + rejectOnUnknown from the resolved options.
+- [x] Unit tests 100% on new files.
 
 #### Files to create / modify
 
@@ -395,5 +395,6 @@ Completion Protocol:
 
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
 
+- 6.3 ✅ 2026-07-07: `scanner-lab/` module (`ScannerLabController` + `ScannerLabService`) driving the real scanner pipeline under `scanner-lab/` keys. `POST /scanner/upload` (Zod `content` + optional deterministic `keySeed`, always `text/plain` so the MIME stage passes) classifies the body with the SAME inert `MarkerFileScanner` the library runs, reflects the detected marker into the object key (so post-upload mode, which scans the KEY, sees the same marker the pre-upload mode reads from the body), then uploads through the library which is the enforcement authority. Infected -> 422 `STORAGE_SCAN_INFECTED` (`threat: Demo.Marker.A`); unknown -> accepted with a warning or 422 `STORAGE_SCAN_INCONCLUSIVE` per `rejectOnUnknown`. `GET /scanner/exists` probes presence (backs the post-upload removal proof); `GET /scanner/config` renders enabled/mode/rejectOnUnknown from the options token. Marker constants exported from `marker-file.scanner.ts` (single source). Unit 100/100/100/100; `test/scanner.e2e-spec.ts` boots three app instances on ONE MinIO (pre-upload, pre-upload+reject, post-upload) proving every verdict/mode/reject combination incl. real removal via head->not-found. Inert `X-DEMO-*` markers only.
 - 6.2 ✅ 2026-07-07: added the magic-byte forgery demonstration on the same `POST /validation/upload` route. `pdf-samples.ts` fixture builders: `forgedPdf()` (plain text declared `application/pdf`, no `%PDF` prefix) and `genuinePdf()` (real `%PDF-1.7` signature), both marker-free to isolate the content-sniffing stage. The e2e drives both through the real pipeline against MinIO: the forged body maps to 400 `STORAGE_VALIDATION_FAILED` with `details.validator: 'pdf-magic-byte'` and a reason string; the genuine body passes and the response names the validators that ran. Fixture unit tests at 100%.
 - 6.1 ✅ 2026-07-07: `validation-lab/` module (`MulterModule` memory storage, deliberately NO `fileSize` cap so the library is the size gate), `ValidationLabController` (`POST /validation/upload` thin pass-through, `GET /validation/rules`), and `ValidationLabService` pushing the file straight into `StorageService.upload` under `validation-lab/` keys with no app-side prechecks. Rules rendered from the `BYMAX_STORAGE_OPTIONS` token (`validation-policy.ts` narrow view): whitelist, `maxSizeBytes`, and custom-validator names. Failures propagate the library envelopes (415 MIME, 413 size, 400 validation) untouched via the global filter. Unit 100/100/100/100; `test/validation.e2e-spec.ts` proves MIME 415, size 413, PNG pass, and the rules render against Testcontainers MinIO.
