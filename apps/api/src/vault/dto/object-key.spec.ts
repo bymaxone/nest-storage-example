@@ -2,7 +2,8 @@
  * Unit: objectKeySchema - shared S3 object-key validation.
  *
  * Covers: acceptance of a normal key and a Unicode key, rejection of the empty
- * string, rejection above 1024 bytes, and rejection of C0 control characters
+ * string, the 1024-byte boundary (ASCII acceptance and multi-byte rejection
+ * that would pass a code-unit check), and rejection of C0 control characters
  * (null byte, unit separator) and DEL.
  *
  * @module vault/dto/object-key.spec
@@ -42,10 +43,34 @@ describe('objectKeySchema', () => {
 
   it('rejects a key longer than 1024 bytes', () => {
     /*
-     * Scenario: a 1025-character key exceeds the S3 key-length limit.
+     * Scenario: a 1025-character ASCII key exceeds the S3 key-length limit.
      * Rule it protects: oversized keys are rejected before reaching the provider.
      */
     expect(() => objectKeySchema.parse('a'.repeat(1025))).toThrow()
+  })
+
+  it('accepts an ASCII key at exactly 1024 bytes', () => {
+    /*
+     * Scenario: a 1024-character ASCII key sits exactly on the byte boundary
+     * (1 byte per character), so it must be accepted.
+     * Rule it protects: the byte limit is inclusive at 1024.
+     */
+    const key = 'a'.repeat(1024)
+    expect(objectKeySchema.parse(key)).toBe(key)
+  })
+
+  it('rejects a multi-byte key within the code-unit limit but over 1024 bytes', () => {
+    /*
+     * Scenario: 400 three-byte characters (U+65E5) is 400 UTF-16 code units
+     * (well under 1024, so a `.max(1024)` code-unit check would pass) yet 1200
+     * UTF-8 bytes, exceeding the S3 byte limit.
+     * Rule it protects: the guard measures UTF-8 bytes, not code units, so
+     * non-ASCII keys cannot slip past the S3 1024-byte ceiling.
+     */
+    const key = '日'.repeat(400)
+    expect(key.length).toBeLessThanOrEqual(1024)
+    expect(Buffer.byteLength(key, 'utf8')).toBeGreaterThan(1024)
+    expect(() => objectKeySchema.parse(key)).toThrow()
   })
 
   it('rejects a key containing a null byte', () => {

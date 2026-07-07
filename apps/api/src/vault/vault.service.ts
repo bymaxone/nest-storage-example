@@ -241,16 +241,28 @@ export class VaultService {
   }
 
   /**
-   * Best-effort existence check. Returns `false` for a missing object and also
-   * `false` (with a library-level warning) for any other provider error -- never
-   * throws, per the library contract.
+   * Confirms object existence via a `head()` probe. Returns `true` when the
+   * object is present and `false` ONLY when the provider confirms it is absent
+   * (`STORAGE_OBJECT_NOT_FOUND`). Every other provider error propagates so real
+   * faults reach the global exception filter and the health probe instead of
+   * being masked as a false negative. This deliberately does not use the
+   * library's best-effort `exists()`, which swallows all errors into `false`.
    *
    * @param key - The raw object key.
    * @param bucket - Optional per-call bucket override.
-   * @returns `true` when the object exists, `false` otherwise.
+   * @returns `true` when the object exists, `false` when confirmed absent.
+   * @throws {StorageException} Propagates any error other than STORAGE_OBJECT_NOT_FOUND.
    */
   async exists(key: string, bucket?: string): Promise<boolean> {
-    return this.storage.exists(key, bucket !== undefined ? { bucket } : undefined)
+    try {
+      await this.storage.head(key, bucket !== undefined ? { bucket } : undefined)
+      return true
+    } catch (error) {
+      if (error instanceof StorageException && error.code === 'STORAGE_OBJECT_NOT_FOUND') {
+        return false
+      }
+      throw error
+    }
   }
 
   /**
@@ -297,7 +309,7 @@ export class VaultService {
    * @throws {StorageException} Propagates any non-missing-key library error.
    */
   async deleteOne(key: string): Promise<DeleteOneResponse> {
-    const isExisting = await this.storage.exists(key)
+    const isExisting = await this.exists(key)
     await this.storage.delete(key)
     return { deleted: key, warned: !isExisting }
   }
@@ -332,7 +344,7 @@ export class VaultService {
     archiveBucket: string,
     defaultBucket: string,
   ): Promise<CopyResponse> {
-    const isSourcePresent = await this.storage.exists(options.sourceKey)
+    const isSourcePresent = await this.exists(options.sourceKey)
     if (!isSourcePresent) {
       throw new StorageException('STORAGE_OBJECT_NOT_FOUND', undefined, {
         key: options.sourceKey,

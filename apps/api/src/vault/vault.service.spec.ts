@@ -43,7 +43,6 @@ function setup() {
   const download = jest.fn<StorageService['download']>()
   const downloadBuffer = jest.fn<StorageService['downloadBuffer']>()
   const head = jest.fn<StorageService['head']>()
-  const exists = jest.fn<StorageService['exists']>()
   const list = jest.fn<StorageService['list']>()
   const deleteOne = jest.fn<StorageService['delete']>()
   const deleteMany = jest.fn<StorageService['deleteMany']>()
@@ -52,14 +51,13 @@ function setup() {
     download,
     downloadBuffer,
     head,
-    exists,
     list,
     delete: deleteOne,
     deleteMany,
     copy,
   } as unknown as StorageService
   const service = new VaultService(storage)
-  return { service, download, downloadBuffer, head, exists, list, deleteOne, deleteMany, copy }
+  return { service, download, downloadBuffer, head, list, deleteOne, deleteMany, copy }
 }
 
 describe('VaultService (unit)', () => {
@@ -356,65 +354,76 @@ describe('VaultService (unit)', () => {
   })
 
   describe('exists', () => {
-    it('returns true when the object exists', async () => {
+    it('returns true when head() resolves for a present object', async () => {
       /*
-       * Scenario: the provider reports the key is present.
-       * Rule it protects: exists() surfaces the library's true result.
+       * Scenario: the provider returns metadata, confirming the key is present.
+       * Rule it protects: a successful head() maps to true.
        */
-      const { service, exists } = setup()
-      exists.mockResolvedValue(true)
+      const { service, head } = setup()
+      head.mockResolvedValue(makeMetadata())
 
       const result = await service.exists('avatars/uuid.png')
       expect(result).toBe(true)
     })
 
-    it('returns false when the object is missing', async () => {
+    it('returns false when head() reports the object is not found', async () => {
       /*
-       * Scenario: the provider reports the key is absent.
-       * Rule it protects: exists() returns false (not throws) per the library contract.
+       * Scenario: head() rejects with STORAGE_OBJECT_NOT_FOUND (confirmed absent).
+       * Rule it protects: only a genuine not-found maps to false.
        */
-      const { service, exists } = setup()
-      exists.mockResolvedValue(false)
+      const { service, head } = setup()
+      head.mockRejectedValue(new StorageException('STORAGE_OBJECT_NOT_FOUND'))
 
       const result = await service.exists('missing')
       expect(result).toBe(false)
     })
 
-    it('returns false (with provider warning, not throw) on any other error', async () => {
+    it('propagates a non-not-found provider error instead of masking it as false', async () => {
       /*
-       * Scenario: the library returns false for a provider error (its documented
-       * best-effort contract -- it warns internally rather than throws).
-       * Rule it protects: the service does not re-throw; false propagates.
+       * Scenario: head() rejects with a provider fault (not a missing object).
+       * Rule it protects: real faults surface to the caller / health probe rather
+       * than being hidden behind a false negative.
        */
-      const { service, exists } = setup()
-      exists.mockResolvedValue(false)
+      const { service, head } = setup()
+      head.mockRejectedValue(new StorageException('STORAGE_PROVIDER_ERROR'))
 
-      const result = await service.exists('any/key')
-      expect(result).toBe(false)
+      await expect(service.exists('any/key')).rejects.toBeInstanceOf(StorageException)
     })
 
-    it('forwards the bucket option when supplied', async () => {
+    it('propagates a non-StorageException error unchanged', async () => {
+      /*
+       * Scenario: head() rejects with a plain Error (e.g. a network failure).
+       * Rule it protects: only StorageException not-found is caught; every other
+       * error type re-throws so it is never swallowed.
+       */
+      const { service, head } = setup()
+      head.mockRejectedValue(new Error('socket hang up'))
+
+      await expect(service.exists('any/key')).rejects.toThrow('socket hang up')
+    })
+
+    it('forwards the bucket option to head() when supplied', async () => {
       /*
        * Scenario: caller provides a bucket override.
-       * Rule it protects: the bucket option is forwarded to the library.
+       * Rule it protects: the bucket option is forwarded to the head() probe.
        */
-      const { service, exists } = setup()
-      exists.mockResolvedValue(true)
+      const { service, head } = setup()
+      head.mockResolvedValue(makeMetadata())
 
       await service.exists('some/key', 'vault-archive')
-      expect(exists).toHaveBeenCalledWith('some/key', { bucket: 'vault-archive' })
+      expect(head).toHaveBeenCalledWith('some/key', { bucket: 'vault-archive' })
     })
 
-    it('calls storage.exists without a bucket option when none is given', async () => {
+    it('calls head() without an options argument when no bucket is given', async () => {
       /*
        * Scenario: no bucket override; the library uses its default bucket.
-       * Rule it protects: undefined is not passed as the options argument.
+       * Rule it protects: undefined is passed as the options argument, not an object.
        */
-      const { service, exists } = setup()
-      exists.mockResolvedValue(true)
+      const { service, head } = setup()
+      head.mockResolvedValue(makeMetadata())
 
       await service.exists('some/key')
-      expect(exists).toHaveBeenCalledWith('some/key', undefined)
+      expect(head).toHaveBeenCalledWith('some/key', undefined)
     })
   })
 
@@ -466,11 +475,12 @@ describe('VaultService (unit)', () => {
   describe('deleteOne', () => {
     it('returns warned=false when the key existed before the delete', async () => {
       /*
-       * Scenario: first delete of an existing object; exists() returns true.
+       * Scenario: first delete of an existing object; the exists() probe (head)
+       * resolves, so the key was present.
        * Rule it protects: warned is false on the first call -- no idempotency event.
        */
-      const { service, exists, deleteOne } = setup()
-      exists.mockResolvedValue(true)
+      const { service, head, deleteOne } = setup()
+      head.mockResolvedValue(makeMetadata())
       deleteOne.mockResolvedValue(undefined)
 
       const result = await service.deleteOne('avatars/uuid.png')
@@ -480,12 +490,13 @@ describe('VaultService (unit)', () => {
 
     it('returns warned=true when the key was already absent', async () => {
       /*
-       * Scenario: repeat delete of a non-existent key; exists() returns false.
+       * Scenario: repeat delete of a non-existent key; the exists() probe (head)
+       * rejects with a confirmed not-found.
        * Rule it protects: warned=true surfaces the library's internal warning to
        * the UI so idempotent repeat is observable.
        */
-      const { service, exists, deleteOne } = setup()
-      exists.mockResolvedValue(false)
+      const { service, head, deleteOne } = setup()
+      head.mockRejectedValue(new StorageException('STORAGE_OBJECT_NOT_FOUND'))
       deleteOne.mockResolvedValue(undefined)
 
       const result = await service.deleteOne('avatars/uuid.png')
@@ -494,11 +505,11 @@ describe('VaultService (unit)', () => {
 
     it('propagates StorageException from storage.delete()', async () => {
       /*
-       * Scenario: the provider returns an unexpected error.
+       * Scenario: the exists() probe succeeds, then delete() returns a provider error.
        * Rule it protects: non-idempotency errors are not swallowed.
        */
-      const { service, exists, deleteOne } = setup()
-      exists.mockResolvedValue(true)
+      const { service, head, deleteOne } = setup()
+      head.mockResolvedValue(makeMetadata())
       deleteOne.mockRejectedValue(new StorageException('STORAGE_PROVIDER_ERROR'))
 
       await expect(service.deleteOne('avatars/uuid.png')).rejects.toBeInstanceOf(StorageException)
@@ -541,8 +552,8 @@ describe('VaultService (unit)', () => {
        * Scenario: same-bucket copy; destinationBucket is not passed to the library.
        * Rule it protects: the default bucket is used when destination='same'.
        */
-      const { service, exists, copy } = setup()
-      exists.mockResolvedValue(true)
+      const { service, head, copy } = setup()
+      head.mockResolvedValue(makeMetadata())
       copy.mockResolvedValue({ etag: '"new-etag"' })
 
       const result = await service.copy(
@@ -567,8 +578,8 @@ describe('VaultService (unit)', () => {
        * Scenario: cross-bucket copy to vault-archive.
        * Rule it protects: destinationBucket is passed when destination='archive'.
        */
-      const { service, exists, copy } = setup()
-      exists.mockResolvedValue(true)
+      const { service, head, copy } = setup()
+      head.mockResolvedValue(makeMetadata())
       copy.mockResolvedValue({ etag: '"arc-etag"' })
 
       const result = await service.copy(
@@ -588,8 +599,8 @@ describe('VaultService (unit)', () => {
        * Scenario: rename pattern -- deleteSource=true triggers a post-copy delete.
        * Rule it protects: the source is removed only after a successful copy.
        */
-      const { service, exists, copy, deleteOne } = setup()
-      exists.mockResolvedValue(true)
+      const { service, head, copy, deleteOne } = setup()
+      head.mockResolvedValue(makeMetadata())
       copy.mockResolvedValue({ etag: '"e"' })
       deleteOne.mockResolvedValue(undefined)
 
@@ -612,8 +623,8 @@ describe('VaultService (unit)', () => {
        * Scenario: plain copy without deleteSource; source stays intact.
        * Rule it protects: the source is not deleted unless explicitly requested.
        */
-      const { service, exists, copy, deleteOne } = setup()
-      exists.mockResolvedValue(true)
+      const { service, head, copy, deleteOne } = setup()
+      head.mockResolvedValue(makeMetadata())
       copy.mockResolvedValue({ etag: '"e"' })
 
       await service.copy(
@@ -627,16 +638,35 @@ describe('VaultService (unit)', () => {
 
     it('throws STORAGE_OBJECT_NOT_FOUND when the source is absent', async () => {
       /*
-       * Scenario: the exists() precheck finds no source; a typed 404 is thrown
-       * before any CopyObject request is issued.
+       * Scenario: the exists() precheck (head) reports a confirmed not-found; a
+       * typed 404 is thrown before any CopyObject request is issued.
        * Rule it protects: the precheck prevents undefined copy semantics at the provider.
        */
-      const { service, exists, copy } = setup()
-      exists.mockResolvedValue(false)
+      const { service, head, copy } = setup()
+      head.mockRejectedValue(new StorageException('STORAGE_OBJECT_NOT_FOUND'))
 
       await expect(
         service.copy(
           { sourceKey: 'missing.png', destinationKey: 'dst.png', destination: 'same' },
+          'vault-archive',
+          'vault',
+        ),
+      ).rejects.toBeInstanceOf(StorageException)
+      expect(copy).not.toHaveBeenCalled()
+    })
+
+    it('propagates a non-not-found provider error from the source precheck', async () => {
+      /*
+       * Scenario: the exists() precheck (head) rejects with a provider fault.
+       * Rule it protects: precheck faults surface instead of being misread as a
+       * missing source, and no CopyObject request is issued.
+       */
+      const { service, head, copy } = setup()
+      head.mockRejectedValue(new StorageException('STORAGE_PROVIDER_ERROR'))
+
+      await expect(
+        service.copy(
+          { sourceKey: 'src.png', destinationKey: 'dst.png', destination: 'same' },
           'vault-archive',
           'vault',
         ),

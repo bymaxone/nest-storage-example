@@ -88,6 +88,27 @@ describe('listQuerySchema', () => {
     expect(() => listQuerySchema.parse({ cursor: 'a'.repeat(1025) })).toThrow()
   })
 
+  it('rejects a multi-byte prefix within the code-unit limit but over 1024 bytes', () => {
+    /*
+     * Scenario: 400 three-byte characters (U+65E5) is 400 UTF-16 code units
+     * (a code-unit `.max(1024)` would pass) but 1200 UTF-8 bytes.
+     * Rule it protects: prefix is bounded by UTF-8 bytes, matching the S3 limit.
+     */
+    const prefix = '日'.repeat(400)
+    expect(Buffer.byteLength(prefix, 'utf8')).toBeGreaterThan(1024)
+    expect(() => listQuerySchema.parse({ prefix })).toThrow()
+  })
+
+  it('rejects a multi-byte cursor within the code-unit limit but over 1024 bytes', () => {
+    /*
+     * Scenario: the same over-limit multi-byte string supplied as a cursor.
+     * Rule it protects: cursor shares the UTF-8 byte guard with prefix and keys.
+     */
+    const cursor = '日'.repeat(400)
+    expect(Buffer.byteLength(cursor, 'utf8')).toBeGreaterThan(1024)
+    expect(() => listQuerySchema.parse({ cursor })).toThrow()
+  })
+
   it('accepts delimiter "/" for folder aggregation', () => {
     /*
      * Scenario: caller requests pseudo-folder aggregation.
