@@ -21,79 +21,88 @@ export interface RecipeView {
 const SAMPLE = { accessKeyId: 'AKIAEXAMPLE1234', secretAccessKey: 'sample-secret-value' } as const
 
 /**
- * Builds the six provider recipes with sample args and documented quirks. The
- * options are redacted so no secret-looking sample value is ever serialized.
+ * The six provider recipes rendered from representative sample args, each paired
+ * with its documented quirk notes (spec §12.6-§12.7). Built once at module load;
+ * the controller redacts a fresh clone per request so no sample value leaks.
+ */
+const RECIPE_BLUEPRINTS: RecipeView[] = [
+  {
+    provider: 'awsS3',
+    options: providerRecipes.awsS3({ region: 'us-east-1', bucket: 'vault', ...SAMPLE }),
+    quirks: [
+      'Keeps the SDK default checksum behavior (WHEN_SUPPORTED, CRC32 integrity headers).',
+      'ACLs are disabled on modern buckets (Object Ownership = Bucket owner enforced); a public-read ACL returns HTTP 400. Prefer a bucket policy, CDN, or signed URLs.',
+    ],
+  },
+  {
+    provider: 'digitalOceanSpaces',
+    options: providerRecipes.digitalOceanSpaces({ region: 'nyc3', bucket: 'vault', ...SAMPLE }),
+    quirks: [
+      'Sets checksum mode to WHEN_REQUIRED (non-AWS providers reject the SDK default CRC32 headers).',
+      'Virtual-hosted addressing with public delivery via the Spaces CDN host.',
+    ],
+  },
+  {
+    provider: 'cloudflareR2',
+    options: providerRecipes.cloudflareR2({
+      accountId: 'account-id',
+      bucket: 'vault',
+      customDomain: 'https://cdn.example.com',
+      ...SAMPLE,
+    }),
+    quirks: [
+      'Region is always "auto".',
+      'Sets checksum mode to WHEN_REQUIRED.',
+      'Public reads require a custom domain (publicBaseUrl); the S3 API host does not serve public objects.',
+      'ACLs are a no-op on R2.',
+    ],
+  },
+  {
+    provider: 'backblazeB2',
+    options: providerRecipes.backblazeB2({
+      region: 'us-west-002',
+      bucket: 'vault',
+      endpointHost: 's3.us-west-002.backblazeb2.com',
+      ...SAMPLE,
+    }),
+    quirks: [
+      'Sets checksum mode to WHEN_REQUIRED.',
+      'Endpoint host varies by region cluster; virtual-hosted addressing matches publicBaseUrl.',
+    ],
+  },
+  {
+    provider: 'minio',
+    options: providerRecipes.minio({
+      endpoint: 'http://localhost:9000',
+      bucket: 'vault',
+      ...SAMPLE,
+    }),
+    quirks: [
+      'Path-style addressing (forcePathStyle = true).',
+      'Sets checksum mode to WHEN_REQUIRED (MinIO rejects the SDK default CRC32 headers).',
+    ],
+  },
+  {
+    provider: 'wasabi',
+    options: providerRecipes.wasabi({ region: 'us-east-1', bucket: 'vault', ...SAMPLE }),
+    quirks: [
+      'Sets checksum mode to WHEN_REQUIRED.',
+      'Virtual-hosted addressing (Hot Cloud Storage).',
+    ],
+  },
+]
+
+/**
+ * Renders every provider recipe with its credentials redacted, so no
+ * secret-looking sample value is ever serialized.
  *
  * @returns One redacted, annotated view per supported provider.
  */
 function buildRecipeViews(): RecipeView[] {
-  const views: RecipeView[] = [
-    {
-      provider: 'awsS3',
-      options: providerRecipes.awsS3({ region: 'us-east-1', bucket: 'vault', ...SAMPLE }),
-      quirks: [
-        'Keeps the SDK default checksum behavior (WHEN_SUPPORTED, CRC32 integrity headers).',
-        'ACLs are disabled on modern buckets (Object Ownership = Bucket owner enforced); a public-read ACL returns HTTP 400. Prefer a bucket policy, CDN, or signed URLs.',
-      ],
-    },
-    {
-      provider: 'digitalOceanSpaces',
-      options: providerRecipes.digitalOceanSpaces({ region: 'nyc3', bucket: 'vault', ...SAMPLE }),
-      quirks: [
-        'Sets checksum mode to WHEN_REQUIRED (non-AWS providers reject the SDK default CRC32 headers).',
-        'Virtual-hosted addressing with public delivery via the Spaces CDN host.',
-      ],
-    },
-    {
-      provider: 'cloudflareR2',
-      options: providerRecipes.cloudflareR2({
-        accountId: 'account-id',
-        bucket: 'vault',
-        customDomain: 'https://cdn.example.com',
-        ...SAMPLE,
-      }),
-      quirks: [
-        'Region is always "auto".',
-        'Sets checksum mode to WHEN_REQUIRED.',
-        'Public reads require a custom domain (publicBaseUrl); the S3 API host does not serve public objects.',
-        'ACLs are a no-op on R2.',
-      ],
-    },
-    {
-      provider: 'backblazeB2',
-      options: providerRecipes.backblazeB2({
-        region: 'us-west-002',
-        bucket: 'vault',
-        endpointHost: 's3.us-west-002.backblazeb2.com',
-        ...SAMPLE,
-      }),
-      quirks: [
-        'Sets checksum mode to WHEN_REQUIRED.',
-        'Endpoint host varies by region cluster; virtual-hosted addressing matches publicBaseUrl.',
-      ],
-    },
-    {
-      provider: 'minio',
-      options: providerRecipes.minio({
-        endpoint: 'http://localhost:9000',
-        bucket: 'vault',
-        ...SAMPLE,
-      }),
-      quirks: [
-        'Path-style addressing (forcePathStyle = true).',
-        'Sets checksum mode to WHEN_REQUIRED (MinIO rejects the SDK default CRC32 headers).',
-      ],
-    },
-    {
-      provider: 'wasabi',
-      options: providerRecipes.wasabi({ region: 'us-east-1', bucket: 'vault', ...SAMPLE }),
-      quirks: [
-        'Sets checksum mode to WHEN_REQUIRED.',
-        'Virtual-hosted addressing (Hot Cloud Storage).',
-      ],
-    },
-  ]
-  return views.map((view) => ({ ...view, options: redactStorageOptions(view.options) }))
+  return RECIPE_BLUEPRINTS.map((view) => ({
+    ...view,
+    options: redactStorageOptions(view.options),
+  }))
 }
 
 /** Introspection surface over the resolved module options and provider recipes. */

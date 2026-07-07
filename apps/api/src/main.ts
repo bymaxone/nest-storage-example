@@ -8,6 +8,7 @@
  * @layer api/bootstrap
  */
 import 'reflect-metadata'
+import { Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { createApp } from './app.factory.js'
 import type { Env } from './config/env.schema.js'
@@ -21,8 +22,8 @@ async function bootstrap(): Promise<void> {
 }
 
 // A boot failure (including an aggregated environment-validation error) must
-// print one readable message and exit non-zero so orchestration surfaces it.
+// surface one readable message and exit non-zero so orchestration notices it.
 bootstrap().catch((error: unknown) => {
-  console.error(error instanceof Error ? error.message : String(error))
+  new Logger('Bootstrap').error(error instanceof Error ? error.message : String(error))
   process.exit(1)
 })
