@@ -41,4 +41,18 @@ describe('application bootstrap (e2e)', () => {
       docs: '/system/recipes',
     })
   })
+
+  it('GET /health reports up with a numeric latency against the compose MinIO', async () => {
+    /*
+     * Scenario: the health probe runs against the running MinIO stack.
+     * Rule it protects: the sentinel exists() probe resolves, so health reports
+     * status up, the default bucket, and a non-negative latency reading.
+     */
+    const response = await request(app.getHttpServer()).get('/health')
+
+    expect(response.status).toBe(200)
+    expect(response.body.status).toBe('up')
+    expect(response.body.bucket).toBe('vault')
+    expect(typeof response.body.latencyMs).toBe('number')
+  })
 })

@@ -11,6 +11,7 @@ import { NestFactory } from '@nestjs/core'
 import { ConfigService } from '@nestjs/config'
 import type { INestApplication } from '@nestjs/common'
 import { AppModule } from './app.module.js'
+import { StorageExceptionFilter } from './common/storage-exception.filter.js'
 import type { Env } from './config/env.schema.js'
 
 /**
@@ -25,6 +26,9 @@ export async function createApp(): Promise<INestApplication> {
   const config = app.get<ConfigService<{ env: Env }, true>>(ConfigService)
   const env = config.get('env', { infer: true })
   app.enableCors({ origin: env.WEB_ORIGIN, credentials: true })
+  // The library's StorageException already carries the public error envelope and
+  // its own HTTP status; the filter relays it verbatim (spec §18).
+  app.useGlobalFilters(new StorageExceptionFilter())
   app.enableShutdownHooks()
   return app
 }
