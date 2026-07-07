@@ -12,7 +12,7 @@
 | ----- | --------------------------------------- | --------- | -------------- | ---------------------------------------------------------------------------------------------------- |
 | P0    | `phase-00-repo-foundation-ci.md`        | 6/6       | ✅ Done        | pnpm workspace, toolchain, husky/commitlint, **CI from day one** (conditional CodeQL/Scorecard)      |
 | P1    | `phase-01-minio-stack-library-link.md`  | 5/5       | ✅ Done        | docker-compose MinIO (3 buckets, versioning, seed) + `file:` link + subpath probes                   |
-| P2    | `phase-02-api-skeleton-wiring.md`       | 0/6       | 🔄 In Progress | NestJS 11 skeleton, Zod env, canonical `forRootAsync`, filter, health, recipes                       |
+| P2    | `phase-02-api-skeleton-wiring.md`       | 1/6       | 🔄 In Progress | NestJS 11 skeleton, Zod env, canonical `forRootAsync`, filter, health, recipes                       |
 | P3    | `phase-03-core-object-operations.md`    | 0/5       | 📋 ToDo        | uploads (single/multipart/stream/progress/idempotency/SSE) + downloads (stream/buffer/range/version) |
 | P4    | `phase-04-listing-lifecycle.md`         | 0/5       | 📋 ToDo        | list/folders/pagination, head/exists, delete/deleteMany, copy, public URLs                           |
 | P5    | `phase-05-signed-urls-direct-upload.md` | 0/5       | 📋 ToDo        | presigned GET/PUT/multipart, TTL clamp, direct upload + confirm                                      |

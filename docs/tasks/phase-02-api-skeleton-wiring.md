@@ -1,6 +1,6 @@
 # Phase 2: api-skeleton-wiring
 
-> **Status**: 🔄 In Progress · **Progress**: 0 / 6 tasks · **Last updated**: 2026-07-07
+> **Status**: 🔄 In Progress · **Progress**: 1 / 6 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P2)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §9, §10, §18, §19
 
@@ -33,7 +33,7 @@ wiring is honest from day one (the marker scanner and magic-byte validator are s
 
 | ID  | Task                                                        | Status  | Priority | Size | Depends on |
 | --- | ----------------------------------------------------------- | ------- | -------- | ---- | ---------- |
-| 2.1 | Branch + Nest app shell (`main.ts`, module, boot)           | 📋 ToDo | P0       | M    | none       |
+| 2.1 | Branch + Nest app shell (`main.ts`, module, boot)           | ✅ Done | P0       | M    | none       |
 | 2.2 | Zod env schema with aggregated fail-fast                    | 📋 ToDo | P0       | S    | 2.1        |
 | 2.3 | Canonical wiring: `storage.config.ts` + validator + scanner | 📋 ToDo | P0       | M    | 2.2        |
 | 2.4 | Cross-cutting: exception filter + validation pipe + health  | 📋 ToDo | P0       | M    | 2.3        |
@@ -44,7 +44,7 @@ wiring is honest from day one (the marker scanner and magic-byte validator are s
 
 ### Task 2.1: Branch + Nest app shell
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: none
@@ -57,11 +57,11 @@ workers, and a boot smoke test via a `createApp()` seam.
 
 #### Acceptance criteria
 
-- [ ] Branch `feat/phase-02-api-skeleton-wiring` created with `git switch -c`.
-- [ ] `apps/api` boots with `pnpm --filter api dev` (a temporary root `GET /` returns `{ name, docs }` until system lands).
-- [ ] `main.ts` delegates to an exported `createApp()` so e2e and unit tests cover bootstrap without spawning a process.
-- [ ] `jest.config.ts` (+ `jest.e2e.config.ts` stub): `coverageThreshold` 100/100/100/100, `maxWorkers: '50%'`; the boot smoke test passes.
-- [ ] `pnpm --filter api test` green; CI still green.
+- [x] Branch `feat/phase-02-api-skeleton-wiring` created with `git switch -c`.
+- [x] `apps/api` boots with `pnpm --filter api dev` (a temporary root `GET /` returns `{ name, version, docs }` until system lands).
+- [x] `main.ts` delegates to an exported `createApp()` so e2e and unit tests cover bootstrap without spawning a process.
+- [x] `jest.config.cjs` (+ `jest-e2e.config.mjs`): `coverageThreshold` 100/100/100/100, `maxWorkers: '50%'`; the boot smoke test passes.
+- [x] `pnpm --filter api test` green; CI still green.
 
 #### Files to create / modify
 
@@ -494,3 +494,5 @@ Completion Protocol:
 ## Completion log
 
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
+
+- 2.1 ✅ 2026-07-07: bootable NestJS 11 shell — main.ts delegates to the exported createApp() seam (CORS + shutdown hooks, fail-fast exit), app.module.ts + root AppController (GET / -> { name, version, docs }), nest-cli.json + build/spec tsconfigs, unit jest.config.cjs (100/100/100/100, maxWorkers 50%, metadata-off spec tsconfig) and jest-e2e.config.mjs; app.controller + library-probe unit specs and a boot e2e smoke all green; lint/typecheck/format clean
