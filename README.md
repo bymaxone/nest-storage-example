@@ -64,7 +64,8 @@ Conventional Commits.
 git clone https://github.com/bymaxone/nest-storage-example.git
 cd nest-storage-example
 
-# 1) build the sibling library once (consumed pre-publish via a local file: link)
+# 1) clone + build the sibling library once (consumed pre-publish via a local file: link)
+git clone https://github.com/bymaxone/nest-storage.git ../nest-storage
 cd ../nest-storage && pnpm install && pnpm build
 # then back to this repo:
 cd ../nest-storage-example
@@ -228,10 +229,11 @@ pnpm infra:up && pnpm dev
 
 ## 🔒 Security policy
 
-If you find a security vulnerability, in **either this example or the library**, please **do not** open a
-public issue, discussion, or pull request. Email **support@bymax.one** with `[security] nest-storage-example`
-in the subject line. A vulnerability in the **library itself** (`@bymax-one/nest-storage`) should be reported
-against [its repository](https://github.com/bymaxone/nest-storage).
+Please **do not** open a public issue, discussion, or pull request for a security vulnerability. For a
+vulnerability in **this example** (an API route, the dashboard, the build/CI, or a dependency), email
+**support@bymax.one** with `[security] nest-storage-example` in the subject line. For a vulnerability in the
+**library itself** (`@bymax-one/nest-storage`), report it against
+[its repository](https://github.com/bymaxone/nest-storage) instead.
 
 Presigned URLs are credentials and per-tenant objects must never leak across tenants; we triage security
 reports ahead of feature work. See [SECURITY.md](SECURITY.md) for the full disclosure process.

@@ -24,7 +24,8 @@ welcome. Generic refactors that obscure how the library is wired will be decline
 ## Getting started
 
 ```bash
-# Build the sibling library first (consumed pre-publish via file:, must be built before pnpm install)
+# Clone + build the sibling library first (consumed pre-publish via file:, must be built before pnpm install)
+git clone https://github.com/bymaxone/nest-storage.git ../nest-storage
 cd ../nest-storage && pnpm install && pnpm build
 cd ../nest-storage-example
 
@@ -42,7 +43,7 @@ pnpm lint
 pnpm typecheck
 pnpm format:check
 pnpm --filter @nest-storage-example/api run test:cov   # 100% on all four metrics
-pnpm --filter web test                                  # 100% on all four metrics
+pnpm --filter web test:cov                              # 100% on all four metrics
 pnpm --filter @nest-storage-example/api run test:e2e    # real MinIO via Testcontainers
 node scripts/audit-library-exports.mjs                  # every library export is demonstrated
 ```

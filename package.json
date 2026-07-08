@@ -13,6 +13,7 @@
   },
   "scripts": {
     "prepare": "husky",
+    "dev": "pnpm -r --parallel run dev",
     "lint": "eslint .",
     "typecheck": "pnpm -r --workspace-concurrency=1 exec tsc --noEmit",
     "format": "prettier --write .",
