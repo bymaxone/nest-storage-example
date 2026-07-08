@@ -488,7 +488,6 @@ Completion Protocol:
 ## Completion log
 
 - 8.6 ✅ 2026-07-07: phase merged in PR #9 (squash); CI green incl. new Web build + Web tests jobs; Copilot round addressed; web 244 unit tests 100%, api 367 100%, next build green; zero-peer ./shared browser proof; verbatim design system.
-- 8.6 👀 2026-07-07: acceptance-criteria audit passed (verbatim design system + shell chrome-parity, all four design files byte-identical to the sibling; typed data layer keyed by shared STORAGE_ERROR_CODES; the ten pages incl. real browser presigned PUT+confirm; zero-peer ./shared browser proof). New web-build + web-tests CI jobs added. 241 web unit tests at 100/100/100/100; api still 367 tests 100%; production build green. Signed URLs masked in the UI. Code review + security review addressed. Dashboards synced; PR opened with Copilot review requested; merge deferred to the orchestrator.
 - 8.5 ✅ 2026-07-07: labs/scanner/validation/errors/system/tenants pages with VerdictCard and EnvelopePanel, 100% coverage
 - 8.4 ✅ 2026-07-07: upload, direct-upload and signed-URL pages with UploadDropzone and TtlCountdown, 100% coverage
 - 8.3 ✅ 2026-07-07: vault browser with FolderBreadcrumbs, HexPreview and KeyDetailDrawer (4 tabs, lifecycle actions), 100% coverage
