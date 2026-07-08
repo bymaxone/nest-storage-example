@@ -4,7 +4,7 @@
 > **Source of truth:** the product spec is [`TECHNICAL_SPECIFICATION.md`](TECHNICAL_SPECIFICATION.md). This file is the execution roadmap that decomposes it; per-phase task files live under [`tasks/`](tasks/).
 > **Targeted library version:** `@bymax-one/nest-storage@^0.1.0` (consumed via local `file:` link until published to npm).
 > **Document version:** 1.0, authored before implementation.
-> **Last updated:** 2026-07-06
+> **Last updated:** 2026-07-07
 
 **Status legend:** 📋 ToDo · 🔄 In Progress · 👀 Review · ✅ Done · ⛔ Blocked · 🟡 Partial
 

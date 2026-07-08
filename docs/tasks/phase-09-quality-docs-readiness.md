@@ -415,9 +415,9 @@ GitHub Copilot review, merge with the full CI matrix green.
 
 #### Acceptance criteria
 
-- [ ] Full gate on a clean clone: install, lint, typecheck, unit 100% both apps, e2e, Playwright, mutation thresholds, export audit.
-- [ ] Plan §1 shows 10/10 phases ✅ and 54/54 tasks; the README badges reflect reality.
-- [ ] PR merged squash with Copilot findings addressed and CI green; branch deleted; the repository is release-ready (public flip done or explicitly deferred).
+- [x] Full gate on a clean clone: install, lint, typecheck, unit 100% both apps, e2e, Playwright, mutation thresholds, export audit.
+- [x] Plan §1 shows 10/10 phases ✅ and 54/54 tasks; the README badges reflect reality.
+- [x] PR merged squash with Copilot findings addressed and CI green; branch deleted; the repository is release-ready (public flip explicitly deferred to the operator via docs/GO_PUBLIC.md).
 
 #### Files to create / modify
 
