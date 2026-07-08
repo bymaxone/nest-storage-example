@@ -160,3 +160,34 @@ jobs:
         run: pnpm --filter web exec playwright install --with-deps chromium
       - name: Run the dashboard journey smoke
         run: pnpm --filter web run test:e2e
+
+  # Mutation testing is the final assertiveness gate, gated behind both unit tiers:
+  # Stryker re-runs the same suites internally, so there is no point spending up to
+  # 45 minutes mutating a tree whose baseline is red. It enforces api `break: 100`
+  # (zero survivors) and web `break: 90` (lib 100). `pnpm mutation` fans out
+  # serialized (--workspace-concurrency=1) so the two apps never mutate at once and
+  # the locally linked library is not duplicated across two Stryker runs; each app's
+  # Stryker `concurrency: 2` keeps the per-run worker pool within a 2-core runner.
+  mutation:
+    name: Mutation testing
+    runs-on: ubuntu-latest
+    needs: [unit, web-tests]
+    permissions:
+      contents: read
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Setup workspace
+        uses: ./.github/actions/setup
+      - name: Run Stryker mutation (api break:100, web break:90)
+        run: pnpm mutation
+      - name: Upload mutation reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: mutation-reports
+          path: |
+            apps/api/reports/mutation/
+            apps/web/reports/mutation/
+          retention-days: 7

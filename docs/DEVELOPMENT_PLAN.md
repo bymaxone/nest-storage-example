@@ -25,7 +25,7 @@
 
 ## 1. Progress Dashboard
 
-> **Progress:** 9 / 10 phases complete (90%) · 51 / 54 tasks
+> **Progress:** 9 / 10 phases complete (90%) · 52 / 54 tasks
 > **Active phase:** P9 quality-docs-readiness
 > **Blockers:** none
 
@@ -40,7 +40,7 @@
 | P6  | validation-scanner        | `phase-06-validation-scanner.md`        | ✅ Done        | 5/5      | M    | 2026-07-07   |
 | P7  | tenants-advanced-errors   | `phase-07-tenants-advanced-errors.md`   | ✅ Done        | 5/5      | M    | 2026-07-07   |
 | P8  | web-dashboard             | `phase-08-web-dashboard.md`             | ✅ Done        | 6/6      | L    | 2026-07-07   |
-| P9  | quality-docs-readiness    | `phase-09-quality-docs-readiness.md`    | 🔄 In Progress | 3/6      | L    | 2026-07-07   |
+| P9  | quality-docs-readiness    | `phase-09-quality-docs-readiness.md`    | 🔄 In Progress | 4/6      | L    | 2026-07-07   |
 
 ---
 
