@@ -1,6 +1,6 @@
 # Phase 9: quality-docs-readiness
 
-> **Status**: 👀 Review · **Progress**: 6 / 6 tasks · **Last updated**: 2026-07-07
+> **Status**: ✅ Done · **Progress**: 6 / 6 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P9)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §21, §22, Appendix B of the plan
 
@@ -30,14 +30,14 @@ CodeQL/Scorecard workflows).
 
 ## Task index
 
-| ID  | Task                                                       | Status    | Priority | Size | Depends on |
-| --- | ---------------------------------------------------------- | --------- | -------- | ---- | ---------- |
-| 9.1 | Branch + api unit suite to 100/100/100/100                 | ✅ Done   | P0       | L    | none       |
-| 9.2 | Web unit suite to 100/100/100/100                          | ✅ Done   | P0       | L    | 9.1        |
-| 9.3 | e2e: every route, every error path, Playwright smoke       | ✅ Done   | P0       | L    | 9.1        |
-| 9.4 | Stryker mutation (api break 100, web break 90) + docs      | ✅ Done   | P0       | L    | 9.2, 9.3   |
-| 9.5 | Export audit + README + go-public checklist                | ✅ Done   | P0       | M    | 9.4        |
-| 9.6 | Phase close: audit, dashboards, PR + Copilot review, merge | 👀 Review | P0       | S    | 9.1-9.5    |
+| ID  | Task                                                       | Status  | Priority | Size | Depends on |
+| --- | ---------------------------------------------------------- | ------- | -------- | ---- | ---------- |
+| 9.1 | Branch + api unit suite to 100/100/100/100                 | ✅ Done | P0       | L    | none       |
+| 9.2 | Web unit suite to 100/100/100/100                          | ✅ Done | P0       | L    | 9.1        |
+| 9.3 | e2e: every route, every error path, Playwright smoke       | ✅ Done | P0       | L    | 9.1        |
+| 9.4 | Stryker mutation (api break 100, web break 90) + docs      | ✅ Done | P0       | L    | 9.2, 9.3   |
+| 9.5 | Export audit + README + go-public checklist                | ✅ Done | P0       | M    | 9.4        |
+| 9.6 | Phase close: audit, dashboards, PR + Copilot review, merge | ✅ Done | P0       | S    | 9.1-9.5    |
 
 ## Tasks
 
@@ -403,7 +403,7 @@ Completion Protocol:
 
 ### Task 9.6: Phase close
 
-- **Status**: 👀 Review
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 9.1-9.5
@@ -415,9 +415,9 @@ GitHub Copilot review, merge with the full CI matrix green.
 
 #### Acceptance criteria
 
-- [ ] Full gate on a clean clone: install, lint, typecheck, unit 100% both apps, e2e, Playwright, mutation thresholds, export audit.
-- [ ] Plan §1 shows 10/10 phases ✅ and 54/54 tasks; the README badges reflect reality.
-- [ ] PR merged squash with Copilot findings addressed and CI green; branch deleted; the repository is release-ready (public flip done or explicitly deferred).
+- [x] Full gate on a clean clone: install, lint, typecheck, unit 100% both apps, e2e, Playwright, mutation thresholds, export audit.
+- [x] Plan §1 shows 10/10 phases ✅ and 54/54 tasks; the README badges reflect reality.
+- [x] PR merged squash with Copilot findings addressed and CI green; branch deleted; the repository is release-ready (public flip explicitly deferred to the operator via docs/GO_PUBLIC.md).
 
 #### Files to create / modify
 
@@ -471,6 +471,7 @@ Completion Protocol:
 
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
 
+- 9.6 ✅ 2026-07-07: roadmap complete, phase merged in PR #10 (squash); CI green on main (mutation is PR-skipped + advisory, blocking locally at api 100 / web 96.58). All 10 phases done: 100% coverage x4 on both apps, route-exhaustive e2e + Playwright journeys, Stryker, the export-usage audit (47/47), the house-style README, and the go-public checklist.
 - 9.6 👀 2026-07-07: phase close. Re-audited the P9 Definition of Done and ran the final gate sequentially (memory-safe): lint + typecheck + format:check clean, apps/api unit coverage 100/100/100/100 (406 tests), apps/web unit 100% (312 tests), and `node scripts/audit-library-exports.mjs` green (47/47 exports demonstrated). Finalized the dashboards (phase header + 9.6 block + index to 👀 Review 6/6, plan §1 to 54/54, task-index mirror). Opened the phase PR and requested the GitHub Copilot review; the row flips to ✅ Done on squash-merge with the full CI matrix green.
 - 9.5 ✅ 2026-07-07: export-usage audit + README + go-public checklist. Added scripts/audit-library-exports.mjs (zero-dep Node): it enumerates all 47 exports from the linked library's server + shared subpath d.ts files and word-boundary-searches apps/, failing on any undemonstrated export (in-file IGNORE map, empty by design). Extended the two resolution probes (apps/api/src/library-probe.ts server surface, apps/web/lib/storage-shared-probe.ts shared surface) so every export is genuinely demonstrated; `pnpm audit:exports` passes (47/47). Wired the root audit:exports script and a CI Export usage audit job; added scripts/**/*.mjs Node globals to the ESLint config. Replaced the README stub with the polished nest-logger-example house-style README (centered header, shields.io badges, nav row, What's inside, Quick Start, architecture ASCII, docs table). Added docs/GO_PUBLIC.md documenting the visibility flip, the CodeQL activation, and the ossf/scorecard-action third-party org-policy action item (no npm publish, no version tag).
 - 9.4 ✅ 2026-07-07: Stryker mutation is the final gate. apps/api scores 100.00 at break:100 (0 survivors; 742 killed + 4 timeout + 2 documented equivalents in env.schema.ts and uploads.service.ts, each an inline `Stryker disable next-line StringLiteral` with a reason). apps/web scores 96.58 at break:90 with lib/** fully killed; the 32 residual survivors are genuine equivalents in the presentational components/** layer (static class strings and timing formulae recomputed on mount). Added docs/stryker/BASELINE.md (scores + equivalent inventory) and HISTORY.md (append-only run log); wired root `mutation` scripts and a CI `Mutation testing` job (needs [unit, web-tests], 45-min timeout, `pnpm mutation` serialized) plus reports artifact upload.
