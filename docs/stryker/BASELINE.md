@@ -51,3 +51,14 @@ pnpm --filter web run mutation
 
 Each app's Stryker config caps `concurrency` at 2 so a run stays memory-safe on a 2-core CI runner,
 and the two apps never mutate concurrently.
+
+## CI enforcement note
+
+The mutation thresholds (api `break: 100`, web `break: 90`) are the authoritative,
+blocking gate **locally and pre-release** via the committed Stryker configs
+(`pnpm mutation`). On CI the `Mutation testing` job runs only on push to `main`
+(post-merge) and is advisory (`continue-on-error: true`): mutating both apps takes
+longer than a two-core hosted runner completes inside a reasonable pull-request
+window, so it does not gate PRs. Coverage (100% on all four metrics for both apps),
+the route-exhaustive e2e, the Playwright journeys, and the export-usage audit remain
+blocking on every PR.
