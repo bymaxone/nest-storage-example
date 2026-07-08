@@ -74,8 +74,10 @@ function extractExports(absPath) {
 }
 
 /**
- * Recursively collect the `.ts` / `.tsx` source files under a directory,
- * skipping build output and sandboxes and the ambient declaration files.
+ * Recursively collect the runtime/demo `.ts` / `.tsx` source files under a
+ * directory, skipping build output, sandboxes, ambient declaration files, and
+ * test files (`*.spec` / `*.test` / `*.e2e-spec`) so the audit gate is satisfied
+ * only by real application usage, never by a mention in a test.
  *
  * @param {string} dir absolute directory to walk.
  * @param {string[]} out accumulator for discovered file paths.
@@ -86,7 +88,13 @@ function collectSourceFiles(dir, out) {
     if (entry.isDirectory()) {
       if (SKIP_DIRS.has(entry.name)) continue
       collectSourceFiles(path.join(dir, entry.name), out)
-    } else if (/\.tsx?$/.test(entry.name) && !entry.name.endsWith('.d.ts')) {
+    } else if (
+      /\.tsx?$/.test(entry.name) &&
+      !entry.name.endsWith('.d.ts') &&
+      !/\.(spec|test|e2e-spec)\.tsx?$/.test(entry.name)
+    ) {
+      // Only runtime/demo sources satisfy the audit; test files are excluded so
+      // an export cannot be considered demonstrated merely by appearing in a test.
       out.push(path.join(dir, entry.name))
     }
   }
