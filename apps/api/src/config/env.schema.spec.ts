@@ -46,6 +46,58 @@ describe('envSchema defaults', () => {
   })
 })
 
+describe('explicit string constraints', () => {
+  it('accepts multi-character values for the endpoint, region, and bucket fields', () => {
+    /*
+     * Scenario: an operator supplies explicit, multi-character values for the
+     * string fields (rather than relying on the defaults, which skip re-validation).
+     * Rule it protects: the length/URL constraints admit real values longer than a
+     * single character, so a mutant that shrinks a `.min`/`.url` constraint to
+     * `.max(1)` would reject these and is caught.
+     */
+    const parsed = envSchema.parse({
+      STORAGE_ENDPOINT: 'http://storage.example:9000',
+      STORAGE_REGION: 'eu-west-1',
+      STORAGE_BUCKET: 'primary-bucket',
+      STORAGE_ARCHIVE_BUCKET: 'archive-bucket',
+      STORAGE_VERSIONED_BUCKET: 'versioned-bucket',
+    })
+
+    expect(parsed.STORAGE_ENDPOINT).toBe('http://storage.example:9000')
+    expect(parsed.STORAGE_REGION).toBe('eu-west-1')
+    expect(parsed.STORAGE_BUCKET).toBe('primary-bucket')
+    expect(parsed.STORAGE_ARCHIVE_BUCKET).toBe('archive-bucket')
+    expect(parsed.STORAGE_VERSIONED_BUCKET).toBe('versioned-bucket')
+  })
+})
+
+describe('optional CDN and SSE unions', () => {
+  it('accepts an explicit empty string and a valid URL for the CDN base', () => {
+    /*
+     * Scenario: the CDN base is supplied explicitly as "" (the "no CDN" state) and,
+     * separately, as a real URL.
+     * Rule it protects: the union's empty-string LITERAL is `''` exactly, so a
+     * mutant that swaps the literal for other text would reject the "no CDN" state
+     * (which relies on defaults skipping re-validation otherwise).
+     */
+    expect(envSchema.parse({ STORAGE_CDN_BASE_URL: '' }).STORAGE_CDN_BASE_URL).toBe('')
+    expect(
+      envSchema.parse({ STORAGE_CDN_BASE_URL: 'https://cdn.example.com' }).STORAGE_CDN_BASE_URL,
+    ).toBe('https://cdn.example.com')
+  })
+
+  it('accepts each SSE algorithm and the explicit "no SSE" empty string', () => {
+    /*
+     * Scenario: STORAGE_SSE is supplied as each allowed algorithm and as "".
+     * Rule it protects: the enum members are exactly `'AES256'` and `'aws:kms'`, so
+     * a mutant that blanks either enum literal would reject that algorithm.
+     */
+    expect(envSchema.parse({ STORAGE_SSE: 'AES256' }).STORAGE_SSE).toBe('AES256')
+    expect(envSchema.parse({ STORAGE_SSE: 'aws:kms' }).STORAGE_SSE).toBe('aws:kms')
+    expect(envSchema.parse({ STORAGE_SSE: '' }).STORAGE_SSE).toBe('')
+  })
+})
+
 describe('envBoolean transform', () => {
   it.each([
     ['true', true],
@@ -121,6 +173,16 @@ describe('validateEnv', () => {
     const run = () => validateEnv({ PORT: 'x', SCANNER_MODE: 'y' })
     expect(run).toThrow(/PORT/)
     expect(run).toThrow(/SCANNER_MODE/)
+    // The two issue lines are joined by a newline (never concatenated), so the report
+    // splits into the prefix line plus one line per violation. A mutant that blanks
+    // the line separator would collapse both violations onto a single line.
+    let message = ''
+    try {
+      run()
+    } catch (error) {
+      message = error instanceof Error ? error.message : String(error)
+    }
+    expect(message.split('\n')).toHaveLength(3)
   })
 
   it('never echoes a received value (secret safety)', () => {
@@ -138,6 +200,23 @@ describe('validateEnv', () => {
     }
     expect(message).toMatch(/PORT/)
     expect(message).not.toContain(secret)
+  })
+
+  it('renders a non-custom issue by its code alone, without a parenthetical message', () => {
+    /*
+     * Scenario: a plain (non-custom) validation failure, e.g. a non-numeric PORT.
+     * Rule it protects: only custom-guard issues append `(message)`; every other
+     * issue is reported by code ONLY, so no Zod message text (which could echo
+     * input) leaks. A mutant that always appends the parenthetical is caught.
+     */
+    let message = ''
+    try {
+      validateEnv({ PORT: 'not-a-number' })
+    } catch (error) {
+      message = error instanceof Error ? error.message : String(error)
+    }
+    expect(message).toMatch(/PORT/)
+    expect(message).not.toMatch(/PORT: \w+ \(/)
   })
 
   it('labels a root-level failure as (root)', () => {
@@ -161,6 +240,33 @@ describe('production credential guard', () => {
     const run = () => validateEnv({ NODE_ENV: 'production' })
     expect(run).toThrow(/STORAGE_ACCESS_KEY_ID/)
     expect(run).toThrow(/STORAGE_SECRET_ACCESS_KEY/)
+  })
+
+  it('formats a custom guard issue as "custom (message)" under the config-error prefix', () => {
+    /*
+     * Scenario: a production boot trips the dev-credential guard.
+     * Rule it protects: the aggregated report opens with the fixed
+     * "Invalid environment configuration:" prefix and renders each custom guard
+     * issue as `custom (<value-free message>)`, so the code-vs-custom branch and
+     * the literal detail text are pinned.
+     */
+    let message = ''
+    try {
+      validateEnv({ NODE_ENV: 'production' })
+    } catch (error) {
+      message = error instanceof Error ? error.message : String(error)
+    }
+    expect(message).toMatch(/^Invalid environment configuration:/)
+    // The offending credential is labelled by its own path (the `path: [name]`
+    // issue), so the line reads `<NAME>: custom (...)` rather than `(root): ...`.
+    expect(message).toContain('STORAGE_ACCESS_KEY_ID: custom (')
+    expect(message).toContain('STORAGE_SECRET_ACCESS_KEY: custom (')
+    expect(message).toContain(
+      'custom (STORAGE_ACCESS_KEY_ID must not use the dev default in production)',
+    )
+    expect(message).toContain(
+      'custom (STORAGE_SECRET_ACCESS_KEY must not use the dev default in production)',
+    )
   })
 
   it('passes when production supplies real credentials', () => {

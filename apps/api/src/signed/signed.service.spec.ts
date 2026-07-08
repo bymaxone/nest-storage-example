@@ -245,6 +245,14 @@ describe('SignedService (unit)', () => {
       expect(res.minPartSizeBytes).toBe(5 * 1024 * 1024)
       expect(res.expiresAt).toBe(new Date('2026-07-07T11:00:00Z').toISOString())
       expect(getMultipartUploadUrls.mock.calls[0]?.[0].ttlSeconds).toBe(86400)
+      // The composed key is `${category}/${uuid}`; a mutant that blanks the
+      // template produces an empty key, so pin its exact shape on both the
+      // library call and the response.
+      expect(getMultipartUploadUrls.mock.calls[0]?.[0].key).toMatch(/^media\/[0-9a-f-]{36}$/)
+      expect(res.key).toMatch(/^media\/[0-9a-f-]{36}$/)
+      expect(res.note).toBe(
+        'Every part except the last must be at least 5 MiB (S3 rule). The consumer orchestrates the parts and MUST call POST /signed/multipart-abort if the upload is not completed, or the uploaded parts are billed as orphans.',
+      )
     })
 
     it('omits ttlSeconds from the library call when not requested', async () => {
@@ -288,6 +296,9 @@ describe('SignedService (unit)', () => {
       const { service } = setup(makeOptions(), client)
       const res = await service.abortMultipart({ key: 'media//clip.mp4', uploadId: 'UP-9' })
       expect(res).toMatchObject({ aborted: true, key: 'media//clip.mp4', uploadId: 'UP-9' })
+      expect(res.note).toBe(
+        'AbortMultipartUpload is idempotent per S3 semantics; no orphan parts remain for this uploadId.',
+      )
       const command = send.mock.calls[0]?.[0] as {
         input: { Key: string; Bucket: string; UploadId: string }
       }
@@ -296,6 +307,22 @@ describe('SignedService (unit)', () => {
         Bucket: 'vault',
         UploadId: 'UP-9',
       })
+    })
+
+    it('trims leading and trailing slashes from the configured key prefix', async () => {
+      /*
+       * Scenario: the module runs with a key prefix wrapped in and containing
+       * slashes ('//a/b//').
+       * Rule it protects: the prefix is trimmed at BOTH ends (and only at the
+       * ends), so the abort targets 'a/b/<key>'. A mutant that changes the trim
+       * regex or its replacement string produces a different key and is caught.
+       */
+      const send = makeSend().mockResolvedValue(undefined)
+      const client = { send } as unknown as S3Client
+      const { service } = setup(makeOptions({ keyPrefix: '//a/b//' }), client)
+      await service.abortMultipart({ key: 'media/x.mp4', uploadId: 'UP' })
+      const command = send.mock.calls[0]?.[0] as { input: { Key: string } }
+      expect(command.input.Key).toBe('a/b/media/x.mp4')
     })
 
     it('composes the key without a prefix when none is configured', async () => {
@@ -320,9 +347,16 @@ describe('SignedService (unit)', () => {
       const send = makeSend()
       const client = { send } as unknown as S3Client
       const { service } = setup(makeOptions(), client)
-      await expect(
-        service.abortMultipart({ key: 'media/../secret', uploadId: 'UP' }),
-      ).rejects.toMatchObject({ code: 'STORAGE_KEY_INVALID' })
+      const traversal = await service
+        .abortMultipart({ key: 'media/../secret', uploadId: 'UP' })
+        .catch((e: unknown) => e)
+      expect(traversal).toBeInstanceOf(StorageException)
+      expect((traversal as StorageException).code).toBe('STORAGE_KEY_INVALID')
+      // The reject envelope pins the exact reason, so a mutant that blanks the
+      // details object or its reason string is caught.
+      expect((traversal as StorageException).getResponse()).toMatchObject({
+        error: { details: { reason: 'key must not start with "/" or contain ".." segments' } },
+      })
       await expect(service.abortMultipart({ key: '/abs', uploadId: 'UP' })).rejects.toMatchObject({
         code: 'STORAGE_KEY_INVALID',
       })
@@ -338,10 +372,15 @@ describe('SignedService (unit)', () => {
       const send = makeSend().mockRejectedValue(new Error('network down'))
       const client = { send } as unknown as S3Client
       const { service } = setup(makeOptions(), client)
-      await expect(
-        service.abortMultipart({ key: 'media/x', uploadId: 'UP' }),
-      ).rejects.toMatchObject({
-        code: 'STORAGE_PROVIDER_ERROR',
+      const error = await service
+        .abortMultipart({ key: 'media/x', uploadId: 'UP' })
+        .catch((e: unknown) => e)
+      expect(error).toBeInstanceOf(StorageException)
+      expect((error as StorageException).code).toBe('STORAGE_PROVIDER_ERROR')
+      // The wrapped envelope pins the operation and key in its details, so a
+      // mutant that empties the details object or its strings is caught.
+      expect((error as StorageException).getResponse()).toMatchObject({
+        error: { details: { op: 'abortMultipartUpload', key: 'media/x' } },
       })
     })
 
@@ -372,31 +411,67 @@ describe('SignedService (unit)', () => {
       expect(expiresAt.toISOString()).toBe(new Date('2026-07-07T10:30:00Z').toISOString())
     })
 
-    it('throws STORAGE_PROVIDER_ERROR when the SigV4 params are missing', () => {
+    it('throws the exact missing-params envelope when either SigV4 param is absent', () => {
       /*
-       * Scenario: a URL without the expiry query parameters.
-       * Rule it protects: a contract violation surfaces the provider-error envelope.
+       * Scenario: URLs missing both params, only the date, or only the expires.
+       * Rule it protects: the OR guard fires when EITHER param is absent, and the
+       * thrown envelope carries the exact provider-error reason (a mutant that
+       * blanks the details object or its reason string, or collapses the OR, is
+       * caught).
        */
-      expect(() => readSignedUrlExpiry('https://minio.local/vault/key')).toThrow(StorageException)
+      const cases = [
+        'https://minio.local/vault/key',
+        'https://minio.local/vault/key?X-Amz-Expires=300',
+        'https://minio.local/vault/key?X-Amz-Date=20260707T100000Z',
+      ]
+      for (const url of cases) {
+        const error = (() => {
+          try {
+            readSignedUrlExpiry(url)
+            return undefined
+          } catch (caught: unknown) {
+            return caught
+          }
+        })()
+        expect(error).toBeInstanceOf(StorageException)
+        expect((error as StorageException).code).toBe('STORAGE_PROVIDER_ERROR')
+        expect((error as StorageException).getResponse()).toMatchObject({
+          error: { details: { reason: 'presigned URL is missing SigV4 expiry parameters' } },
+        })
+      }
     })
 
-    it('throws when the X-Amz-Date is present but unparseable', () => {
+    it('throws the exact unparseable-expiry envelope for a malformed date or expires', () => {
       /*
-       * Scenario: the date param does not match the SigV4 basic format.
-       * Rule it protects: a malformed signing time surfaces the provider error
-       * rather than producing an Invalid Date.
+       * Scenario: the date does not match the SigV4 basic format, or the expires
+       * is non-numeric.
+       * Rule it protects: a malformed signing time or lifetime surfaces the exact
+       * provider-error reason rather than an Invalid Date (the details object and
+       * its reason string are pinned).
        */
-      const url = 'https://minio.local/vault/key?X-Amz-Date=notadate&X-Amz-Expires=300'
-      expect(() => readSignedUrlExpiry(url)).toThrow(StorageException)
-    })
-
-    it('throws when the X-Amz-Expires is present but non-numeric', () => {
-      /*
-       * Scenario: the expires param is not a number.
-       * Rule it protects: a malformed lifetime surfaces the provider error.
-       */
-      const url = 'https://minio.local/vault/key?X-Amz-Date=20260707T100000Z&X-Amz-Expires=abc'
-      expect(() => readSignedUrlExpiry(url)).toThrow(StorageException)
+      const cases = [
+        'https://minio.local/vault/key?X-Amz-Date=notadate&X-Amz-Expires=300',
+        'https://minio.local/vault/key?X-Amz-Date=20260707T100000Z&X-Amz-Expires=abc',
+        // A date wrapped in extra characters must fail the anchored match end to end,
+        // so a leading or trailing character is rejected rather than partially parsed
+        // (kills a dropped ^ or $ anchor in the SigV4 date pattern).
+        'https://minio.local/vault/key?X-Amz-Date=x20260707T100000Z&X-Amz-Expires=300',
+        'https://minio.local/vault/key?X-Amz-Date=20260707T100000Zx&X-Amz-Expires=300',
+      ]
+      for (const url of cases) {
+        const error = (() => {
+          try {
+            readSignedUrlExpiry(url)
+            return undefined
+          } catch (caught: unknown) {
+            return caught
+          }
+        })()
+        expect(error).toBeInstanceOf(StorageException)
+        expect((error as StorageException).getResponse()).toMatchObject({
+          error: { details: { reason: 'presigned URL carries an unparseable SigV4 expiry' } },
+        })
+      }
     })
   })
 })

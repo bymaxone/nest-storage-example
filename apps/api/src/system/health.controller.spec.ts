@@ -45,6 +45,8 @@ describe('HealthController (unit)', () => {
       const report = await controller.health()
 
       expect(report).toEqual({ status: 'up', latencyMs: 4, bucket: 'vault' })
+      // The probe targets the fixed sentinel key, not an empty or altered key.
+      expect(exists).toHaveBeenCalledWith('health/sentinel')
     })
 
     it('throws a 503 down report when the probe rejects', async () => {

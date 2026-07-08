@@ -119,6 +119,23 @@ describe('UploadsService (unit)', () => {
       // No trailing dot: the UUID alone follows the slash.
       expect(key).toMatch(/^attachments\/[0-9a-f-]{36}$/)
     })
+
+    it('preserves a leading-dot extension (dotfile at index 0)', async () => {
+      /*
+       * Scenario: the originalname is a dotfile like ".env" (its only dot is at
+       * index 0).
+       * Rule it protects: the extension boundary is inclusive of index 0, so the
+       * dotfile suffix is preserved (kills a `>= 0` to `> 0` mutation that would
+       * drop it).
+       */
+      const { service, upload } = setup()
+      upload.mockResolvedValue(makeResult())
+      await service.uploadSingle(makeFile({ originalname: '.env', mimetype: 'text/plain' }), {
+        category: 'attachments',
+      })
+      const key = upload.mock.calls[0]?.[0]?.key
+      expect(key).toMatch(/^attachments\/[0-9a-f-]{36}\.env$/)
+    })
   })
 
   describe('uploadWithSseOverride', () => {
@@ -134,6 +151,8 @@ describe('UploadsService (unit)', () => {
         serverSideEncryption: 'AES256',
       })
       expect(upload.mock.calls[0]?.[0]?.serverSideEncryption).toBe('AES256')
+      // The SSE-override path composes the same {category}/{uuid}{ext} key.
+      expect(upload.mock.calls[0]?.[0]?.key).toMatch(/^avatars\/[0-9a-f-]{36}\.png$/)
     })
 
     it("passes the 'NONE' sentinel to the library", async () => {
@@ -173,9 +192,13 @@ describe('UploadsService (unit)', () => {
       const snapshots = sessions.get(sessionId)
       // Two intermediate + one final.
       expect(snapshots).toHaveLength(3)
-      expect(snapshots?.[0]).toMatchObject({ loaded: 1000, part: 1 })
-      expect(snapshots?.[1]).toMatchObject({ loaded: 2000, part: 2 })
+      // Pin total too: a mutant that drops the conditional `total` field (or flips
+      // its presence test) is caught because the recorded snapshot must carry it.
+      expect(snapshots?.[0]).toMatchObject({ loaded: 1000, total: 2000, part: 1 })
+      expect(snapshots?.[1]).toMatchObject({ loaded: 2000, total: 2000, part: 2 })
       expect(snapshots?.[2]).toMatchObject({ strategy: 'multipart' })
+      // The multipart key follows the {category}/{uuid}{ext} convention.
+      expect(upload.mock.calls[0]?.[0]?.key).toMatch(/^media\/[0-9a-f-]{36}\.png$/)
     })
 
     it('returns the upload result alongside the sessionId', async () => {
@@ -212,8 +235,10 @@ describe('UploadsService (unit)', () => {
       const snapshots = sessions.get(sessionId)
       const firstSnap = snapshots?.[0]
       expect(firstSnap?.loaded).toBe(256)
-      expect(firstSnap?.total).toBeUndefined()
-      expect(firstSnap?.part).toBeUndefined()
+      // The total/part keys are OMITTED (not present-with-undefined) when the
+      // event lacks them, so a mutant that always spreads them in is caught.
+      expect(firstSnap !== undefined && 'total' in firstSnap).toBe(false)
+      expect(firstSnap !== undefined && 'part' in firstSnap).toBe(false)
     })
   })
 
@@ -233,6 +258,9 @@ describe('UploadsService (unit)', () => {
       expect(call?.body).toBe(stream)
       expect(call?.contentType).toBe('video/mp4')
       expect(call?.size).toBe(5000)
+      // The stream path composes {category}/{uuid} with the default 'stream'
+      // filename (no extension), pinning the key template.
+      expect(call?.key).toMatch(/^media\/[0-9a-f-]{36}$/)
     })
 
     it('omits size when knownSize is false, forcing the multipart path', async () => {
@@ -296,7 +324,9 @@ describe('UploadsService (unit)', () => {
       expect(snapshots).toHaveLength(3)
       expect(snapshots?.[0]).toMatchObject({ loaded: 512, total: 1024, part: 1 })
       expect(snapshots?.[1]).toMatchObject({ loaded: 1024, total: 1024, part: 2 })
-      expect(snapshots?.[2]).toMatchObject({ strategy: 'multipart' })
+      // The final snapshot carries the known total too (contentLength was 1024), so a
+      // mutant that drops the conditional `total` field from the final append is caught.
+      expect(snapshots?.[2]).toMatchObject({ loaded: 1024, total: 1024, strategy: 'multipart' })
     })
 
     it('carries the last onProgress loaded value into the final snapshot for unknown-size streams', async () => {

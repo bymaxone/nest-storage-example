@@ -74,3 +74,52 @@ describe('useVersioningStatus', () => {
     expect(result.current.data).toEqual(status)
   })
 })
+
+describe('system query keys', () => {
+  const mockGet = vi.mocked(apiGet)
+  beforeEach(() => mockGet.mockReset())
+
+  function seededClient(key: readonly unknown[], data: unknown) {
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+    })
+    qc.setQueryData(key as unknown[], data)
+    const Wrap = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    )
+    return Wrap
+  }
+
+  // Scenario: config reads from the exact ['system','config'] key without refetching.
+  it('reads storage config from its exact query key without refetching', () => {
+    const config = {
+      provider: 'minio',
+      bucket: 'vault',
+      multipartThreshold: 1,
+      scannerMode: 'pre-upload',
+      rejectOnUnknown: false,
+    }
+    const Wrap = seededClient(['system', 'config'], config)
+    const { result } = renderHook(() => useStorageConfig(), { wrapper: Wrap })
+    expect(result.current.data).toEqual(config)
+    expect(mockGet).not.toHaveBeenCalled()
+  })
+
+  // Scenario: recipes read from the exact ['system','recipes'] key without refetching.
+  it('reads provider recipes from their exact query key without refetching', () => {
+    const recipes = [{ provider: 'awsS3', options: {}, quirks: [] }]
+    const Wrap = seededClient(['system', 'recipes'], recipes)
+    const { result } = renderHook(() => useProviderRecipes(), { wrapper: Wrap })
+    expect(result.current.data).toEqual(recipes)
+    expect(mockGet).not.toHaveBeenCalled()
+  })
+
+  // Scenario: versioning reads from the exact ['system','versioning'] key without refetching.
+  it('reads versioning status from its exact query key without refetching', () => {
+    const status = { versioned: true, bucket: 'vault-versioned', status: 'Enabled' }
+    const Wrap = seededClient(['system', 'versioning'], status)
+    const { result } = renderHook(() => useVersioningStatus(), { wrapper: Wrap })
+    expect(result.current.data).toEqual(status)
+    expect(mockGet).not.toHaveBeenCalled()
+  })
+})

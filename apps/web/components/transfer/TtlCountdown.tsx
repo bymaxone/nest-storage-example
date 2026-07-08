@@ -52,6 +52,7 @@ export function formatCountdown(seconds: number): string {
  */
 export function TtlCountdown({ expiresAt, ttlSeconds, className }: TtlCountdownProps) {
   const expiryMs = new Date(expiresAt).getTime()
+  // Stryker disable next-line ArrowFunction,MethodExpression,ArithmeticOperator: the mount effect below immediately recomputes `remaining` with this identical formula, so the lazy initializer's value is never observed by any render.
   const [remaining, setRemaining] = useState(() => Math.max(0, (expiryMs - Date.now()) / 1000))
 
   useEffect(() => {

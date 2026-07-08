@@ -93,4 +93,10 @@ describe('httpStatusColor', () => {
   it('returns text-red-400 for 300 (redirect range)', () => {
     expect(httpStatusColor(300)).toBe('text-red-400')
   })
+
+  // Scenario: a sub-200 informational status must fall through to red, proving the
+  // lower `status >= 200` bound is enforced (not collapsed to an always-true guard).
+  it('returns text-red-400 for 100 (below the 2xx lower bound)', () => {
+    expect(httpStatusColor(100)).toBe('text-red-400')
+  })
 })

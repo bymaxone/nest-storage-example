@@ -138,11 +138,15 @@ export function readSignedUrlExpiry(signedUrl: string): {
  * @returns Epoch milliseconds for the signing instant.
  */
 function parseAmzDate(amzDate: string): number {
-  const expanded = amzDate.replace(
-    /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/,
-    '$1-$2-$3T$4:$5:$6Z',
-  )
-  return Date.parse(expanded)
+  // Anchored match: the value must be EXACTLY the basic format end to end, so a
+  // string that merely contains a date (leading/trailing characters) fails the match
+  // and yields NaN rather than a partially-parsed instant.
+  const match = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/.exec(amzDate)
+  if (match === null) {
+    return Number.NaN
+  }
+  const [, year, month, day, hour, minute, second] = match
+  return Date.parse(`${year}-${month}-${day}T${hour}:${minute}:${second}Z`)
 }
 
 /** Service issuing presigned URLs and owning the multipart abort path. */

@@ -93,4 +93,21 @@ describe('useScannerUpload', () => {
     expect(returned?.verdict.status).toBe('infected')
     expect(returned?.verdict.threat).toBe('X-DEMO-INFECTED')
   })
+
+  // Scenario: a successful scanner upload invalidates the exact ['vault'] cache key.
+  it('invalidates ["vault"] after a scanner upload', async () => {
+    mockPost.mockResolvedValueOnce({ key: 'k', verdict: { status: 'clean', engine: 'x' } })
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    })
+    const invalidate = vi.spyOn(qc, 'invalidateQueries')
+    const Wrap = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    )
+    const { result } = renderHook(() => useScannerUpload(), { wrapper: Wrap })
+    await act(async () => {
+      await result.current.mutateAsync({ content: 'clean' })
+    })
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['vault'] })
+  })
 })

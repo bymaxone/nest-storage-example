@@ -9,6 +9,9 @@
  * @module common/scoped-storage.factory.spec
  */
 import 'reflect-metadata'
+import { jest } from '@jest/globals'
+import type { INestApplicationContext } from '@nestjs/common'
+import { NestFactory } from '@nestjs/core'
 import { SignedUrlService, StorageService } from '@bymax-one/nest-storage'
 import type { BymaxStorageModuleOptions } from '@bymax-one/nest-storage'
 import { ScopedStorageFactory } from './scoped-storage.factory.js'
@@ -46,6 +49,39 @@ describe('ScopedStorageFactory (unit)', () => {
     const second = await factory.storage('reused', OPTIONS)
     expect(second).toBe(first)
     await factory.onApplicationShutdown()
+  })
+
+  it('builds the context with logging off, resolves services non-strictly, and closes on shutdown', async () => {
+    /*
+     * Scenario: a scoped storage and signed-url facade are resolved, then the app
+     * shuts down.
+     * Rule it protects: the context is created with `{ logger: false }`, each
+     * facade is resolved with `{ strict: false }`, and shutdown closes the context
+     * (kills mutants that blank those option objects or skip the close call).
+     */
+    const close = jest.fn<() => Promise<void>>().mockResolvedValue()
+    const fakeStorage = {} as StorageService
+    const fakeSigned = {} as SignedUrlService
+    const get = jest
+      .fn<(token: unknown, options: unknown) => unknown>()
+      .mockReturnValueOnce(fakeStorage)
+      .mockReturnValueOnce(fakeSigned)
+    const context = { get, close } as unknown as INestApplicationContext
+    const createSpy = jest.spyOn(NestFactory, 'createApplicationContext').mockResolvedValue(context)
+
+    const factory = new ScopedStorageFactory()
+    const storage = await factory.storage('spy', OPTIONS)
+    const signed = await factory.signedUrls('spy', OPTIONS)
+
+    expect(createSpy).toHaveBeenCalledWith(expect.anything(), { logger: false })
+    expect(get).toHaveBeenNthCalledWith(1, StorageService, { strict: false })
+    expect(get).toHaveBeenNthCalledWith(2, SignedUrlService, { strict: false })
+    expect(storage).toBe(fakeStorage)
+    expect(signed).toBe(fakeSigned)
+
+    await factory.onApplicationShutdown()
+    expect(close).toHaveBeenCalledTimes(1)
+    createSpy.mockRestore()
   })
 
   it('closes and clears instances on shutdown so a later request rebuilds', async () => {

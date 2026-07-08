@@ -158,7 +158,10 @@ export class UploadsController {
     const lengthHeader = firstHeaderValue(req.headers['content-length'])
     // Only forward a Content-Length that is a finite, non-negative integer as the
     // size hint; a negative, fractional, or NaN value is treated as unknown size.
-    const parsedLength = lengthHeader !== undefined ? Number(lengthHeader) : NaN
+    // Number(undefined) is NaN, so an absent header coerces to NaN directly; the
+    // integer/sign guard below then treats NaN (and any negative/fractional value)
+    // as unknown size.
+    const parsedLength = Number(lengthHeader)
     const size = Number.isInteger(parsedLength) && parsedLength >= 0 ? parsedLength : undefined
     return this.uploadsService.uploadStream(req, contentType, query, size)
   }

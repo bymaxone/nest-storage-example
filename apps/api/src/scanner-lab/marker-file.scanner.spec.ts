@@ -99,6 +99,68 @@ describe('MarkerFileScanner (unit)', () => {
     expect(result.status).toBe('infected')
   })
 
+  it('does not detect a marker that begins after the byte bound (single chunk)', async () => {
+    /*
+     * Scenario: one 4096-byte benign prefix followed by X-DEMO-INFECTED, in a
+     * single oversized stream chunk.
+     * Rule it protects: the chunk is truncated to the remaining budget before it
+     * is retained, so a marker past MAX_SCAN_BYTES is never scanned and the body
+     * reads clean (kills a chunk-truncation comparison that keeps the whole chunk).
+     */
+    const oversized = Buffer.from(`${'a'.repeat(4096)}X-DEMO-INFECTED`)
+    const stream = Readable.from([oversized])
+    const result = await scanner.scan(preUpload(stream))
+    expect(result.status).toBe('clean')
+  })
+
+  it('keeps scanning across multiple sub-bound chunks until a later chunk carries the marker', async () => {
+    /*
+     * Scenario: two small chunks well under the byte bound; the marker is only in
+     * the second chunk.
+     * Rule it protects: the reader does not stop after the first chunk while the
+     * running total is below MAX_SCAN_BYTES, so a marker in a later in-budget
+     * chunk is still found (kills an early-break comparison).
+     */
+    const stream = Readable.from([Buffer.from('benign-head '), Buffer.from('X-DEMO-INFECTED tail')])
+    const result = await scanner.scan(preUpload(stream))
+    expect(result.status).toBe('infected')
+  })
+
+  it('shrinks the remaining budget as chunks accumulate, dropping a marker past the running bound', async () => {
+    /*
+     * Scenario: a first 4000-byte benign chunk, then a chunk whose first 96 bytes
+     * fit the remaining budget but whose marker sits beyond it.
+     * Rule it protects: the remaining budget is `MAX_SCAN_BYTES - total`, so it
+     * SHRINKS as bytes accumulate. A mutant that adds instead (never truncating)
+     * would retain the whole second chunk and detect the marker; here the marker is
+     * truncated away and the body reads clean.
+     */
+    const first = Buffer.from('a'.repeat(4000))
+    const second = Buffer.from(`${'a'.repeat(96)}X-DEMO-INFECTED`)
+    const stream = Readable.from([first, second])
+    const result = await scanner.scan(preUpload(stream))
+    expect(result.status).toBe('clean')
+  })
+
+  it('stops pulling chunks from the stream once the byte bound is reached', async () => {
+    /*
+     * Scenario: a first chunk fills the 4096-byte bound exactly (no marker); the
+     * generator then throws if asked for a further chunk.
+     * Rule it protects: the reader BREAKS at the bound and never requests another
+     * chunk, so the throw is unreachable and the scan resolves clean. A mutant that
+     * drops or weakens the break would pull the next chunk and reject.
+     */
+    function* boundedThenThrow(): Generator<Buffer> {
+      yield Buffer.from('a'.repeat(4096))
+      throw new Error('must not read past the byte bound')
+    }
+    const stream = Readable.from(boundedThenThrow())
+    await expect(scanner.scan(preUpload(stream))).resolves.toEqual({
+      status: 'clean',
+      engine: 'marker-demo',
+    })
+  })
+
   it('scans the object key when no body is present (post-upload mode)', async () => {
     /*
      * Scenario: post-upload mode delivers only the key/bucket, no body.

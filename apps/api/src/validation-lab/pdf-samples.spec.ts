@@ -20,6 +20,11 @@ describe('pdf-samples (unit)', () => {
     expect(sample.contentType).toBe('application/pdf')
     expect(sample.filename).toBe('forged.pdf')
     expect(sample.buffer.subarray(0, 4).toString('ascii')).not.toBe('%PDF')
+    // Pin the exact forged body so a mutant that blanks it (and would then
+    // trivially still fail the %PDF check) is caught.
+    expect(sample.buffer.toString('utf8')).toBe(
+      'This is plain text pretending to be a PDF document.\n',
+    )
   })
 
   it('genuinePdf begins with the real %PDF signature', () => {

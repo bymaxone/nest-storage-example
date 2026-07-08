@@ -10,7 +10,7 @@
  */
 import 'reflect-metadata'
 import { jest } from '@jest/globals'
-import { BadRequestException, NotFoundException, RequestMethod } from '@nestjs/common'
+import { NotFoundException, RequestMethod } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
 import type { UploadResult } from '@bymax-one/nest-storage'
 import { UploadsController } from './uploads.controller.js'
@@ -96,15 +96,26 @@ describe('UploadsController (unit)', () => {
       expect(returned).toBe(result)
     })
 
-    it('throws BadRequestException when file is undefined', async () => {
+    it('throws BadRequestException with the VALIDATION envelope when file is undefined', async () => {
       /*
        * Scenario: FileInterceptor did not attach a file (field missing).
-       * Rule it protects: a missing file never reaches the service.
+       * Rule it protects: a missing file never reaches the service, and the thrown
+       * body is exactly { error: { code: 'VALIDATION', message: 'file is required' } }.
        */
-      const { controller } = setup()
+      const { controller, uploadSingle } = setup()
+      // Both undefined and null are rejected (each `===` operand is exercised),
+      // killing a mutant that drops the null half of the guard.
       await expect(
         controller.uploadSingle(undefined as unknown as MulterFile, { category: 'avatars' }),
-      ).rejects.toBeInstanceOf(BadRequestException)
+      ).rejects.toMatchObject({
+        response: { error: { code: 'VALIDATION', message: 'file is required' } },
+      })
+      await expect(
+        controller.uploadSingle(null as unknown as MulterFile, { category: 'avatars' }),
+      ).rejects.toMatchObject({
+        response: { error: { code: 'VALIDATION', message: 'file is required' } },
+      })
+      expect(uploadSingle).not.toHaveBeenCalled()
     })
   })
 
@@ -121,15 +132,25 @@ describe('UploadsController (unit)', () => {
       expect(returned).toStrictEqual(payload)
     })
 
-    it('throws BadRequestException when file is missing', async () => {
+    it('throws the VALIDATION envelope when file is missing', async () => {
       /*
        * Scenario: no file attached to the multipart request.
-       * Rule it protects: guard fires before service call.
+       * Rule it protects: guard fires before the service call with the exact
+       * VALIDATION envelope.
        */
-      const { controller } = setup()
+      const { controller, uploadMultipart } = setup()
+      // Both undefined and null are rejected, exercising each `===` operand.
       await expect(
         controller.uploadMultipart(undefined as unknown as MulterFile, { category: 'media' }),
-      ).rejects.toBeInstanceOf(BadRequestException)
+      ).rejects.toMatchObject({
+        response: { error: { code: 'VALIDATION', message: 'file is required' } },
+      })
+      await expect(
+        controller.uploadMultipart(null as unknown as MulterFile, { category: 'media' }),
+      ).rejects.toMatchObject({
+        response: { error: { code: 'VALIDATION', message: 'file is required' } },
+      })
+      expect(uploadMultipart).not.toHaveBeenCalled()
     })
   })
 
@@ -152,24 +173,70 @@ describe('UploadsController (unit)', () => {
       })
     })
 
-    it('throws NotFoundException for an unknown session id', () => {
+    it('throws the SESSION_NOT_FOUND envelope for an unknown session id', () => {
       /*
        * Scenario: valid UUID format but session never created (evicted or invalid).
-       * Rule it protects: unknown sessions return 404, not an empty list.
+       * Rule it protects: unknown sessions return 404 with the exact
+       * { error: { code: 'SESSION_NOT_FOUND' } } envelope, not an empty list.
        */
       const { controller } = setup()
       expect(() => controller.getSession('00000000-0000-4000-8000-000000000000')).toThrow(
         NotFoundException,
       )
+      try {
+        controller.getSession('00000000-0000-4000-8000-000000000000')
+        throw new Error('expected getSession to throw')
+      } catch (error) {
+        expect(error).toBeInstanceOf(NotFoundException)
+        expect((error as NotFoundException).getResponse()).toEqual({
+          error: { code: 'SESSION_NOT_FOUND' },
+        })
+      }
     })
 
-    it('throws NotFoundException for a non-UUID session id without echoing the raw value', () => {
+    it('throws the SESSION_NOT_FOUND envelope for a non-UUID session id', () => {
       /*
        * Scenario: caller passes an arbitrary string (not a UUID v4).
-       * Rule it protects: invalid format is rejected before the store lookup; raw
-       * value is not reflected in the error body.
+       * Rule it protects: invalid format is rejected before the store lookup with
+       * the value-free envelope; the raw value is not reflected in the body.
        */
       const { controller } = setup()
+      try {
+        controller.getSession('not-a-uuid')
+        throw new Error('expected getSession to throw')
+      } catch (error) {
+        expect(error).toBeInstanceOf(NotFoundException)
+        expect((error as NotFoundException).getResponse()).toEqual({
+          error: { code: 'SESSION_NOT_FOUND' },
+        })
+      }
+    })
+
+    it('rejects a UUID carrying an extra prefix or suffix even when a session exists under it', () => {
+      /*
+       * Scenario: sessions are PLANTED under the padded keys, then queried.
+       * Rule it protects: the UUID guard is anchored at both ends, so a value that
+       * merely contains a UUID is rejected BEFORE the store lookup. Planting the
+       * session removes the not-found fallback, so a dropped ^ or $ anchor would let
+       * the padded id resolve and return the session instead of throwing.
+       */
+      const { controller, sessions } = setup()
+      sessions.create(`x${VALID_SESSION_UUID}`)
+      sessions.create(`${VALID_SESSION_UUID}x`)
+      expect(() => controller.getSession(`x${VALID_SESSION_UUID}`)).toThrow(NotFoundException)
+      expect(() => controller.getSession(`${VALID_SESSION_UUID}x`)).toThrow(NotFoundException)
+    })
+
+    it('rejects a non-UUID id before the store lookup even when a session exists under it', () => {
+      /*
+       * Scenario: a session is PLANTED under a non-UUID key, then queried.
+       * Rule it protects: the format guard rejects the invalid id BEFORE the store
+       * lookup. With the session planted the not-found fallback cannot mask a removed
+       * guard, so dropping the format check would return the planted session.
+       */
+      const { controller, sessions } = setup()
+      sessions.create('not-a-uuid')
+      sessions.append('not-a-uuid', { loaded: 1, strategy: 'single' })
       expect(() => controller.getSession('not-a-uuid')).toThrow(NotFoundException)
     })
   })
@@ -235,6 +302,26 @@ describe('UploadsController (unit)', () => {
 
       const [, , , sizeArg] = uploadStream.mock.calls[0] ?? []
       expect(sizeArg).toBeUndefined()
+    })
+
+    it('forwards a zero-byte Content-Length as size 0', async () => {
+      /*
+       * Scenario: an empty body arrives with Content-Length '0'.
+       * Rule it protects: the boundary is inclusive (>= 0), so a zero size is
+       * forwarded as the hint rather than dropped as unknown (kills a >= to >
+       * mutation on the length guard).
+       */
+      const { controller, uploadStream } = setup()
+      uploadStream.mockResolvedValue({ sessionId: 's7', result: makeResult() })
+      const req = {
+        headers: { 'content-type': 'text/plain', 'content-length': '0' },
+        pipe: jest.fn(),
+      } as unknown as Request
+
+      await controller.uploadStream(req, { category: 'attachments', knownSize: true })
+
+      const [, , , sizeArg] = uploadStream.mock.calls[0] ?? []
+      expect(sizeArg).toBe(0)
     })
 
     it('normalizes array-valued Content-Type and Content-Length headers to the first value', async () => {
@@ -326,13 +413,25 @@ describe('UploadsController (unit)', () => {
        * Scenario: SSE-override request without a file attachment.
        * Rule it protects: the guard fires before the service call.
        */
-      const { controller } = setup()
+      const { controller, uploadWithSseOverride } = setup()
+      // Both undefined and null are rejected, exercising each `===` operand.
       await expect(
         controller.uploadWithSseOverride(undefined as unknown as MulterFile, {
           category: 'avatars',
           serverSideEncryption: 'NONE',
         }),
-      ).rejects.toBeInstanceOf(BadRequestException)
+      ).rejects.toMatchObject({
+        response: { error: { code: 'VALIDATION', message: 'file is required' } },
+      })
+      await expect(
+        controller.uploadWithSseOverride(null as unknown as MulterFile, {
+          category: 'avatars',
+          serverSideEncryption: 'NONE',
+        }),
+      ).rejects.toMatchObject({
+        response: { error: { code: 'VALIDATION', message: 'file is required' } },
+      })
+      expect(uploadWithSseOverride).not.toHaveBeenCalled()
     })
   })
 

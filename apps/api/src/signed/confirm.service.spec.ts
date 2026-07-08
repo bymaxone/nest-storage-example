@@ -103,6 +103,35 @@ describe('ConfirmService (unit)', () => {
     expect(res.confirmed).toBe(false)
   })
 
+  it('accepts an object whose size exactly equals the policy maximum', async () => {
+    /*
+     * Scenario: the landed object is exactly maxSizeBytes (4096).
+     * Rule it protects: the size bound is inclusive (size <= max), so a size equal
+     * to the cap passes. A mutant that flips <= to < would wrongly refuse it.
+     */
+    const { service, head } = setup({ status: 'clean' })
+    head.mockResolvedValue(makeMetadata({ size: 4096, contentType: 'image/png' }))
+    const res = await service.confirm('avatars/uuid.png')
+    expect(res.checks.sizeWithinPolicy).toBe(true)
+    expect(res.confirmed).toBe(true)
+  })
+
+  it('passes the MIME check when the configured whitelist is empty', async () => {
+    /*
+     * Scenario: the validation policy carries an empty mimeWhitelist array.
+     * Rule it protects: an empty whitelist means nothing to enforce, so mimeAllowed
+     * passes (the `length === 0` guard). A mutant that drops the guard would call
+     * the matcher against an empty list and refuse every type.
+     */
+    const { service, head } = setup(
+      { status: 'skipped' },
+      makeOptions({ validation: { maxSizeBytes: 4096, mimeWhitelist: [] } }),
+    )
+    head.mockResolvedValue(makeMetadata({ contentType: 'application/zip' }))
+    const res = await service.confirm('avatars/uuid.png')
+    expect(res.checks.mimeAllowed).toBe(true)
+  })
+
   it('refuses an object exceeding the size policy', async () => {
     /*
      * Scenario: the landed object is larger than maxSizeBytes.
@@ -211,6 +240,17 @@ describe('isMimeAllowed', () => {
     expect(isMimeAllowed('', ['image/png'])).toBe(false)
   })
 
+  it('rejects an absent content type even against a catch-all entry', () => {
+    /*
+     * Scenario: the whitelist is a bare star but the content type is absent.
+     * Rule it protects: the empty/undefined guard runs BEFORE the wildcard match,
+     * so an absent MIME is refused even when a `*` entry would otherwise allow
+     * anything (a mutant that removes the guard would wrongly allow it).
+     */
+    expect(isMimeAllowed(undefined, ['*'])).toBe(false)
+    expect(isMimeAllowed('', ['*'])).toBe(false)
+  })
+
   it('allows any type for a bare or full wildcard', () => {
     /*
      * Scenario: the whitelist contains a catch-all entry.
@@ -227,6 +267,21 @@ describe('isMimeAllowed', () => {
      */
     expect(isMimeAllowed('video/mp4', ['video/*'])).toBe(true)
     expect(isMimeAllowed('image/png', ['image/png'])).toBe(true)
+    // An EXACT entry must match exactly, not as a prefix: a type that merely shares
+    // the entry's leading characters is refused. This kills a mutant that treats a
+    // non-wildcard entry as a `type/*` wildcard (forcing the prefix branch).
+    expect(isMimeAllowed('image/pngxyz', ['image/png'])).toBe(false)
+  })
+
+  it('anchors a type/* wildcard at the full prefix, not the first character', () => {
+    /*
+     * Scenario: a type outside a `image/*` wildcard is tested.
+     * Rule it protects: the prefix compared is `image/` (entry without its
+     * trailing `*`), so `irrelevant/x` does NOT match. A mutant that slices the
+     * wrong end (leaving `i`) would wrongly match any `i...` type.
+     */
+    expect(isMimeAllowed('irrelevant/x', ['image/*'])).toBe(false)
+    expect(isMimeAllowed('image/png', ['image/*'])).toBe(true)
   })
 
   it('rejects a type outside the whitelist', () => {

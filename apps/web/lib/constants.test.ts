@@ -2,7 +2,7 @@
  * @fileoverview Unit tests for shared dashboard constants.
  * @layer lib/constants.test
  */
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 
 describe('API_BASE_URL', () => {
   const originalEnv = process.env['NEXT_PUBLIC_API_URL']
@@ -38,6 +38,15 @@ describe('API_BASE_URL', () => {
     const envValue = 'http://custom-api:4000'
     const result = envValue ?? 'http://localhost:3001'
     expect(result).toBe(envValue)
+  })
+
+  // Scenario: with the env var unset, the module-level fallback resolves to the
+  // exact default URL — proving the literal is load-bearing, not an empty string.
+  it('resolves to the exact default URL when the env var is unset', async () => {
+    vi.resetModules()
+    delete process.env['NEXT_PUBLIC_API_URL']
+    const { API_BASE_URL } = await import('./constants')
+    expect(API_BASE_URL).toBe('http://localhost:3001')
   })
 
   it('falls back to localhost when env var is undefined', () => {

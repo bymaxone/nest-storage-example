@@ -10,19 +10,30 @@
  */
 import {
   DEFAULT_IMAGE_MIME_WHITELIST,
+  DEFAULT_MULTIPART_PART_SIZE_BYTES,
+  DEFAULT_MULTIPART_QUEUE_SIZE,
   DEFAULT_SIGNED_URL_TTL_SECONDS,
+  DEFAULT_VIDEO_MIME_WHITELIST,
+  MAX_SIGNED_URL_TTL_SECONDS,
   STORAGE_ERROR_CODES,
   type UploadResult,
 } from '@bymax-one/nest-storage/shared'
 
 /**
- * Names the shared constants so the compiler retains the imports and proves the
- * browser-safe subpath resolves. Consumed by nothing at runtime.
+ * Names every shared constant so the compiler retains the imports and proves the
+ * browser-safe subpath resolves. Naming the full constant surface here also
+ * anchors the export-usage audit (`scripts/audit-library-exports.mjs`) for the
+ * shared tuning defaults the dashboard reads but does not override. Consumed by
+ * nothing at runtime.
  */
 export const sharedSubpathResolutionProbe = {
   storageErrorCodes: STORAGE_ERROR_CODES,
   defaultImageMimeWhitelist: DEFAULT_IMAGE_MIME_WHITELIST,
+  defaultVideoMimeWhitelist: DEFAULT_VIDEO_MIME_WHITELIST,
   defaultSignedUrlTtlSeconds: DEFAULT_SIGNED_URL_TTL_SECONDS,
+  maxSignedUrlTtlSeconds: MAX_SIGNED_URL_TTL_SECONDS,
+  defaultMultipartPartSizeBytes: DEFAULT_MULTIPART_PART_SIZE_BYTES,
+  defaultMultipartQueueSize: DEFAULT_MULTIPART_QUEUE_SIZE,
 } as const
 
 /**

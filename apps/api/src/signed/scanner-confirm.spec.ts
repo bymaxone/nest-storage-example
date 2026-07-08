@@ -100,7 +100,11 @@ describe('ScannerConfirm (unit)', () => {
       }),
     } as unknown as MarkerFileScanner
     const confirm = new ScannerConfirm(storage, scanner)
-    await expect(confirm.scan('attachments/uuid', 'vault')).resolves.toEqual({ status: 'infected' })
+    // toStrictEqual (not toEqual): the absent threat must be OMITTED, never rendered
+    // as `threat: undefined`, so a mutant that always spreads the threat is caught.
+    await expect(confirm.scan('attachments/uuid', 'vault')).resolves.toStrictEqual({
+      status: 'infected',
+    })
     expect(del).toHaveBeenCalledTimes(1)
   })
 

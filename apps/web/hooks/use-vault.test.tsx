@@ -183,3 +183,103 @@ describe('usePublicUrl', () => {
     expect(mockGet).toHaveBeenCalledWith(expect.stringContaining('/vault/object/public-url?key='))
   })
 })
+
+describe('vault cache invalidation and query keys', () => {
+  const mockGet = vi.mocked(apiGet)
+  const mockPost = vi.mocked(apiPost)
+  const mockDelete = vi.mocked(apiDelete)
+  beforeEach(() => {
+    mockGet.mockReset()
+    mockPost.mockReset()
+    mockDelete.mockReset()
+  })
+
+  function clientWithSpy() {
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    })
+    const invalidate = vi.spyOn(qc, 'invalidateQueries')
+    const Wrap = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    )
+    return { invalidate, Wrap }
+  }
+
+  // Scenario: deleting an object invalidates the exact ['vault'] cache key.
+  it('invalidates ["vault"] after a delete', async () => {
+    mockDelete.mockResolvedValueOnce({ deleted: true })
+    const { invalidate, Wrap } = clientWithSpy()
+    const { result } = renderHook(() => useDeleteObject(), { wrapper: Wrap })
+    await act(async () => {
+      await result.current.mutateAsync('docs/a.pdf')
+    })
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['vault'] })
+  })
+
+  // Scenario: a bulk delete invalidates the exact ['vault'] cache key.
+  it('invalidates ["vault"] after a bulk delete', async () => {
+    mockPost.mockResolvedValueOnce({ deleted: ['a'], failed: [] })
+    const { invalidate, Wrap } = clientWithSpy()
+    const { result } = renderHook(() => useBulkDelete(), { wrapper: Wrap })
+    await act(async () => {
+      await result.current.mutateAsync(['a'])
+    })
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['vault'] })
+  })
+
+  // Scenario: a server-side copy invalidates the exact ['vault'] cache key.
+  it('invalidates ["vault"] after a copy', async () => {
+    mockPost.mockResolvedValueOnce({
+      etag: '"x"',
+      sourceKey: 'a',
+      destinationKey: 'b',
+      bucket: 'vault',
+    })
+    const { invalidate, Wrap } = clientWithSpy()
+    const { result } = renderHook(() => useCopyObject(), { wrapper: Wrap })
+    await act(async () => {
+      await result.current.mutateAsync({ sourceKey: 'a', destinationKey: 'b' })
+    })
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['vault'] })
+  })
+
+  // Scenario: useObjectMeta reads its seeded value from the exact key
+  // ['vault','meta',key] without refetching; a wrong key would miss and fetch.
+  it('reads object metadata from its exact query key without refetching', () => {
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+    })
+    const meta = {
+      key: 'docs/a.pdf',
+      bucket: 'vault',
+      size: 1,
+      contentType: 'application/pdf',
+      etag: '"e"',
+      lastModified: new Date().toISOString(),
+      metadata: {},
+    }
+    qc.setQueryData(['vault', 'meta', 'docs/a.pdf'], meta)
+    const Wrap = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    )
+    const { result } = renderHook(() => useObjectMeta('docs/a.pdf'), { wrapper: Wrap })
+    expect(result.current.data).toEqual(meta)
+    expect(mockGet).not.toHaveBeenCalled()
+  })
+
+  // Scenario: usePublicUrl reads its seeded value from the exact key
+  // ['vault','public-url',key] without refetching.
+  it('reads the public url from its exact query key without refetching', () => {
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+    })
+    const data = { publicUrl: 'https://cdn.example.com/a.pdf' }
+    qc.setQueryData(['vault', 'public-url', 'docs/a.pdf'], data)
+    const Wrap = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    )
+    const { result } = renderHook(() => usePublicUrl('docs/a.pdf'), { wrapper: Wrap })
+    expect(result.current.data).toEqual(data)
+    expect(mockGet).not.toHaveBeenCalled()
+  })
+})

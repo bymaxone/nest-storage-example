@@ -24,9 +24,18 @@ describe('strategyFromMultipart', () => {
 
 describe('UploadDropzone', () => {
   it('renders idle state with upload icon', () => {
-    render(<UploadDropzone onFile={vi.fn()} />)
-    expect(screen.getByRole('button', { name: /upload dropzone/i })).toBeInTheDocument()
+    const { container } = render(<UploadDropzone onFile={vi.fn()} />)
+    const dropzone = screen.getByRole('button', { name: /upload dropzone/i })
+    expect(dropzone).toBeInTheDocument()
     expect(screen.getByText(/drop a file or click to browse/i)).toBeInTheDocument()
+    // Wrapper + dropzone keep their layout classes; idle uses the inactive border.
+    expect((container.firstChild as HTMLElement).className).toContain('flex-col')
+    expect(dropzone.className).toContain('border-dashed')
+    expect(dropzone.className).toContain('border-(--glass-border)')
+    // No drag highlight and no strategy badge without a strategy prop.
+    expect(dropzone).not.toHaveClass('border-brand-500')
+    expect(screen.queryByText('Single-shot')).not.toBeInTheDocument()
+    expect(screen.queryByText('Multipart')).not.toBeInTheDocument()
   })
 
   it('shows uploading state when isPending is true', () => {
@@ -34,14 +43,21 @@ describe('UploadDropzone', () => {
     expect(screen.getByText(/uploading/i)).toBeInTheDocument()
   })
 
-  it('shows strategy badge when strategy is set', () => {
+  it('shows the multipart badge with the solid brand variant', () => {
     render(<UploadDropzone onFile={vi.fn()} strategy="multipart" />)
-    expect(screen.getByText('Multipart')).toBeInTheDocument()
+    const badge = screen.getByText('Multipart')
+    expect(badge).toBeInTheDocument()
+    // Multipart maps to the default (solid brand) badge variant.
+    expect(badge.className).toContain('bg-brand-500')
   })
 
-  it('shows single-shot badge for single strategy', () => {
+  it('shows the single-shot badge with the outline variant', () => {
     render(<UploadDropzone onFile={vi.fn()} strategy="single" />)
-    expect(screen.getByText('Single-shot')).toBeInTheDocument()
+    const badge = screen.getByText('Single-shot')
+    expect(badge).toBeInTheDocument()
+    // Single maps to the outline badge variant (no solid brand fill).
+    expect(badge.className).toContain('text-foreground')
+    expect(badge.className).not.toContain('bg-brand-500')
   })
 
   it('does not render strategy badge when strategy is idle', () => {
@@ -56,6 +72,18 @@ describe('UploadDropzone', () => {
     )
     const progressbar = screen.getByRole('progressbar')
     expect(progressbar).toHaveAttribute('aria-valuenow', '50')
+    // The percentage label and the fill width both reflect 50%.
+    expect(screen.getByText('50%')).toBeInTheDocument()
+    const fill = progressbar.querySelector('div') as HTMLElement
+    expect(fill.style.width).toBe('50%')
+  })
+
+  it('hides the percentage label when a strategy is set but no progress exists', () => {
+    // Scenario: with a strategy chip but no progress, no percentage should render
+    // (guards the `progressPercent !== undefined` conditional).
+    render(<UploadDropzone onFile={vi.fn()} strategy="single" />)
+    expect(screen.queryByText(/%$/)).not.toBeInTheDocument()
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
   })
 
   it('shows the uploading (File) icon and disables interaction when pending', () => {
@@ -128,5 +156,60 @@ describe('UploadDropzone', () => {
     await userEvent.click(screen.getByRole('button', { name: /upload dropzone/i }))
     expect(click).toHaveBeenCalled()
     click.mockRestore()
+  })
+
+  it('does not open the dialog for keys other than Enter or Space', () => {
+    // Scenario: an arbitrary key must NOT open the picker (guards both key checks).
+    render(<UploadDropzone onFile={vi.fn()} />)
+    const dropzone = screen.getByRole('button', { name: /upload dropzone/i })
+    const click = vi.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(() => {})
+    fireEvent.keyDown(dropzone, { key: 'a' })
+    expect(click).not.toHaveBeenCalled()
+    click.mockRestore()
+  })
+
+  it('resets the dragging highlight after a drop', () => {
+    // Scenario: dropping a file clears the drag highlight (guards setIsDragging(false)).
+    render(<UploadDropzone onFile={vi.fn()} />)
+    const dropzone = screen.getByRole('button', { name: /upload dropzone/i })
+    fireEvent.dragOver(dropzone)
+    expect(dropzone).toHaveClass('border-brand-500')
+    fireEvent.drop(dropzone, { dataTransfer: { files: [makeFile()] } })
+    expect(dropzone).not.toHaveClass('border-brand-500')
+  })
+
+  it('ignores a change event whose files list is null', () => {
+    // Scenario: some browsers deliver a null files list; the optional-chaining
+    // access must tolerate it without throwing (guards e.target.files?.[0]).
+    const onFile = vi.fn()
+    const { container } = render(<UploadDropzone onFile={onFile} />)
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement
+    fireEvent.change(input, { target: { files: null } })
+    expect(onFile).not.toHaveBeenCalled()
+  })
+
+  it('uses the latest onFile handler when the prop changes (input)', () => {
+    // Scenario: the change callback must track the current onFile prop, not a
+    // stale closure from the first render (guards the [onFile] dependency).
+    const first = vi.fn()
+    const second = vi.fn()
+    const { container, rerender } = render(<UploadDropzone onFile={first} />)
+    rerender(<UploadDropzone onFile={second} />)
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement
+    fireEvent.change(input, { target: { files: [makeFile()] } })
+    expect(first).not.toHaveBeenCalled()
+    expect(second).toHaveBeenCalledTimes(1)
+  })
+
+  it('uses the latest onFile handler when the prop changes (drop)', () => {
+    // Scenario: the drop callback must also track the current onFile prop.
+    const first = vi.fn()
+    const second = vi.fn()
+    const { rerender } = render(<UploadDropzone onFile={first} />)
+    rerender(<UploadDropzone onFile={second} />)
+    const dropzone = screen.getByRole('button', { name: /upload dropzone/i })
+    fireEvent.drop(dropzone, { dataTransfer: { files: [makeFile()] } })
+    expect(first).not.toHaveBeenCalled()
+    expect(second).toHaveBeenCalledTimes(1)
   })
 })

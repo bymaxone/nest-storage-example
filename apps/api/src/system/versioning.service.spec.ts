@@ -48,6 +48,19 @@ describe('VersioningService (unit)', () => {
     expect(view.tradeOffNote).toContain('raw S3Client')
   })
 
+  it('reads the env namespace with type inference enabled', () => {
+    /*
+     * Scenario: the service resolves its bucket list from the config on construction.
+     * Rule it protects: the ConfigService is queried with exactly ('env', { infer:
+     * true }), so a mutant that empties the options object or flips infer is caught.
+     */
+    const get = jest.fn().mockReturnValue(ENV)
+    const config = { get } as unknown as ConfigService<{ env: never }, true>
+    const service = new VersioningService({ send: jest.fn() } as unknown as S3Client, config)
+    expect(service).toBeDefined()
+    expect(get).toHaveBeenCalledWith('env', { infer: true })
+  })
+
   it('raises the not-configured envelope when the raw client is null', async () => {
     /*
      * Scenario: storage is unconfigured, so the raw client token resolves to null.

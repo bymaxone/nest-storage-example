@@ -39,20 +39,13 @@ module.exports = {
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },
-  // Coverage scope: every executable source file under `src`, minus non-executable
-  // glue — framework modules (DI wiring), the bootstrap entrypoint and the
-  // `createApp` factory (both exercised by the e2e boot spec, not unit),
-  // declaration/type-only files, and barrels. The exclusions keep the 100% gate
-  // meaningful rather than gamed.
-  collectCoverageFrom: [
-    '**/*.ts',
-    '!**/*.spec.ts',
-    '!**/*.module.ts',
-    '!main.ts',
-    '!app.factory.ts',
-    '!**/*.d.ts',
-    '!**/index.ts',
-  ],
+  // Coverage scope: every executable source file under `src`, minus
+  // non-executable glue only. `*.module.ts` are pure DI wiring exercised by the
+  // e2e boot; `main.ts` is the process entrypoint (a `listen()` call proven by
+  // the e2e boot, not unit); `*.d.ts` are type-only declarations. Everything
+  // else - including `app.factory.ts` (unit-proven via a NestFactory spy) - is
+  // in scope so the 100% gate stays meaningful rather than gamed.
+  collectCoverageFrom: ['**/*.ts', '!**/*.spec.ts', '!**/*.module.ts', '!main.ts', '!**/*.d.ts'],
   coverageThreshold: {
     global: { branches: 100, functions: 100, lines: 100, statements: 100 },
   },

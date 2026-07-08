@@ -23,6 +23,14 @@ export default tseslint.config(
     extends: [js.configs.recommended],
   },
 
+  // Repository tooling scripts run under Node, so expose the Node globals they use.
+  {
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      globals: { process: 'readonly', console: 'readonly' },
+    },
+  },
+
   // TypeScript type-checked rules for all TS/TSX source files
   {
     files: ['**/*.{ts,tsx}'],

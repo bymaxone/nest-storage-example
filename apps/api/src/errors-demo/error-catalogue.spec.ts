@@ -39,6 +39,51 @@ describe('buildCatalogue (unit)', () => {
     expect(typeof byCode.get('STORAGE_OBJECT_NOT_FOUND')?.message).toBe('string')
   })
 
+  it('pins the exact trigger recipe text for every shipped code', () => {
+    /*
+     * Scenario: the trigger prose is inspected for every code.
+     * Rule it protects: each catalogue row carries its exact, non-empty trigger
+     * recipe (a mutant that blanks or swaps any recipe string is caught).
+     */
+    const byCode = new Map<string, string>(
+      buildCatalogue().map((entry) => [entry.code, entry.trigger]),
+    )
+    const expected: Record<string, string> = {
+      STORAGE_NOT_CONFIGURED:
+        'A scoped module instance built with empty credentials; any operation asserts configuration first.',
+      STORAGE_KEY_INVALID:
+        'An upload whose key contains a `..` traversal segment; the key resolver rejects it.',
+      STORAGE_BODY_MISSING: 'An upload call with no body.',
+      STORAGE_CONTENT_TYPE_REQUIRED: 'An upload call with an empty content type.',
+      STORAGE_MIME_NOT_ALLOWED: 'An upload of `application/zip` against the module MIME whitelist.',
+      STORAGE_SIZE_EXCEEDED: 'An upload whose declared size exceeds the configured `maxSizeBytes`.',
+      STORAGE_VALIDATION_FAILED:
+        'A body declared `application/pdf` without the `%PDF` magic bytes; the custom validator rejects it.',
+      STORAGE_SCAN_INFECTED:
+        'A body carrying the inert `X-DEMO-INFECTED` marker; the scanner reports infected.',
+      STORAGE_SCAN_INCONCLUSIVE:
+        'A scoped instance with `rejectOnUnknown: true` scanning an `X-DEMO-UNKNOWN` body.',
+      STORAGE_OBJECT_NOT_FOUND: 'A head() on a key that does not exist.',
+      STORAGE_PROVIDER_ERROR:
+        'A scoped instance pointed at the real endpoint with wrong credentials; the provider rejects with 403.',
+      STORAGE_SIGNED_URL_TTL_INVALID: 'A signed download URL requested with `ttlSeconds: 0`.',
+      STORAGE_PART_TOO_SMALL:
+        'DEFINED BUT NOT THROWN by the shipped library: no public method guards part size. A real sub-5 MiB non-final part surfaces from the provider as EntityTooSmall, which the library maps to STORAGE_PROVIDER_ERROR.',
+      STORAGE_INVALID_PART_COUNT: 'A presigned multipart request with `parts: 0`.',
+      STORAGE_BUCKET_UNDEFINED:
+        'A head() call with an empty per-call bucket override and no default.',
+      STORAGE_MULTIPART_ABORTED:
+        'A wrong-credentials scoped instance forced onto the multipart path (unknown-size stream); CreateMultipartUpload fails and the upload aborts.',
+      STORAGE_INVALID_CONFIG:
+        'A `BymaxStorageModule.forRoot({})` probe with missing required options.',
+      STORAGE_TIMEOUT:
+        'DEFINED BUT NOT REPRODUCIBLE via the shipped library: `requestTimeoutMs` is resolved in options but never wired into the S3 client request handler, so the SDK issues no request/connection timeout and never emits the TimeoutError that STORAGE_TIMEOUT maps from. A real timeout needs a request-handler timeout the library does not expose.',
+    }
+    for (const [code, trigger] of Object.entries(expected)) {
+      expect(byCode.get(code)).toBe(trigger)
+    }
+  })
+
   it('marks exactly the two defined-but-unreachable codes as non-reproducible', () => {
     /*
      * Scenario: the reproducibility flags are inspected.

@@ -72,6 +72,97 @@ describe('SystemController (unit)', () => {
       expect(recipes.every((recipe) => recipe.quirks.length > 0)).toBe(true)
     })
 
+    it('pins the derived options and quirk notes for every provider recipe', () => {
+      /*
+       * Scenario: each recipe is rendered from its sample args.
+       * Rule it protects: the provider-derived endpoint, region, bucket and public
+       * base URL and the exact quirk notes are pinned, so a mutant that blanks any
+       * recipe argument or quirk string is caught.
+       */
+      const byProvider = new Map(controller.recipes().map((recipe) => [recipe.provider, recipe]))
+      const expected: Record<
+        string,
+        {
+          endpoint: string
+          region: string
+          bucket: string
+          publicBaseUrl: string
+          quirks: string[]
+        }
+      > = {
+        awsS3: {
+          endpoint: 'https://s3.us-east-1.amazonaws.com',
+          region: 'us-east-1',
+          bucket: 'vault',
+          publicBaseUrl: 'https://vault.s3.us-east-1.amazonaws.com',
+          quirks: [
+            'Keeps the SDK default checksum behavior (WHEN_SUPPORTED, CRC32 integrity headers).',
+            'ACLs are disabled on modern buckets (Object Ownership = Bucket owner enforced); a public-read ACL returns HTTP 400. Prefer a bucket policy, CDN, or signed URLs.',
+          ],
+        },
+        digitalOceanSpaces: {
+          endpoint: 'https://nyc3.digitaloceanspaces.com',
+          region: 'nyc3',
+          bucket: 'vault',
+          publicBaseUrl: 'https://vault.nyc3.digitaloceanspaces.com',
+          quirks: [
+            'Sets checksum mode to WHEN_REQUIRED (non-AWS providers reject the SDK default CRC32 headers).',
+            'Virtual-hosted addressing with public delivery via the Spaces CDN host.',
+          ],
+        },
+        cloudflareR2: {
+          endpoint: 'https://account-id.r2.cloudflarestorage.com',
+          region: 'auto',
+          bucket: 'vault',
+          publicBaseUrl: 'https://cdn.example.com',
+          quirks: [
+            'Region is always "auto".',
+            'Sets checksum mode to WHEN_REQUIRED.',
+            'Public reads require a custom domain (publicBaseUrl); the S3 API host does not serve public objects.',
+            'ACLs are a no-op on R2.',
+          ],
+        },
+        backblazeB2: {
+          endpoint: 'https://s3.us-west-002.backblazeb2.com',
+          region: 'us-west-002',
+          bucket: 'vault',
+          publicBaseUrl: 'https://vault.s3.us-west-002.backblazeb2.com',
+          quirks: [
+            'Sets checksum mode to WHEN_REQUIRED.',
+            'Endpoint host varies by region cluster; virtual-hosted addressing matches publicBaseUrl.',
+          ],
+        },
+        minio: {
+          endpoint: 'http://localhost:9000',
+          region: 'us-east-1',
+          bucket: 'vault',
+          publicBaseUrl: 'http://localhost:9000/vault',
+          quirks: [
+            'Path-style addressing (forcePathStyle = true).',
+            'Sets checksum mode to WHEN_REQUIRED (MinIO rejects the SDK default CRC32 headers).',
+          ],
+        },
+        wasabi: {
+          endpoint: 'https://s3.us-east-1.wasabisys.com',
+          region: 'us-east-1',
+          bucket: 'vault',
+          publicBaseUrl: 'https://vault.s3.us-east-1.wasabisys.com',
+          quirks: [
+            'Sets checksum mode to WHEN_REQUIRED.',
+            'Virtual-hosted addressing (Hot Cloud Storage).',
+          ],
+        },
+      }
+      for (const [provider, want] of Object.entries(expected)) {
+        const recipe = byProvider.get(provider)
+        expect(recipe?.options.endpoint).toBe(want.endpoint)
+        expect(recipe?.options.region).toBe(want.region)
+        expect(recipe?.options.bucket).toBe(want.bucket)
+        expect(recipe?.options.publicBaseUrl).toBe(want.publicBaseUrl)
+        expect(recipe?.quirks).toEqual(want.quirks)
+      }
+    })
+
     it('redacts the sample credentials in every rendered recipe', () => {
       /*
        * Scenario: the recipes are built from representative sample credentials.

@@ -117,3 +117,94 @@ describe('useTenantClear', () => {
     expect(mockDelete).toHaveBeenCalledWith('/tenants/tenant%2Fa/objects')
   })
 })
+
+describe('tenant form fields, cache invalidation, and query keys', () => {
+  const mockGet = vi.mocked(apiGet)
+  const mockPostForm = vi.mocked(apiPostForm)
+  const mockDelete = vi.mocked(apiDelete)
+  beforeEach(() => {
+    mockGet.mockReset()
+    mockPostForm.mockReset()
+    mockDelete.mockReset()
+  })
+
+  function clientWithSpy() {
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    })
+    const invalidate = vi.spyOn(qc, 'invalidateQueries')
+    const Wrap = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    )
+    return { invalidate, Wrap }
+  }
+
+  // Scenario: the tenant upload appends the file under the exact 'file' field.
+  it('appends the file under the "file" field', async () => {
+    let form: FormData | undefined
+    mockPostForm.mockImplementation((_p: string, f: FormData) => {
+      form = f
+      return Promise.resolve(uploadResult)
+    })
+    const { Wrap } = clientWithSpy()
+    const { result } = renderHook(() => useTenantUpload(), { wrapper: Wrap })
+    const file = new File(['data'], 'file.png', { type: 'image/png' })
+    await act(async () => {
+      await result.current.mutateAsync({ tenant: 'alpha', file })
+    })
+    expect(form?.get('file')).toBeInstanceOf(File)
+  })
+
+  // Scenario: a tenant upload invalidates the per-tenant cache key ['tenants', tenant].
+  it('invalidates ["tenants", tenant] after a tenant upload', async () => {
+    mockPostForm.mockResolvedValueOnce(uploadResult)
+    const { invalidate, Wrap } = clientWithSpy()
+    const { result } = renderHook(() => useTenantUpload(), { wrapper: Wrap })
+    const file = new File(['data'], 'file.png', { type: 'image/png' })
+    await act(async () => {
+      await result.current.mutateAsync({ tenant: 'alpha', file })
+    })
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['tenants', 'alpha'] })
+  })
+
+  // Scenario: clearing a tenant invalidates the per-tenant cache key.
+  it('invalidates ["tenants", tenant] after a tenant clear', async () => {
+    mockDelete.mockResolvedValueOnce({ deleted: 1, keys: ['a'] })
+    const { invalidate, Wrap } = clientWithSpy()
+    const { result } = renderHook(() => useTenantClear(), { wrapper: Wrap })
+    await act(async () => {
+      await result.current.mutateAsync('beta')
+    })
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['tenants', 'beta'] })
+  })
+
+  // Scenario: the tenants list reads its seeded value from the exact ['tenants'] key.
+  it('reads the tenants list from its exact query key without refetching', () => {
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+    })
+    const data = { tenants: ['alpha', 'beta'] }
+    qc.setQueryData(['tenants'], data)
+    const Wrap = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    )
+    const { result } = renderHook(() => useTenantsList(), { wrapper: Wrap })
+    expect(result.current.data).toEqual(data)
+    expect(mockGet).not.toHaveBeenCalled()
+  })
+
+  // Scenario: tenant objects read from the exact ['tenants', tenant, 'objects'] key.
+  it('reads tenant objects from their exact query key without refetching', () => {
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+    })
+    const data = { objects: [], prefix: 'alpha/' }
+    qc.setQueryData(['tenants', 'alpha', 'objects'], data)
+    const Wrap = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    )
+    const { result } = renderHook(() => useTenantObjects('alpha'), { wrapper: Wrap })
+    expect(result.current.data).toEqual(data)
+    expect(mockGet).not.toHaveBeenCalled()
+  })
+})

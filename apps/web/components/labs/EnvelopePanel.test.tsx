@@ -17,9 +17,16 @@ describe('EnvelopePanel', () => {
         }}
       />,
     )
-    expect(screen.getByRole('alert')).toBeInTheDocument()
-    expect(screen.getByText('422')).toBeInTheDocument()
-    expect(screen.getByText('STORAGE_MIME_NOT_ALLOWED')).toBeInTheDocument()
+    const alert = screen.getByRole('alert')
+    expect(alert).toBeInTheDocument()
+    // The panel shell keeps its glass container classes.
+    expect(alert.className).toContain('font-mono')
+    expect(alert.className).toContain('rounded-xl')
+    // The accessible label embeds the exact error code.
+    expect(alert).toHaveAttribute('aria-label', 'Error: STORAGE_MIME_NOT_ALLOWED')
+    const status = screen.getByText('422')
+    expect(status).toBeInTheDocument()
+    expect(status.className).toContain('tabular-nums')
     expect(screen.getByText('MIME type not allowed')).toBeInTheDocument()
   })
 
@@ -35,6 +42,9 @@ describe('EnvelopePanel', () => {
     )
     const codeEl = screen.getByText('STORAGE_SIZE_EXCEEDED')
     expect(codeEl).toBeInTheDocument()
+    // Known codes get the brand badge (rounded pill + brand text colour).
+    expect(codeEl.className).toContain('rounded-full')
+    expect(codeEl.className).toContain('text-brand-400')
   })
 
   it('renders unknown error code in muted style', () => {
@@ -47,7 +57,11 @@ describe('EnvelopePanel', () => {
         }}
       />,
     )
-    expect(screen.getByText('UNKNOWN')).toBeInTheDocument()
+    const codeEl = screen.getByText('UNKNOWN')
+    expect(codeEl).toBeInTheDocument()
+    // Unknown codes get the muted badge colour rather than the brand colour.
+    expect(codeEl.className).toContain('text-white/50')
+    expect(codeEl.className).not.toContain('text-brand-400')
   })
 
   it('renders details section when details present', () => {
