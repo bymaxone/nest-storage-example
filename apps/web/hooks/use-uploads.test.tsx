@@ -187,3 +187,146 @@ describe('useSseOverrideUpload', () => {
     expect(capturedForm?.get('sse')).toBe('NONE')
   })
 })
+
+describe('upload form fields, cache invalidation, and query keys', () => {
+  const mockPostForm = vi.mocked(apiPostForm)
+  const mockGet = vi.mocked(apiGet)
+  beforeEach(() => {
+    mockPostForm.mockReset()
+    mockGet.mockReset()
+  })
+
+  function clientWithSpy() {
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    })
+    const invalidate = vi.spyOn(qc, 'invalidateQueries')
+    const Wrap = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    )
+    return { invalidate, Wrap }
+  }
+
+  function captureForm() {
+    let form: FormData | undefined
+    mockPostForm.mockImplementation((_p: string, f: FormData) => {
+      form = f
+      return Promise.resolve(uploadResult)
+    })
+    return () => form
+  }
+
+  // Scenario: the single upload appends the raw file under the exact 'file' field.
+  it('appends the file under the "file" field for single upload', async () => {
+    const getForm = captureForm()
+    const { Wrap } = clientWithSpy()
+    const { result } = renderHook(() => useSingleUpload(), { wrapper: Wrap })
+    await act(async () => {
+      await result.current.mutateAsync({ file: makeFile() })
+    })
+    expect(getForm()?.get('file')).toBeInstanceOf(File)
+  })
+
+  // Scenario: absent optional fields must not be appended (guards the if-conditions).
+  it('omits category and contentType when they are not provided', async () => {
+    const getForm = captureForm()
+    const { Wrap } = clientWithSpy()
+    const { result } = renderHook(() => useSingleUpload(), { wrapper: Wrap })
+    await act(async () => {
+      await result.current.mutateAsync({ file: makeFile() })
+    })
+    expect(getForm()?.get('category')).toBeNull()
+    expect(getForm()?.get('contentType')).toBeNull()
+  })
+
+  // Scenario: idempotent upload also skips absent optional fields.
+  it('omits category and contentType for idempotent upload when absent', async () => {
+    const getForm = captureForm()
+    const { Wrap } = clientWithSpy()
+    const { result } = renderHook(() => useIdempotentUpload(), { wrapper: Wrap })
+    await act(async () => {
+      await result.current.mutateAsync({ file: makeFile(), idempotencyKey: 'k' })
+    })
+    expect(getForm()?.get('file')).toBeInstanceOf(File)
+    expect(getForm()?.get('category')).toBeNull()
+    expect(getForm()?.get('contentType')).toBeNull()
+  })
+
+  // Scenario: multipart and sse uploads carry the file field.
+  it('appends the file field for multipart and sse uploads', async () => {
+    const getMultipart = captureForm()
+    const { Wrap } = clientWithSpy()
+    const multipart = renderHook(() => useMultipartUpload(), { wrapper: Wrap })
+    await act(async () => {
+      await multipart.result.current.mutateAsync(makeFile())
+    })
+    expect(getMultipart()?.get('file')).toBeInstanceOf(File)
+
+    const getSse = captureForm()
+    const sse = renderHook(() => useSseOverrideUpload(), { wrapper: Wrap })
+    await act(async () => {
+      await sse.result.current.mutateAsync({ file: makeFile(), sse: 'AES256' })
+    })
+    expect(getSse()?.get('file')).toBeInstanceOf(File)
+  })
+
+  // Scenario: a successful single upload invalidates the exact ['vault'] cache key.
+  it('invalidates ["vault"] after a single upload', async () => {
+    captureForm()
+    const { invalidate, Wrap } = clientWithSpy()
+    const { result } = renderHook(() => useSingleUpload(), { wrapper: Wrap })
+    await act(async () => {
+      await result.current.mutateAsync({ file: makeFile() })
+    })
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['vault'] })
+  })
+
+  // Scenario: a successful multipart upload invalidates the exact ['vault'] key.
+  it('invalidates ["vault"] after a multipart upload', async () => {
+    captureForm()
+    const { invalidate, Wrap } = clientWithSpy()
+    const { result } = renderHook(() => useMultipartUpload(), { wrapper: Wrap })
+    await act(async () => {
+      await result.current.mutateAsync(makeFile())
+    })
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['vault'] })
+  })
+
+  // Scenario: a successful idempotent upload invalidates the exact ['vault'] key.
+  it('invalidates ["vault"] after an idempotent upload', async () => {
+    captureForm()
+    const { invalidate, Wrap } = clientWithSpy()
+    const { result } = renderHook(() => useIdempotentUpload(), { wrapper: Wrap })
+    await act(async () => {
+      await result.current.mutateAsync({ file: makeFile(), idempotencyKey: 'k' })
+    })
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['vault'] })
+  })
+
+  // Scenario: a successful sse-override upload invalidates the exact ['vault'] key.
+  it('invalidates ["vault"] after an sse-override upload', async () => {
+    captureForm()
+    const { invalidate, Wrap } = clientWithSpy()
+    const { result } = renderHook(() => useSseOverrideUpload(), { wrapper: Wrap })
+    await act(async () => {
+      await result.current.mutateAsync({ file: makeFile(), sse: 'AES256' })
+    })
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['vault'] })
+  })
+
+  // Scenario: the session query reads its seeded value from the exact key
+  // ['uploads','session',id] without hitting the network — a wrong key would miss.
+  it('reads the session snapshot from its exact query key without refetching', () => {
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+    })
+    const snapshot = { loaded: 1, total: 2, part: 1, strategy: 'single' as const }
+    qc.setQueryData(['uploads', 'session', 'sess-xyz'], snapshot)
+    const Wrap = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    )
+    const { result } = renderHook(() => useUploadSession('sess-xyz'), { wrapper: Wrap })
+    expect(result.current.data).toEqual(snapshot)
+    expect(mockGet).not.toHaveBeenCalled()
+  })
+})

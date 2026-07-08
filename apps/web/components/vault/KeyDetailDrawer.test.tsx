@@ -120,12 +120,51 @@ describe('KeyDetailDrawer — metadata tab', () => {
     expect(screen.getByText('author')).toBeInTheDocument()
   })
 
-  it('omits optional fields when absent', async () => {
+  it('renders every base metadata row label', async () => {
+    // Scenario: the fixed metadata rows each carry their exact label (guards the
+    // [label, value] row tuples and their label string literals).
     routeApiGet(makeMeta())
     renderDrawer()
+    for (const label of ['Key', 'Bucket', 'Size', 'Content-Type', 'ETag', 'Last Modified']) {
+      expect(await screen.findByText(label)).toBeInTheDocument()
+    }
+  })
+
+  it('omits optional fields when absent', async () => {
+    routeApiGet(makeMeta())
+    const { container } = renderDrawer()
     await screen.findByText('Bucket')
     expect(screen.queryByText('Cache-Control')).not.toBeInTheDocument()
     expect(screen.queryByText('Custom Metadata')).not.toBeInTheDocument()
+    // Only the six base rows exist — no stray rows leak from the optional-field
+    // spreads (guards the `: []` else branches against non-empty replacements).
+    const rows = container.querySelector('dl')?.querySelectorAll(':scope > div')
+    expect(rows).toHaveLength(6)
+  })
+
+  it('reads all four object queries from their exact keys without refetching', async () => {
+    // Scenario: with every query key pre-seeded and data kept fresh, the drawer
+    // must render from cache and never call the API — a wrong queryKey would miss
+    // the cache and trigger a fetch.
+    const meta = makeMeta({ contentType: 'image/png' })
+    const qc = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false, staleTime: Infinity },
+        mutations: { retry: false },
+      },
+    })
+    qc.setQueryData(['vault', 'meta', 'docs/report.pdf'], meta)
+    qc.setQueryData(['vault', 'preview', 'docs/report.pdf'], { base64: SAMPLE_B64, metadata: meta })
+    qc.setQueryData(['vault', 'range', 'docs/report.pdf'], { base64: SAMPLE_B64, metadata: meta })
+    qc.setQueryData(['vault', 'public-url', 'docs/report.pdf'], {
+      publicUrl: 'http://localhost:9000/vault/docs/report.pdf',
+    })
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    )
+    render(<KeyDetailDrawer objectKey="docs/report.pdf" onClose={vi.fn()} />, { wrapper })
+    await screen.findByText('Bucket')
+    expect(apiGetMock).not.toHaveBeenCalled()
   })
 
   it('invokes onClose when the close button is pressed', async () => {
@@ -252,8 +291,24 @@ describe('KeyDetailDrawer — URLs tab', () => {
     await userEvent.click(screen.getByRole('button', { name: /issue signed url/i }))
     expect(await screen.findByText(/\[signed-params-hidden\]/)).toBeInTheDocument()
     expect(screen.queryByText(/X-Amz-Signature=secret/)).not.toBeInTheDocument()
+    // The issuance request targets the signed endpoint with the exact key + TTL.
+    expect(apiPostMock).toHaveBeenCalledWith('/signed/download-url', {
+      key: 'docs/report.pdf',
+      ttlSeconds: 300,
+    })
     await userEvent.click(screen.getByRole('button', { name: /copy signed url/i }))
     await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith('Signed URL copied'))
+  })
+
+  it('renders the open-in-new-tab anchor for an https public URL', async () => {
+    // Scenario: an https URL is a distinct safe scheme from http; the guard must
+    // admit it too, so the anchor renders (guards the https branch of the OR).
+    routeApiGet(makeMeta(), 'https://cdn.example.com/vault/docs/report.pdf')
+    renderDrawer()
+    await userEvent.click(screen.getByRole('tab', { name: 'URLs' }))
+    await screen.findByText('Public URL')
+    const link = screen.getByRole('link', { name: /open public url/i })
+    expect(link).toHaveAttribute('href', 'https://cdn.example.com/vault/docs/report.pdf')
   })
 
   it('renders [url-hidden] when the signed URL cannot be parsed', async () => {

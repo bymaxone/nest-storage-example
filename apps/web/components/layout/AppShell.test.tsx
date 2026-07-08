@@ -55,6 +55,19 @@ describe('AppShell', () => {
     expect(screen.getByRole('main')).toBeInTheDocument()
   })
 
+  it('starts with the mobile sidebar closed', () => {
+    // Scenario: the overlay open state defaults to false, so no close button shows
+    // until the hamburger is pressed (guards the initial useState value).
+    render(
+      wrapper(
+        <AppShell>
+          <span>Content</span>
+        </AppShell>,
+      ),
+    )
+    expect(screen.queryByRole('button', { name: /close navigation menu/i })).not.toBeInTheDocument()
+  })
+
   it('applies max-w-5xl when wide is not set', () => {
     render(
       wrapper(
@@ -66,6 +79,8 @@ describe('AppShell', () => {
     const main = screen.getByRole('main')
     const contentWell = main.firstChild as HTMLElement
     expect(contentWell?.className).toContain('max-w-5xl')
+    // The content well is always horizontally centered.
+    expect(contentWell?.className).toContain('mx-auto')
   })
 
   it('applies max-w-7xl when wide is set', () => {

@@ -308,6 +308,100 @@ describe('apiPostForm', () => {
   })
 })
 
+describe('request internals and error-envelope narrowing', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn())
+  })
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  // Scenario: GET requests must carry the JSON content-type header verbatim.
+  it('sends the application/json Content-Type header', async () => {
+    const fetchMock = vi.mocked(globalThis.fetch)
+    fetchMock.mockResolvedValueOnce(okResponse({ ok: true }))
+    await apiGet('/health')
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ headers: { 'Content-Type': 'application/json' } }),
+    )
+  })
+
+  // Scenario: a well-formed but non-envelope JSON body yields the HTTP fallback
+  // message (with the masked URL), proving the fallback string is load-bearing.
+  it('uses the "HTTP <status> from <url>" fallback message for non-envelope bodies', async () => {
+    const fetchMock = vi.mocked(globalThis.fetch)
+    fetchMock.mockResolvedValueOnce(errorResponse(500, { message: 'plain error' }))
+    await expect(apiGet('/health')).rejects.toThrow('HTTP 500 from')
+  })
+
+  // Scenario: a null JSON body is not an envelope — it must resolve to UNKNOWN,
+  // proving the `v !== null` guard runs before the `'error' in v` access.
+  it('treats a null body as UNKNOWN without throwing a TypeError', async () => {
+    const fetchMock = vi.mocked(globalThis.fetch)
+    fetchMock.mockResolvedValueOnce(errorResponse(500, null))
+    await expect(apiGet('/health')).rejects.toMatchObject({ code: 'UNKNOWN', status: 500 })
+  })
+
+  // Scenario: a primitive (non-object) body must resolve to UNKNOWN, proving the
+  // `typeof v === 'object'` guard runs before the `'error' in v` access.
+  it('treats a primitive body as UNKNOWN without throwing a TypeError', async () => {
+    const fetchMock = vi.mocked(globalThis.fetch)
+    fetchMock.mockResolvedValueOnce(errorResponse(500, 42))
+    await expect(apiGet('/health')).rejects.toMatchObject({ code: 'UNKNOWN', status: 500 })
+  })
+
+  // Scenario: an envelope whose error.code is not a string is rejected as
+  // non-envelope, so the message falls back to the HTTP form (not the body's).
+  it('rejects an envelope with a non-string error.code', async () => {
+    const fetchMock = vi.mocked(globalThis.fetch)
+    fetchMock.mockResolvedValueOnce(
+      errorResponse(500, { error: { code: 123, message: 'typed-message' } }),
+    )
+    await expect(apiGet('/health')).rejects.toThrow('HTTP 500 from')
+  })
+
+  // Scenario: an envelope whose error.message is not a string is rejected as
+  // non-envelope, so the code stays UNKNOWN (not the body's typed code).
+  it('rejects an envelope with a non-string error.message', async () => {
+    const fetchMock = vi.mocked(globalThis.fetch)
+    fetchMock.mockResolvedValueOnce(
+      errorResponse(404, { error: { code: 'STORAGE_OBJECT_NOT_FOUND', message: 42 } }),
+    )
+    await expect(apiGet('/health')).rejects.toMatchObject({ code: 'UNKNOWN', status: 404 })
+  })
+
+  // Scenario: apiPost with no body must omit the `body` key entirely (not send
+  // an explicit `body: undefined`), proving the conditional spread is a real guard.
+  it('omits the body key entirely when apiPost body is undefined', async () => {
+    const fetchMock = vi.mocked(globalThis.fetch)
+    fetchMock.mockResolvedValueOnce(okResponse({ ok: true }))
+    await apiPost('/errors/STORAGE_TIMEOUT')
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(Object.prototype.hasOwnProperty.call(init, 'body')).toBe(false)
+  })
+
+  // Scenario: apiDelete with no body must omit the `body` key entirely.
+  it('omits the body key entirely when apiDelete body is undefined', async () => {
+    const fetchMock = vi.mocked(globalThis.fetch)
+    fetchMock.mockResolvedValueOnce(okResponse({ ok: true }))
+    await apiDelete('/vault/object?key=foo')
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(Object.prototype.hasOwnProperty.call(init, 'body')).toBe(false)
+  })
+
+  // Scenario: apiPostForm targets the full API base URL + path (not an empty URL).
+  it('apiPostForm posts to the API base URL joined with the path', async () => {
+    const fetchMock = vi.mocked(globalThis.fetch)
+    fetchMock.mockResolvedValueOnce(okResponse({ key: 'k' }))
+    await apiPostForm('/uploads/single', new FormData())
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/uploads/single'),
+      expect.objectContaining({ method: 'POST' }),
+    )
+  })
+})
+
 describe('maskUrl fallback', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn())

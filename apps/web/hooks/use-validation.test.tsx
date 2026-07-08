@@ -65,4 +65,35 @@ describe('useValidationUpload', () => {
     })
     expect(mockPostForm).toHaveBeenCalledWith('/validation/upload?path=magic', expect.any(FormData))
   })
+
+  // Scenario: the upload appends the file under the exact 'file' field.
+  it('appends the file under the "file" field', async () => {
+    let form: FormData | undefined
+    mockPostForm.mockImplementation((_p: string, f: FormData) => {
+      form = f
+      return Promise.resolve(uploadResult)
+    })
+    const { result } = renderHook(() => useValidationUpload(), { wrapper: wrapper() })
+    await act(async () => {
+      await result.current.mutateAsync({ file: makeFile(), path: 'mime' })
+    })
+    expect(form?.get('file')).toBeInstanceOf(File)
+  })
+
+  // Scenario: a successful validation upload invalidates the exact ['vault'] key.
+  it('invalidates ["vault"] after a validation upload', async () => {
+    mockPostForm.mockResolvedValueOnce(uploadResult)
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    })
+    const invalidate = vi.spyOn(qc, 'invalidateQueries')
+    const Wrap = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    )
+    const { result } = renderHook(() => useValidationUpload(), { wrapper: Wrap })
+    await act(async () => {
+      await result.current.mutateAsync({ file: makeFile(), path: 'mime' })
+    })
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['vault'] })
+  })
 })

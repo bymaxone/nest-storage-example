@@ -44,7 +44,10 @@ describe('Topbar', () => {
   it('shows the checking state before the health query resolves', () => {
     vi.mocked(globalThis.fetch).mockReturnValue(new Promise(() => {}))
     renderTopbar(<Topbar />)
-    expect(screen.getByText('checking…')).toBeInTheDocument()
+    const chip = screen.getByText('checking…').parentElement
+    expect(chip).toBeInTheDocument()
+    // The loading chip uses the muted colour.
+    expect(chip?.className).toContain('text-white/40')
   })
 
   it('shows online latency once the health query succeeds', async () => {
@@ -53,6 +56,8 @@ describe('Topbar', () => {
     )
     renderTopbar(<Topbar />)
     await waitFor(() => expect(screen.getByText('online · 42 ms')).toBeInTheDocument())
+    // A healthy poll paints the chip green.
+    expect(screen.getByText('online · 42 ms').parentElement?.className).toContain('text-green-400')
   })
 
   it('falls back to 0 ms when the response omits latency', async () => {
@@ -70,7 +75,10 @@ describe('Topbar', () => {
     await act(async () => {
       await new Promise<void>((r) => setTimeout(r, 500))
     })
-    expect(screen.getByText('offline')).toBeInTheDocument()
+    const chip = screen.getByText('offline').parentElement
+    expect(chip).toBeInTheDocument()
+    // A failed poll paints the chip red.
+    expect(chip?.className).toContain('text-red-400')
   })
 
   it('renders the right slot when provided', () => {

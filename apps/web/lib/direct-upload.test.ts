@@ -225,4 +225,22 @@ describe('putWithHeaders', () => {
     xhrInstance._triggerLoad()
     await expect(promise).rejects.toThrow('[url-redacted]')
   })
+
+  // Scenario: a status of exactly 300 sits just outside the 2xx window and must
+  // reject, proving the upper bound is strict `< 300` (not `<= 300`).
+  it('rejects when the load fires with status exactly 300', async () => {
+    xhrInstance.status = 300
+    const promise = putWithHeaders('https://s3.example.com/k?sig=x', {}, new Blob(['d']))
+    xhrInstance._triggerLoad()
+    await expect(promise).rejects.toThrow('failed with status 300')
+  })
+
+  // Scenario: a sub-200 informational status must reject, proving the lower bound
+  // `>= 200` is enforced (not collapsed to an always-true guard).
+  it('rejects when the load fires with a status below 200', async () => {
+    xhrInstance.status = 100
+    const promise = putWithHeaders('https://s3.example.com/k?sig=x', {}, new Blob(['d']))
+    xhrInstance._triggerLoad()
+    await expect(promise).rejects.toThrow('failed with status 100')
+  })
 })

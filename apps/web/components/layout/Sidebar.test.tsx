@@ -61,10 +61,38 @@ describe('Sidebar', () => {
     expect(screen.getByRole('link', { name: /browser/i })).toHaveAttribute('aria-current', 'page')
   })
 
+  it('does not mark overview active on a doubled-slash path', () => {
+    // Scenario: root matches ONLY the exact '/'. A '//' path must not activate
+    // overview, proving the root guard compares against '/' (not a prefix match).
+    vi.mocked(usePathname).mockReturnValue('//')
+    render(<Sidebar isOpen={false} />)
+    expect(screen.getByRole('link', { name: /overview/i })).not.toHaveAttribute('aria-current')
+  })
+
+  it('does not mark an unrelated route active on a non-matching path', () => {
+    // Scenario: at /vault, a sibling route like /upload must stay inactive,
+    // proving the non-root match is an exact/prefix test (not always true).
+    vi.mocked(usePathname).mockReturnValue('/vault')
+    render(<Sidebar isOpen={false} />)
+    expect(screen.getByRole('link', { name: /upload lab/i })).not.toHaveAttribute('aria-current')
+  })
+
   it('renders the nav landmark when closed', () => {
     vi.mocked(usePathname).mockReturnValue('/')
     render(<Sidebar isOpen={false} />)
     expect(screen.getByRole('navigation')).toBeInTheDocument()
+  })
+
+  it('hides the rail off-canvas when closed and shows it when open', () => {
+    // Scenario: the open flag toggles the flex/hidden visibility classes on the
+    // nav element (guards the isOpen ? 'flex' : 'hidden lg:flex' branch).
+    vi.mocked(usePathname).mockReturnValue('/')
+    const { rerender } = render(<Sidebar isOpen={false} />)
+    expect(screen.getByRole('navigation').classList.contains('hidden')).toBe(true)
+    rerender(<Sidebar isOpen />)
+    const nav = screen.getByRole('navigation')
+    expect(nav.classList.contains('flex')).toBe(true)
+    expect(nav.classList.contains('hidden')).toBe(false)
   })
 
   it('calls onNavClick when a nav item is clicked and the rail is open', async () => {

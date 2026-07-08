@@ -67,4 +67,57 @@ describe('FolderBreadcrumbs', () => {
     await userEvent.click(docsButton)
     expect(onNavigate).toHaveBeenCalledWith('docs/')
   })
+
+  it('renders the nav landmark with its layout classes', () => {
+    // Scenario: the nav wrapper keeps its monospace layout classes.
+    render(<FolderBreadcrumbs prefix="" onNavigate={vi.fn()} />)
+    const nav = screen.getByRole('navigation', { name: 'Folder path' })
+    expect(nav.className).toContain('font-mono')
+    expect(nav.className).toContain('items-center')
+  })
+
+  it('renders the root as a home icon button, never as literal "root" text', () => {
+    // Scenario: the root crumb renders the Home icon branch, so the string
+    // 'root' must never appear as a visible label (guards the label === 'root' check).
+    render(<FolderBreadcrumbs prefix="docs/" onNavigate={vi.fn()} />)
+    expect(screen.queryByText('root')).not.toBeInTheDocument()
+    const home = screen.getAllByRole('button')[0]!
+    expect(home.querySelector('svg.lucide-house, svg.lucide-home')).not.toBeNull()
+    expect(home.className).toContain('items-center')
+  })
+
+  it('places a chevron separator before every crumb except the first', () => {
+    // Scenario: three crumbs (root/docs/2024) yield exactly two chevrons, one
+    // before each non-first crumb (guards the i > 0 separator condition).
+    const { container } = render(<FolderBreadcrumbs prefix="docs/2024/" onNavigate={vi.fn()} />)
+    expect(container.querySelectorAll('svg.lucide-chevron-right')).toHaveLength(2)
+  })
+
+  it('marks only the last crumb as the current page', () => {
+    // Scenario: for docs/2024/, the trailing '2024' crumb is current and styled
+    // bold-brand; the earlier 'docs' crumb and the root are not current.
+    render(<FolderBreadcrumbs prefix="docs/2024/" onNavigate={vi.fn()} />)
+    const last = screen.getByText('2024')
+    expect(last).toHaveAttribute('aria-current', 'page')
+    expect(last.className).toContain('text-brand-500')
+    expect(last.className).toContain('font-semibold')
+    expect(last.className).toContain('transition-colors')
+
+    const middle = screen.getByText('docs')
+    expect(middle).not.toHaveAttribute('aria-current')
+    expect(middle.className).toContain('text-white/50')
+
+    const home = screen.getAllByRole('button')[0]!
+    expect(home).not.toHaveAttribute('aria-current')
+    expect(home.className).toContain('text-white/50')
+  })
+
+  it('marks the root as current and brand-coloured when it is the only crumb', () => {
+    // Scenario: at the root prefix the sole home button is the last crumb, so it
+    // is the current page and takes the active brand colour.
+    render(<FolderBreadcrumbs prefix="" onNavigate={vi.fn()} />)
+    const home = screen.getAllByRole('button')[0]!
+    expect(home).toHaveAttribute('aria-current', 'page')
+    expect(home.className).toContain('text-brand-500')
+  })
 })
