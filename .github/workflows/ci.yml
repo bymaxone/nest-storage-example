@@ -161,6 +161,25 @@ jobs:
       - name: Run the dashboard journey smoke
         run: pnpm --filter web run test:e2e
 
+  # The export-usage audit turns the Feature Coverage Matrix into a CI gate: it
+  # enumerates every public export of @bymax-one/nest-storage (both subpaths) and
+  # fails if any is not demonstrated somewhere under apps/. Zero-dependency Node,
+  # so it runs straight after the composite provisions and builds the library.
+  export-usage:
+    name: Export usage audit
+    runs-on: ubuntu-latest
+    needs: lint
+    permissions:
+      contents: read
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Setup workspace
+        uses: ./.github/actions/setup
+      - name: Audit library export usage
+        run: node scripts/audit-library-exports.mjs
+
   # Mutation testing is the final assertiveness gate, gated behind both unit tiers:
   # Stryker re-runs the same suites internally, so there is no point spending up to
   # 45 minutes mutating a tree whose baseline is red. It enforces api `break: 100`

@@ -23,6 +23,7 @@
     "test:e2e": "pnpm -r --workspace-concurrency=1 run --if-present test:e2e",
     "mutation": "pnpm -r --workspace-concurrency=1 --if-present run mutation",
     "mutation:incremental": "pnpm -r --workspace-concurrency=1 --if-present run mutation:incremental",
+    "audit:exports": "node scripts/audit-library-exports.mjs",
     "infra:up": "node -e \"require('fs').existsSync('docker-compose.yml')||(console.error('docker-compose.yml not found: the local MinIO stack is not configured in this checkout.'),process.exit(1))\" && docker compose up -d --wait minio && docker compose run --rm minio-setup",
     "infra:down": "node -e \"require('fs').existsSync('docker-compose.yml')||(console.error('docker-compose.yml not found: the local MinIO stack is not configured in this checkout.'),process.exit(1))\" && docker compose down",
     "infra:nuke": "node -e \"require('fs').existsSync('docker-compose.yml')||(console.error('docker-compose.yml not found: the local MinIO stack is not configured in this checkout.'),process.exit(1))\" && docker compose down -v",

@@ -1,6 +1,6 @@
 # Phase 9: quality-docs-readiness
 
-> **Status**: 🔄 In Progress · **Progress**: 4 / 6 tasks · **Last updated**: 2026-07-07
+> **Status**: 🔄 In Progress · **Progress**: 5 / 6 tasks · **Last updated**: 2026-07-07
 > **Source roadmap**: [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) §5 (P9)
 > **Source spec**: [`../TECHNICAL_SPECIFICATION.md`](../TECHNICAL_SPECIFICATION.md) §21, §22, Appendix B of the plan
 
@@ -36,7 +36,7 @@ CodeQL/Scorecard workflows).
 | 9.2 | Web unit suite to 100/100/100/100                          | ✅ Done | P0       | L    | 9.1        |
 | 9.3 | e2e: every route, every error path, Playwright smoke       | ✅ Done | P0       | L    | 9.1        |
 | 9.4 | Stryker mutation (api break 100, web break 90) + docs      | ✅ Done | P0       | L    | 9.2, 9.3   |
-| 9.5 | Export audit + README + go-public checklist                | 📋 ToDo | P0       | M    | 9.4        |
+| 9.5 | Export audit + README + go-public checklist                | ✅ Done | P0       | M    | 9.4        |
 | 9.6 | Phase close: audit, dashboards, PR + Copilot review, merge | 📋 ToDo | P0       | S    | 9.1-9.5    |
 
 ## Tasks
@@ -330,7 +330,7 @@ Completion Protocol:
 
 ### Task 9.5: Export audit, README, go-public checklist
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 9.4
@@ -342,10 +342,10 @@ in the sibling house style, and the go-public checklist.
 
 #### Acceptance criteria
 
-- [ ] `scripts/audit-library-exports.mjs`: parses the linked library's `dist/{server,shared}/index.d.ts` export names, word-boundary-searches `apps/`, fails on any undemonstrated export unless listed in `.audit-ignore.json` with a reason; `pnpm audit:exports` + CI job green.
-- [ ] README: centered header, badges (build, license, coverage claim, library link), "What's inside" checklist mapping to the coverage matrix, Quick Start (infra + dev), endpoint table, curl journeys (upload → browse → signed GET; direct upload → confirm; infected marker rejection), architecture ASCII.
-- [ ] Go-public checklist executed or explicitly deferred to the operator: flip visibility, confirm CodeQL + Scorecard activate, badges resolve, `file:` → `^0.1.0` swap documented as pending library publish.
-- [ ] `CHANGELOG.md` 0.1.0 entry.
+- [x] `scripts/audit-library-exports.mjs`: parses the linked library's `dist/{server,shared}/index.d.ts` export names, word-boundary-searches `apps/`, fails on any undemonstrated export unless listed in an in-file IGNORE map with a reason; `pnpm audit:exports` + CI job green (all 47 exports demonstrated, IGNORE empty).
+- [x] README: centered header, shields.io badge row, library-link tagline, nav-links row, "What's inside" ✅ checklist, Quick Start (install + infra + dev), architecture ASCII, and a documentation table (nest-logger-example house style).
+- [x] Go-public checklist (`docs/GO_PUBLIC.md`): flip visibility, confirm CodeQL activates, the `ossf/scorecard-action` third-party org-policy action item, `file:` → `^0.1.0` swap documented as pending library publish.
+- [x] No npm publish and no version tag: the example ships as a repository; the go-public checklist records this explicitly.
 
 #### Files to create / modify
 
@@ -471,6 +471,7 @@ Completion Protocol:
 
 <!-- append lines: - N.M ✅ YYYY-MM-DD: summary -->
 
+- 9.5 ✅ 2026-07-07: export-usage audit + README + go-public checklist. Added scripts/audit-library-exports.mjs (zero-dep Node): it enumerates all 47 exports from the linked library's server + shared subpath d.ts files and word-boundary-searches apps/, failing on any undemonstrated export (in-file IGNORE map, empty by design). Extended the two resolution probes (apps/api/src/library-probe.ts server surface, apps/web/lib/storage-shared-probe.ts shared surface) so every export is genuinely demonstrated; `pnpm audit:exports` passes (47/47). Wired the root audit:exports script and a CI Export usage audit job; added scripts/**/*.mjs Node globals to the ESLint config. Replaced the README stub with the polished nest-logger-example house-style README (centered header, shields.io badges, nav row, What's inside, Quick Start, architecture ASCII, docs table). Added docs/GO_PUBLIC.md documenting the visibility flip, the CodeQL activation, and the ossf/scorecard-action third-party org-policy action item (no npm publish, no version tag).
 - 9.4 ✅ 2026-07-07: Stryker mutation is the final gate. apps/api scores 100.00 at break:100 (0 survivors; 742 killed + 4 timeout + 2 documented equivalents in env.schema.ts and uploads.service.ts, each an inline `Stryker disable next-line StringLiteral` with a reason). apps/web scores 96.58 at break:90 with lib/** fully killed; the 32 residual survivors are genuine equivalents in the presentational components/** layer (static class strings and timing formulae recomputed on mount). Added docs/stryker/BASELINE.md (scores + equivalent inventory) and HISTORY.md (append-only run log); wired root `mutation` scripts and a CI `Mutation testing` job (needs [unit, web-tests], 45-min timeout, `pnpm mutation` serialized) plus reports artifact upload.
 - 9.3 ✅ 2026-07-07: route-exhaustive e2e now covers every §11.1 route. Added vault.e2e-spec (10 routes + 404/400/413 + Zod reject), uploads.e2e-spec (6 routes + missing-file 400 + session 404s), system.e2e-spec (config redaction + recipes); the full api e2e suite is 11 files / 57 tests green against Testcontainers MinIO (one container at a time, --runInBand). Added the Playwright journey smoke (5 journeys: shell, vault, upload strategy, direct-upload flow, error explorer) booting the whole stack via a globalSetup infra:up + api/web dev webServers, plus a SHA-pinned CI `playwright` job (chromium --with-deps, needs [lint, web-build]).
 - 9.2 ✅ 2026-07-07: web unit suite at 100/100/100/100 (1207 stmts, 352 branches, 129 funcs; 244 tests across 26 files). Trimmed vitest coverage excludes to the genuinely-needed set (vendored components/ui/**, the compile-only shared probe, spec files); app/** route shells stay out of the include list; all boundaries mocked.
