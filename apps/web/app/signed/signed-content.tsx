@@ -7,11 +7,12 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Copy } from 'lucide-react'
 import { DEFAULT_SIGNED_URL_TTL_SECONDS } from '@bymax-one/nest-storage/shared'
-import { useSignedDownloadUrl } from '@/hooks/use-signed'
+import { useSignedDownloadUrl, type DownloadUrlResponse } from '@/hooks/use-signed'
+import { useVaultList } from '@/hooks/use-vault'
 import { TtlCountdown } from '@/components/transfer/TtlCountdown'
 import { EnvelopePanel, type EnvelopePanelData } from '@/components/labs/EnvelopePanel'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -19,13 +20,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { StorageApiError } from '@/lib/api-client'
-
-interface DownloadUrlResponse {
-  url: string
-  expiresAt: string
-  requestedTtl: number
-  effectiveTtl: number
-}
 
 /** Masks the query string of a URL for safe display. */
 function maskUrl(url: string): string {
@@ -48,12 +42,26 @@ async function copyToClipboard(text: string) {
 
 /** Signed URLs body showing the TTL clamp demo and countdown. */
 export function SignedContent() {
-  const [objectKey, setObjectKey] = useState('storage-example/demo.txt')
+  const [objectKey, setObjectKey] = useState('')
   const [requestedTtl, setRequestedTtl] = useState(7200) // 2 hours — above the 1-hour cap
   const [signedResult, setSignedResult] = useState<DownloadUrlResponse | null>(null)
   const [error, setError] = useState<EnvelopePanelData | null>(null)
 
   const issue = useSignedDownloadUrl()
+
+  // Seed the key field once with a real object from the vault so the generated
+  // URL resolves. Keys are raw (before the module keyPrefix) — the library
+  // prepends the prefix server-side; typing a prefixed key here would double it
+  // up and 404 with NoSuchKey. A ref guards against re-seeding after the user
+  // edits or clears the field.
+  const seededRef = useRef(false)
+  const firstObject = useVaultList({ maxKeys: 1 }).data?.objects[0]
+  useEffect(() => {
+    if (!seededRef.current && firstObject) {
+      seededRef.current = true
+      setObjectKey(firstObject.key)
+    }
+  }, [firstObject])
 
   async function handleIssue() {
     setError(null)
@@ -79,7 +87,9 @@ export function SignedContent() {
     }
   }
 
-  const wasClamped = signedResult !== null && signedResult.effectiveTtl < signedResult.requestedTtl
+  const wasClamped =
+    signedResult !== null &&
+    (signedResult.clamped || signedResult.effectiveTtlSeconds < signedResult.requestedTtlSeconds)
 
   return (
     <div className="space-y-8">
@@ -113,8 +123,12 @@ export function SignedContent() {
                 id="signed-object-key"
                 value={objectKey}
                 onChange={(e) => setObjectKey(e.target.value)}
-                placeholder="key to sign"
+                placeholder="e.g. invoices/report.pdf"
               />
+              <p className="mt-1 text-[11px] text-white/30">
+                Relative to the module <code className="font-mono">keyPrefix</code> — the library
+                prepends it, so don&apos;t include it here.
+              </p>
             </div>
             <div>
               <label htmlFor="signed-requested-ttl" className="mb-1 block text-xs text-white/40">
@@ -130,7 +144,10 @@ export function SignedContent() {
               />
             </div>
           </div>
-          <Button onClick={() => void handleIssue()} disabled={issue.isPending}>
+          <Button
+            onClick={() => void handleIssue()}
+            disabled={issue.isPending || objectKey.trim() === ''}
+          >
             Issue Signed URL
           </Button>
         </CardContent>
@@ -158,7 +175,7 @@ export function SignedContent() {
               <div className="rounded-xl border border-(--glass-border) bg-(--glass-bg) p-3">
                 <p className="mb-1 text-xs text-white/40">Requested TTL</p>
                 <p className="font-mono text-lg font-bold text-white/80">
-                  {signedResult.requestedTtl} s
+                  {signedResult.requestedTtlSeconds} s
                 </p>
               </div>
               <div
@@ -168,7 +185,7 @@ export function SignedContent() {
                 <p
                   className={`font-mono text-lg font-bold ${wasClamped ? 'text-yellow-400' : 'text-brand-400'}`}
                 >
-                  {signedResult.effectiveTtl} s
+                  {signedResult.effectiveTtlSeconds} s
                   {wasClamped && (
                     <span className="ml-2 text-xs font-normal text-yellow-300">
                       (silently clamped)
@@ -182,7 +199,7 @@ export function SignedContent() {
             <div className="flex flex-col items-center gap-2">
               <TtlCountdown
                 expiresAt={signedResult.expiresAt}
-                ttlSeconds={signedResult.effectiveTtl}
+                ttlSeconds={signedResult.effectiveTtlSeconds}
               />
               <p className="text-xs text-muted-foreground">
                 Expires: {new Date(signedResult.expiresAt).toLocaleString()}

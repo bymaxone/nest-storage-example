@@ -8,14 +8,45 @@
 import { useQuery } from '@tanstack/react-query'
 import { apiGet } from '@/lib/api-client'
 
-/** Redacted storage configuration returned by GET /system/config. */
+/**
+ * Raw redacted configuration returned by GET /system/config. The API nests the
+ * multipart and scanner options; the UI flattens the fields it renders into
+ * {@link StorageConfig}.
+ */
+export interface SystemConfigResponse {
+  endpoint: string
+  region: string
+  bucket: string
+  keyPrefix?: string
+  publicBaseUrl?: string
+  signedUrls: {
+    defaultGetTtlSeconds: number
+    defaultPutTtlSeconds: number
+    maxTtlSeconds: number
+  }
+  multipart: {
+    thresholdBytes: number
+    partSizeBytes: number
+    queueSize: number
+  }
+  scanner: {
+    impl: string
+    mode: string
+    rejectOnUnknown: boolean
+  }
+}
+
+/** Flattened storage configuration shape rendered by the System config tab. */
 export interface StorageConfig {
-  provider: string
+  endpoint: string
+  region: string
   bucket: string
   keyPrefix?: string
   multipartThreshold: number
+  scannerImpl: string
   scannerMode: string
   rejectOnUnknown: boolean
+  maxTtlSeconds: number
 }
 
 /** One provider recipe entry. */
@@ -25,11 +56,16 @@ export interface RecipeView {
   quirks: string[]
 }
 
-/** Bucket versioning status. */
-export interface VersioningStatus {
-  versioned: boolean
+/** Versioning status for a single bucket. */
+export interface BucketVersioning {
   bucket: string
   status: string
+}
+
+/** Bucket versioning status returned by GET /system/versioning. */
+export interface VersioningStatus {
+  buckets: BucketVersioning[]
+  tradeOffNote: string
 }
 
 /**
@@ -40,8 +76,20 @@ export interface VersioningStatus {
 export function useStorageConfig() {
   return useQuery({
     queryKey: ['system', 'config'],
-    queryFn: () => apiGet<StorageConfig>('/system/config'),
+    queryFn: () => apiGet<SystemConfigResponse>('/system/config'),
     staleTime: 60_000,
+    // Flatten the nested API response into the shape the config tab renders.
+    select: (raw): StorageConfig => ({
+      endpoint: raw.endpoint,
+      region: raw.region,
+      bucket: raw.bucket,
+      ...(raw.keyPrefix !== undefined ? { keyPrefix: raw.keyPrefix } : {}),
+      multipartThreshold: raw.multipart.thresholdBytes,
+      scannerImpl: raw.scanner.impl,
+      scannerMode: raw.scanner.mode,
+      rejectOnUnknown: raw.scanner.rejectOnUnknown,
+      maxTtlSeconds: raw.signedUrls.maxTtlSeconds,
+    }),
   })
 }
 

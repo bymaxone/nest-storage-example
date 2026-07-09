@@ -21,20 +21,23 @@ import { TriangleAlert, Zap } from 'lucide-react'
 function EnvelopePanel({ error }: { error: TriggeredError }) {
   return (
     <div className="rounded-lg border border-white/10 bg-black/30 p-3 space-y-2">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Badge
           variant="outline"
           className={`font-mono text-[10px] border-white/15 ${httpStatusColor(error.status)}`}
         >
           HTTP {error.status}
         </Badge>
-        <Badge variant="outline" className="font-mono text-[10px] border-white/15 text-brand-500">
+        <Badge
+          variant="outline"
+          className="max-w-full break-all font-mono text-[10px] border-white/15 text-brand-500"
+        >
           {error.code}
         </Badge>
       </div>
-      <p className="text-xs text-white/65">{error.message}</p>
+      <p className="break-words text-xs text-white/65">{error.message}</p>
       {error.details && (
-        <pre className="text-[10px] text-white/40 font-mono overflow-auto rounded bg-black/30 p-2 max-h-24">
+        <pre className="max-h-24 overflow-auto whitespace-pre-wrap break-all rounded bg-black/30 p-2 text-[10px] font-mono text-white/40">
           {JSON.stringify(error.details, null, 2)}
         </pre>
       )}

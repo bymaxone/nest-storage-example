@@ -33,9 +33,13 @@ describe('useSignedDownloadUrl', () => {
   it('posts to /signed/download-url with params', async () => {
     mockPost.mockResolvedValueOnce({
       url: 'https://s3.example.com/key?sig=x',
+      method: 'GET' as const,
+      requiredHeaders: {},
       expiresAt: new Date().toISOString(),
-      requestedTtl: 300,
-      effectiveTtl: 300,
+      requestedTtlSeconds: 300,
+      effectiveTtlSeconds: 300,
+      clamped: false,
+      maxTtlSeconds: 3600,
     })
     const { result } = renderHook(() => useSignedDownloadUrl(), { wrapper: wrapper() })
     const params = { key: 'docs/file.pdf', ttlSeconds: 300 }
@@ -54,14 +58,16 @@ describe('useSignedUploadUrl', () => {
     mockPost.mockResolvedValueOnce({
       url: 'https://s3.example.com/new-key?sig=x',
       expiresAt: new Date().toISOString(),
-      key: 'uploads/img.png',
+      key: 'attachments/img.png',
       requiredHeaders: { 'Content-Type': 'image/png' },
       method: 'PUT' as const,
-      requestedTtl: 300,
-      effectiveTtl: 300,
+      requestedTtlSeconds: 300,
+      effectiveTtlSeconds: 300,
+      clamped: false,
+      maxTtlSeconds: 3600,
     })
     const { result } = renderHook(() => useSignedUploadUrl(), { wrapper: wrapper() })
-    const params = { key: 'uploads/img.png', contentType: 'image/png' }
+    const params = { category: 'attachments', contentType: 'image/png' }
     await act(async () => {
       await result.current.mutateAsync(params)
     })
@@ -93,7 +99,11 @@ describe('useConfirmUpload', () => {
   beforeEach(() => mockPost.mockReset())
 
   it('posts { key } to /signed/confirm', async () => {
-    mockPost.mockResolvedValueOnce({ exists: true, scanVerdict: 'clean' })
+    mockPost.mockResolvedValueOnce({
+      confirmed: true,
+      key: 'uploads/img.png',
+      scan: { status: 'clean' },
+    })
     const { result } = renderHook(() => useConfirmUpload(), { wrapper: wrapper() })
     await act(async () => {
       await result.current.mutateAsync('uploads/img.png')

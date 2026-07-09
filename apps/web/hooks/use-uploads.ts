@@ -6,7 +6,7 @@
 'use client'
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { apiGet, apiPostForm } from '@/lib/api-client'
+import { apiGet, apiPost, apiPostForm } from '@/lib/api-client'
 import type { UploadResult } from '@bymax-one/nest-storage/shared'
 
 /** Upload progress snapshot from the session store. */
@@ -20,22 +20,32 @@ export interface ProgressSnapshot {
 /** Parameters for a single-shot form upload. */
 export interface SingleUploadParams {
   file: File
-  category?: string
+  category: string
   contentType?: string
 }
 
-/** Parameters for an idempotent upload. */
+/**
+ * Parameters for an idempotent upload. The `/uploads/idempotent` endpoint
+ * stores a text body (not a multipart file) so the same key can be replayed
+ * from the in-memory cache.
+ */
 export interface IdempotentUploadParams {
   idempotencyKey: string
-  category?: string
-  contentType?: string
-  file: File
+  content: string
+  contentType: string
+}
+
+/** Envelope returned by POST /uploads/idempotent. */
+interface IdempotentUploadResponse {
+  result: UploadResult
+  note: string
 }
 
 /** Parameters for an SSE-override upload. */
 export interface SseUploadParams {
   file: File
-  sse: 'AES256' | 'NONE'
+  category: string
+  serverSideEncryption: 'AES256' | 'aws:kms' | 'NONE'
 }
 
 /**
@@ -49,7 +59,7 @@ export function useSingleUpload() {
     mutationFn: ({ file, category, contentType }: SingleUploadParams) => {
       const form = new FormData()
       form.append('file', file)
-      if (category) form.append('category', category)
+      form.append('category', category)
       if (contentType) form.append('contentType', contentType)
       return apiPostForm<UploadResult>('/uploads/single', form)
     },
@@ -98,13 +108,13 @@ export function useUploadSession(sessionId: string | null) {
 export function useIdempotentUpload() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ file, idempotencyKey, category, contentType }: IdempotentUploadParams) => {
-      const form = new FormData()
-      form.append('file', file)
-      form.append('idempotencyKey', idempotencyKey)
-      if (category) form.append('category', category)
-      if (contentType) form.append('contentType', contentType)
-      return apiPostForm<UploadResult>('/uploads/idempotent', form)
+    mutationFn: async ({ idempotencyKey, content, contentType }: IdempotentUploadParams) => {
+      const res = await apiPost<IdempotentUploadResponse>('/uploads/idempotent', {
+        idempotencyKey,
+        content,
+        contentType,
+      })
+      return res.result
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['vault'] }),
   })
@@ -118,10 +128,11 @@ export function useIdempotentUpload() {
 export function useSseOverrideUpload() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ file, sse }: SseUploadParams) => {
+    mutationFn: ({ file, category, serverSideEncryption }: SseUploadParams) => {
       const form = new FormData()
       form.append('file', file)
-      form.append('sse', sse)
+      form.append('category', category)
+      form.append('serverSideEncryption', serverSideEncryption)
       return apiPostForm<UploadResult>('/uploads/sse-override', form)
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['vault'] }),

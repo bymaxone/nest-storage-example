@@ -31,6 +31,13 @@ interface ValidationUploadResult {
   contentType: string
 }
 
+/** Envelope returned by POST /validation/upload: the upload result plus the
+ * active rules that accepted it. */
+interface ValidationUploadEnvelope {
+  result: ValidationUploadResult
+  rules: ValidationRulesView
+}
+
 /** Validation lab body with live rules and demo triggers. */
 export function ValidationContent() {
   const [envelope, setEnvelope] = useState<EnvelopePanelData | null>(null)
@@ -48,7 +55,7 @@ export function ValidationContent() {
     const blob = new Blob(['test content'], { type: 'application/zip' })
     form.append('file', new File([blob], 'archive.zip', { type: 'application/zip' }))
     try {
-      const result = await apiPostForm<ValidationUploadResult>('/validation/upload', form)
+      const { result } = await apiPostForm<ValidationUploadEnvelope>('/validation/upload', form)
       setLastResult(result)
       toast.success('Uploaded (unexpected — check whitelist)')
     } catch (e) {
@@ -71,7 +78,7 @@ export function ValidationContent() {
     const form = new FormData()
     form.append('file', new File([bigBuffer], 'huge.bin', { type: 'image/png' }))
     try {
-      const result = await apiPostForm<ValidationUploadResult>('/validation/upload', form)
+      const { result } = await apiPostForm<ValidationUploadEnvelope>('/validation/upload', form)
       setLastResult(result)
     } catch (e) {
       if (e instanceof StorageApiError) {
@@ -93,7 +100,7 @@ export function ValidationContent() {
     const blob = new Blob(['NOT A PDF — plain text'], { type: 'application/pdf' })
     form.append('file', new File([blob], 'fake.pdf', { type: 'application/pdf' }))
     try {
-      const result = await apiPostForm<ValidationUploadResult>('/validation/upload', form)
+      const { result } = await apiPostForm<ValidationUploadEnvelope>('/validation/upload', form)
       setLastResult(result)
     } catch (e) {
       if (e instanceof StorageApiError) {
@@ -120,7 +127,7 @@ export function ValidationContent() {
     const blob = new Blob([bytes], { type: 'image/png' })
     form.append('file', new File([blob], 'valid.png', { type: 'image/png' }))
     try {
-      const result = await apiPostForm<ValidationUploadResult>('/validation/upload', form)
+      const { result } = await apiPostForm<ValidationUploadEnvelope>('/validation/upload', form)
       setLastResult(result)
       toast.success(`Uploaded: ${result.key}`)
     } catch (e) {
@@ -162,7 +169,11 @@ export function ValidationContent() {
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   {rules.data.mimeWhitelist.map((m) => (
-                    <Badge key={m} variant="outline" className="font-mono text-xs">
+                    <Badge
+                      key={m}
+                      variant="outline"
+                      className="max-w-full whitespace-normal break-all font-mono text-xs"
+                    >
                       {m}
                     </Badge>
                   ))}
@@ -206,7 +217,11 @@ export function ValidationContent() {
             <p className="mb-1.5 text-xs text-white/40">DEFAULT_IMAGE_MIME_WHITELIST</p>
             <div className="flex flex-wrap gap-1.5">
               {DEFAULT_IMAGE_MIME_WHITELIST.map((m) => (
-                <Badge key={m} variant="outline" className="font-mono text-xs">
+                <Badge
+                  key={m}
+                  variant="outline"
+                  className="max-w-full whitespace-normal break-all font-mono text-xs"
+                >
                   {m}
                 </Badge>
               ))}
@@ -216,7 +231,11 @@ export function ValidationContent() {
             <p className="mb-1.5 text-xs text-white/40">DEFAULT_DOC_MIME_WHITELIST</p>
             <div className="flex flex-wrap gap-1.5">
               {DEFAULT_DOC_MIME_WHITELIST.map((m) => (
-                <Badge key={m} variant="outline" className="font-mono text-xs">
+                <Badge
+                  key={m}
+                  variant="outline"
+                  className="max-w-full whitespace-normal break-all font-mono text-xs"
+                >
                   {m}
                 </Badge>
               ))}
@@ -257,10 +276,10 @@ export function ValidationContent() {
                 key={label}
                 type="button"
                 onClick={() => void action()}
-                className="rounded-xl border border-(--glass-border) bg-(--glass-bg) p-3 text-left transition-all hover:border-brand-500/30 hover:bg-brand-500/5"
+                className="min-w-0 rounded-xl border border-(--glass-border) bg-(--glass-bg) p-3 text-left transition-all hover:border-brand-500/30 hover:bg-brand-500/5"
               >
                 <p className="text-sm font-medium">{label}</p>
-                <p className="mt-1 font-mono text-xs text-white/40">{expected}</p>
+                <p className="mt-1 font-mono text-xs break-all text-white/40">{expected}</p>
               </button>
             ))}
           </div>

@@ -1,8 +1,12 @@
 /**
- * @fileoverview Sonner toast wrapper — dark theme matching design system.
+ * @fileoverview Sonner toast wrapper — the shared glass toast standard used
+ * across the Bymax reference apps (matches nest-auth-example / nest-logger-example).
  *
- * The Toaster is placed in the root layout. Individual toasts are triggered
- * via `toast()` from the `sonner` package.
+ * The surface is a blurred glass card driven by the design tokens
+ * (`--glass-card-bg`, `--glass-border`, `--foreground`, `--font-mono`); each
+ * toast type carries a colored left accent so success/error/info/warning read
+ * at a glance. The Toaster is placed once in the root layout; individual toasts
+ * are triggered via `toast()` from the `sonner` package.
  */
 
 'use client'
@@ -30,7 +34,16 @@ function Toaster(props: ToasterProps) {
           background: 'var(--glass-card-bg)',
           border: '1px solid var(--glass-border)',
           backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          color: 'hsl(var(--foreground))',
           fontFamily: 'var(--font-mono)',
+          borderRadius: '12px',
+        },
+        classNames: {
+          success: 'border-l-4 border-l-green-500',
+          error: 'border-l-4 border-l-red-500',
+          info: 'border-l-4 border-l-blue-400',
+          warning: 'border-l-4 border-l-amber-500',
         },
       }}
       {...props}

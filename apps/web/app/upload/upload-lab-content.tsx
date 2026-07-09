@@ -21,12 +21,20 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { formatBytes } from '@/lib/format'
+import { MAX_TEXT_UPLOAD_BYTES, truncateToByteLength } from '@/lib/text'
 import type { UploadResult } from '@bymax-one/nest-storage/shared'
+
+/** Upload categories accepted by the API; the first key segment of the object key. */
+const UPLOAD_CATEGORIES = ['avatars', 'invoices', 'attachments', 'media'] as const
+
+/** One of the allowed upload categories. */
+type UploadCategory = (typeof UPLOAD_CATEGORIES)[number]
 
 /** Upload lab body showing all server-side upload strategies. */
 export function UploadLabContent() {
   const [lastResult, setLastResult] = useState<UploadResult | null>(null)
   const [strategy, setStrategy] = useState<UploadStrategy>('idle')
+  const [category, setCategory] = useState<UploadCategory>('attachments')
   const [idempotencyKey, setIdempotencyKey] = useState('demo-key-001')
   // Idempotency demo issues the SAME key twice, so results are not distinguishable
   // by their storage key; a monotonic call id gives each log row a stable identity.
@@ -43,7 +51,7 @@ export function UploadLabContent() {
   const handleFile = useCallback(
     async (file: File) => {
       try {
-        const result = await single.mutateAsync({ file })
+        const result = await single.mutateAsync({ file, category })
         setLastResult(result)
         setStrategy(strategyFromMultipart(result.multipart))
         toast.success(`Uploaded: ${result.key}`)
@@ -51,13 +59,20 @@ export function UploadLabContent() {
         toast.error(`Upload failed: ${(e as Error).message}`)
       }
     },
-    [single],
+    [single, category],
   )
 
   const handleIdempotentUpload = useCallback(
     async (file: File) => {
       try {
-        const result = await idempotent.mutateAsync({ file, idempotencyKey })
+        // The idempotent endpoint stores a text body; read the dropped file as
+        // text (capped at the endpoint's 64 KiB limit) and send it as `content`.
+        const content = truncateToByteLength(await file.text(), MAX_TEXT_UPLOAD_BYTES)
+        const result = await idempotent.mutateAsync({
+          idempotencyKey,
+          content,
+          contentType: file.type || 'text/plain',
+        })
         setIdempotencyResults((prev) => [...prev, { callId: prev.length + 1, result }])
         toast.success(
           result.fromIdempotencyCache
@@ -74,14 +89,18 @@ export function UploadLabContent() {
   const handleSseUpload = useCallback(
     async (file: File) => {
       try {
-        const result = await sseOverride.mutateAsync({ file, sse: sseMode })
+        const result = await sseOverride.mutateAsync({
+          file,
+          category,
+          serverSideEncryption: sseMode,
+        })
         setSseResult(result)
         toast.success(`SSE ${sseMode} upload complete: ${result.key}`)
       } catch (e) {
         toast.error(`SSE upload failed: ${(e as Error).message}`)
       }
     },
-    [sseOverride, sseMode],
+    [sseOverride, sseMode, category],
   )
 
   return (
@@ -104,6 +123,19 @@ export function UploadLabContent() {
           <CardDescription>Drop a file to see which strategy the library selects.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="mr-1 text-xs text-white/40">Category</span>
+            {UPLOAD_CATEGORIES.map((c) => (
+              <Button
+                key={c}
+                size="sm"
+                variant={category === c ? 'default' : 'outline'}
+                onClick={() => setCategory(c)}
+              >
+                {c}
+              </Button>
+            ))}
+          </div>
           <UploadDropzone onFile={handleFile} strategy={strategy} isPending={single.isPending} />
           {lastResult && (
             <div className="rounded-xl bg-(--glass-bg) p-4 font-mono text-xs">

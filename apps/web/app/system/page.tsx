@@ -85,7 +85,8 @@ export default function SystemPage() {
                   </div>
                 ) : config.data ? (
                   <div>
-                    <ConfigRow label="provider" value={config.data.provider} />
+                    <ConfigRow label="endpoint" value={config.data.endpoint} />
+                    <ConfigRow label="region" value={config.data.region} />
                     <ConfigRow label="bucket" value={config.data.bucket} />
                     {config.data.keyPrefix !== undefined && (
                       <ConfigRow label="keyPrefix" value={config.data.keyPrefix} />
@@ -94,10 +95,15 @@ export default function SystemPage() {
                       label="multipartThreshold"
                       value={`${config.data.multipartThreshold.toLocaleString()} bytes`}
                     />
+                    <ConfigRow label="scanner" value={config.data.scannerImpl} />
                     <ConfigRow label="scannerMode" value={config.data.scannerMode} />
                     <ConfigRow
                       label="rejectOnUnknown"
                       value={String(config.data.rejectOnUnknown)}
+                    />
+                    <ConfigRow
+                      label="maxTtlSeconds"
+                      value={`${config.data.maxTtlSeconds.toLocaleString()} s`}
                     />
                   </div>
                 ) : (
@@ -150,27 +156,41 @@ export default function SystemPage() {
 
           <TabsContent value="versioning" className="mt-4">
             <Card className="border-white/8 bg-white/4">
-              <CardContent className="p-5">
+              <CardContent className="space-y-3 p-5">
                 {versioning.isLoading ? (
                   <Skeleton className="h-12 w-full" />
                 ) : versioning.data ? (
-                  <div className="flex items-center gap-3">
-                    <GitBranch className="h-5 w-5 text-brand-500" />
-                    <div>
-                      <p className="text-sm font-medium text-white">
-                        {versioning.data.versioned ? 'Versioning enabled' : 'Versioning disabled'}
+                  <>
+                    {versioning.data.buckets.map(({ bucket, status }) => {
+                      const enabled = status === 'Enabled'
+                      return (
+                        <div key={bucket} className="flex items-center gap-3">
+                          <GitBranch
+                            className={`h-5 w-5 shrink-0 ${enabled ? 'text-brand-500' : 'text-white/30'}`}
+                          />
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium text-white">
+                              <code className="font-mono">{bucket}</code>
+                            </p>
+                            <p className="mt-0.5 text-xs text-white/45">
+                              {enabled ? 'Versioning enabled' : 'Versioning disabled'}
+                            </p>
+                          </div>
+                          <Badge
+                            variant="outline"
+                            className={`ml-auto shrink-0 border-white/15 ${enabled ? 'text-green-400' : 'text-white/50'}`}
+                          >
+                            {status}
+                          </Badge>
+                        </div>
+                      )
+                    })}
+                    {versioning.data.tradeOffNote && (
+                      <p className="border-t border-white/6 pt-3 text-xs text-white/40">
+                        {versioning.data.tradeOffNote}
                       </p>
-                      <p className="text-xs text-white/45 mt-0.5">
-                        Bucket: <code className="font-mono">{versioning.data.bucket}</code>
-                      </p>
-                    </div>
-                    <Badge
-                      variant="outline"
-                      className={`ml-auto border-white/15 ${versioning.data.versioned ? 'text-green-400' : 'text-white/50'}`}
-                    >
-                      {versioning.data.status}
-                    </Badge>
-                  </div>
+                    )}
+                  </>
                 ) : (
                   <p className="text-sm text-white/40">Failed to load versioning status</p>
                 )}

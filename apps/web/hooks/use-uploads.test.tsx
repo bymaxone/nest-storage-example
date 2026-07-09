@@ -16,10 +16,11 @@ import {
 
 vi.mock('@/lib/api-client', () => ({
   apiGet: vi.fn(),
+  apiPost: vi.fn(),
   apiPostForm: vi.fn(),
 }))
 
-import { apiGet, apiPostForm } from '@/lib/api-client'
+import { apiGet, apiPost, apiPostForm } from '@/lib/api-client'
 
 const uploadResult = {
   key: 'uploads/file.png',
@@ -50,12 +51,12 @@ describe('useSingleUpload', () => {
     mockPostForm.mockResolvedValueOnce(uploadResult)
     const { result } = renderHook(() => useSingleUpload(), { wrapper: wrapper() })
     await act(async () => {
-      await result.current.mutateAsync({ file: makeFile() })
+      await result.current.mutateAsync({ file: makeFile(), category: 'attachments' })
     })
     expect(mockPostForm).toHaveBeenCalledWith('/uploads/single', expect.any(FormData))
   })
 
-  it('appends category when provided', async () => {
+  it('appends the required category', async () => {
     const { result } = renderHook(() => useSingleUpload(), { wrapper: wrapper() })
     let capturedForm: FormData | undefined
     mockPostForm.mockImplementation((_path: string, form: FormData) => {
@@ -63,9 +64,9 @@ describe('useSingleUpload', () => {
       return Promise.resolve(uploadResult)
     })
     await act(async () => {
-      await result.current.mutateAsync({ file: makeFile(), category: 'images' })
+      await result.current.mutateAsync({ file: makeFile(), category: 'avatars' })
     })
-    expect(capturedForm?.get('category')).toBe('images')
+    expect(capturedForm?.get('category')).toBe('avatars')
   })
 
   it('appends contentType when provided', async () => {
@@ -76,9 +77,26 @@ describe('useSingleUpload', () => {
       return Promise.resolve(uploadResult)
     })
     await act(async () => {
-      await result.current.mutateAsync({ file: makeFile(), contentType: 'image/png' })
+      await result.current.mutateAsync({
+        file: makeFile(),
+        category: 'attachments',
+        contentType: 'image/png',
+      })
     })
     expect(capturedForm?.get('contentType')).toBe('image/png')
+  })
+
+  it('omits contentType when not provided', async () => {
+    const { result } = renderHook(() => useSingleUpload(), { wrapper: wrapper() })
+    let capturedForm: FormData | undefined
+    mockPostForm.mockImplementation((_path: string, form: FormData) => {
+      capturedForm = form
+      return Promise.resolve(uploadResult)
+    })
+    await act(async () => {
+      await result.current.mutateAsync({ file: makeFile(), category: 'media' })
+    })
+    expect(capturedForm?.get('contentType')).toBeNull()
   })
 })
 
@@ -116,43 +134,32 @@ describe('useUploadSession', () => {
 })
 
 describe('useIdempotentUpload', () => {
-  const mockPostForm = vi.mocked(apiPostForm)
-  beforeEach(() => mockPostForm.mockReset())
+  const mockPost = vi.mocked(apiPost)
+  beforeEach(() => mockPost.mockReset())
 
-  it('posts FormData with idempotencyKey to /uploads/idempotent', async () => {
-    let capturedForm: FormData | undefined
-    mockPostForm.mockImplementation((_path: string, form: FormData) => {
-      capturedForm = form
-      return Promise.resolve(uploadResult)
+  it('posts a JSON body to /uploads/idempotent and unwraps the result', async () => {
+    let capturedBody: unknown
+    mockPost.mockImplementation((_path: string, body?: unknown) => {
+      capturedBody = body
+      return Promise.resolve({ result: uploadResult, note: 'per-instance cache' })
     })
     const { result } = renderHook(() => useIdempotentUpload(), { wrapper: wrapper() })
+    let resolved: unknown
     await act(async () => {
-      await result.current.mutateAsync({
-        file: makeFile(),
+      resolved = await result.current.mutateAsync({
         idempotencyKey: 'key-123',
+        content: 'hello',
+        contentType: 'text/plain',
       })
     })
-    expect(mockPostForm).toHaveBeenCalledWith('/uploads/idempotent', expect.any(FormData))
-    expect(capturedForm?.get('idempotencyKey')).toBe('key-123')
-  })
-
-  it('appends optional category and contentType', async () => {
-    let capturedForm: FormData | undefined
-    mockPostForm.mockImplementation((_path: string, form: FormData) => {
-      capturedForm = form
-      return Promise.resolve(uploadResult)
+    expect(mockPost).toHaveBeenCalledWith('/uploads/idempotent', expect.any(Object))
+    expect(capturedBody).toEqual({
+      idempotencyKey: 'key-123',
+      content: 'hello',
+      contentType: 'text/plain',
     })
-    const { result } = renderHook(() => useIdempotentUpload(), { wrapper: wrapper() })
-    await act(async () => {
-      await result.current.mutateAsync({
-        file: makeFile(),
-        idempotencyKey: 'k',
-        category: 'docs',
-        contentType: 'application/pdf',
-      })
-    })
-    expect(capturedForm?.get('category')).toBe('docs')
-    expect(capturedForm?.get('contentType')).toBe('application/pdf')
+    // The hook unwraps the { result, note } envelope to the bare UploadResult.
+    expect(resolved).toEqual(uploadResult)
   })
 })
 
@@ -160,7 +167,7 @@ describe('useSseOverrideUpload', () => {
   const mockPostForm = vi.mocked(apiPostForm)
   beforeEach(() => mockPostForm.mockReset())
 
-  it('posts FormData with sse field to /uploads/sse-override', async () => {
+  it('posts FormData with the serverSideEncryption field to /uploads/sse-override', async () => {
     let capturedForm: FormData | undefined
     mockPostForm.mockImplementation((_path: string, form: FormData) => {
       capturedForm = form
@@ -168,13 +175,18 @@ describe('useSseOverrideUpload', () => {
     })
     const { result } = renderHook(() => useSseOverrideUpload(), { wrapper: wrapper() })
     await act(async () => {
-      await result.current.mutateAsync({ file: makeFile(), sse: 'AES256' })
+      await result.current.mutateAsync({
+        file: makeFile(),
+        category: 'attachments',
+        serverSideEncryption: 'AES256',
+      })
     })
     expect(mockPostForm).toHaveBeenCalledWith('/uploads/sse-override', expect.any(FormData))
-    expect(capturedForm?.get('sse')).toBe('AES256')
+    expect(capturedForm?.get('serverSideEncryption')).toBe('AES256')
+    expect(capturedForm?.get('category')).toBe('attachments')
   })
 
-  it('supports NONE sentinel value', async () => {
+  it('supports the NONE sentinel value', async () => {
     let capturedForm: FormData | undefined
     mockPostForm.mockImplementation((_path: string, form: FormData) => {
       capturedForm = form
@@ -182,16 +194,22 @@ describe('useSseOverrideUpload', () => {
     })
     const { result } = renderHook(() => useSseOverrideUpload(), { wrapper: wrapper() })
     await act(async () => {
-      await result.current.mutateAsync({ file: makeFile(), sse: 'NONE' })
+      await result.current.mutateAsync({
+        file: makeFile(),
+        category: 'media',
+        serverSideEncryption: 'NONE',
+      })
     })
-    expect(capturedForm?.get('sse')).toBe('NONE')
+    expect(capturedForm?.get('serverSideEncryption')).toBe('NONE')
   })
 })
 
 describe('upload form fields, cache invalidation, and query keys', () => {
+  const mockPost = vi.mocked(apiPost)
   const mockPostForm = vi.mocked(apiPostForm)
   const mockGet = vi.mocked(apiGet)
   beforeEach(() => {
+    mockPost.mockReset()
     mockPostForm.mockReset()
     mockGet.mockReset()
   })
@@ -222,34 +240,9 @@ describe('upload form fields, cache invalidation, and query keys', () => {
     const { Wrap } = clientWithSpy()
     const { result } = renderHook(() => useSingleUpload(), { wrapper: Wrap })
     await act(async () => {
-      await result.current.mutateAsync({ file: makeFile() })
+      await result.current.mutateAsync({ file: makeFile(), category: 'attachments' })
     })
     expect(getForm()?.get('file')).toBeInstanceOf(File)
-  })
-
-  // Scenario: absent optional fields must not be appended (guards the if-conditions).
-  it('omits category and contentType when they are not provided', async () => {
-    const getForm = captureForm()
-    const { Wrap } = clientWithSpy()
-    const { result } = renderHook(() => useSingleUpload(), { wrapper: Wrap })
-    await act(async () => {
-      await result.current.mutateAsync({ file: makeFile() })
-    })
-    expect(getForm()?.get('category')).toBeNull()
-    expect(getForm()?.get('contentType')).toBeNull()
-  })
-
-  // Scenario: idempotent upload also skips absent optional fields.
-  it('omits category and contentType for idempotent upload when absent', async () => {
-    const getForm = captureForm()
-    const { Wrap } = clientWithSpy()
-    const { result } = renderHook(() => useIdempotentUpload(), { wrapper: Wrap })
-    await act(async () => {
-      await result.current.mutateAsync({ file: makeFile(), idempotencyKey: 'k' })
-    })
-    expect(getForm()?.get('file')).toBeInstanceOf(File)
-    expect(getForm()?.get('category')).toBeNull()
-    expect(getForm()?.get('contentType')).toBeNull()
   })
 
   // Scenario: multipart and sse uploads carry the file field.
@@ -265,7 +258,11 @@ describe('upload form fields, cache invalidation, and query keys', () => {
     const getSse = captureForm()
     const sse = renderHook(() => useSseOverrideUpload(), { wrapper: Wrap })
     await act(async () => {
-      await sse.result.current.mutateAsync({ file: makeFile(), sse: 'AES256' })
+      await sse.result.current.mutateAsync({
+        file: makeFile(),
+        category: 'attachments',
+        serverSideEncryption: 'AES256',
+      })
     })
     expect(getSse()?.get('file')).toBeInstanceOf(File)
   })
@@ -276,7 +273,7 @@ describe('upload form fields, cache invalidation, and query keys', () => {
     const { invalidate, Wrap } = clientWithSpy()
     const { result } = renderHook(() => useSingleUpload(), { wrapper: Wrap })
     await act(async () => {
-      await result.current.mutateAsync({ file: makeFile() })
+      await result.current.mutateAsync({ file: makeFile(), category: 'attachments' })
     })
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['vault'] })
   })
@@ -294,11 +291,15 @@ describe('upload form fields, cache invalidation, and query keys', () => {
 
   // Scenario: a successful idempotent upload invalidates the exact ['vault'] key.
   it('invalidates ["vault"] after an idempotent upload', async () => {
-    captureForm()
+    mockPost.mockResolvedValue({ result: uploadResult, note: 'n' })
     const { invalidate, Wrap } = clientWithSpy()
     const { result } = renderHook(() => useIdempotentUpload(), { wrapper: Wrap })
     await act(async () => {
-      await result.current.mutateAsync({ file: makeFile(), idempotencyKey: 'k' })
+      await result.current.mutateAsync({
+        idempotencyKey: 'k',
+        content: 'c',
+        contentType: 'text/plain',
+      })
     })
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['vault'] })
   })
@@ -309,7 +310,11 @@ describe('upload form fields, cache invalidation, and query keys', () => {
     const { invalidate, Wrap } = clientWithSpy()
     const { result } = renderHook(() => useSseOverrideUpload(), { wrapper: Wrap })
     await act(async () => {
-      await result.current.mutateAsync({ file: makeFile(), sse: 'AES256' })
+      await result.current.mutateAsync({
+        file: makeFile(),
+        category: 'attachments',
+        serverSideEncryption: 'AES256',
+      })
     })
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['vault'] })
   })
