@@ -1,215 +1,63 @@
-# Day-one CI: lint, typecheck, and format checks on every PR and push to main.
-# Each job provisions the locally linked @bymax-one/nest-storage library through
-# the shared ./.github/actions/setup composite before running its check.
-# Additional jobs (test coverage, e2e, build, mutation, export audit) are added
-# incrementally as those phases land; they are not stubbed here.
+# CI — thin caller of the org-wide reusable pipeline (bymaxone/.github).
 #
-# Dependency updates for GitHub Actions are managed by Renovate (see renovate.json).
-# No dependabot.yml is used to avoid duplicate PRs.
-
+# The generic pipeline (lint, typecheck, format, unit+coverage, API e2e,
+# web-build, export audit, mutation) lives in bymaxone/.github so every repo
+# shares one definition. The Playwright web smoke boots this app's MinIO stack,
+# so it stays here (its services can't be parameterized in a reusable).
+# Mutation runs only on a push to main / manual dispatch, never on PRs or a schedule.
 name: CI
 
 on:
   push:
     branches: [main]
   pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      - name: Setup workspace
-        uses: ./.github/actions/setup
-      - name: Run ESLint
-        run: pnpm lint
+  ci:
+    uses: bymaxone/.github/.github/workflows/node-ci.yml@v1
+    with:
+      library-repo: bymaxone/nest-storage
+      has-web: true
+      run-export-audit: true
+      run-mutation: true
+      run-e2e-web: false # Playwright (MinIO compose stack) kept below
+      unit-command: pnpm test:cov:api && pnpm test:cov:web
+      e2e-api-command: pnpm --filter api run test:e2e
+      mutation-source-globs: '^(apps/api/src/|apps/web/lib/|apps/web/components/)'
 
-  typecheck:
-    name: Typecheck
-    runs-on: ubuntu-latest
-    needs: lint
-    steps:
-      - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      - name: Setup workspace
-        uses: ./.github/actions/setup
-      - name: Run TypeScript
-        run: pnpm typecheck
-
-  format:
-    name: Format
-    runs-on: ubuntu-latest
-    needs: lint
-    steps:
-      - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      - name: Setup workspace
-        uses: ./.github/actions/setup
-      - name: Check formatting
-        run: pnpm format:check
-
-  # The API unit suite is the first coverage-gated tier. It runs after lint on
-  # its own runner (the locally linked library is provisioned by the composite)
-  # and enforces the 100/100/100/100 threshold baked into apps/api/jest.config.cjs,
-  # so any coverage regression fails the check. The worker pool is capped at
-  # maxWorkers '50%' in that config to stay memory-safe on small runners.
-  unit:
-    name: Unit tests
-    runs-on: ubuntu-latest
-    needs: lint
-    steps:
-      - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      - name: Setup workspace
-        uses: ./.github/actions/setup
-      - name: API unit coverage
-        run: pnpm test:cov:api
-
-  # The web unit tier runs the dashboard's Vitest coverage on its own runner.
-  # The suite caps its worker pool at maxWorkers '50%' in vitest.config.ts and
-  # runs as a separate job from the API unit tier, so the locally linked library
-  # is never duplicated across two test runners at once (memory-safe on small
-  # runners). The consumed @bymax-one/nest-storage library is provisioned by the
-  # shared composite.
-  web-tests:
-    name: Web tests
-    runs-on: ubuntu-latest
-    needs: lint
-    permissions:
-      contents: read
-    timeout-minutes: 15
-    steps:
-      - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      - name: Setup workspace
-        uses: ./.github/actions/setup
-      - name: Web unit coverage
-        run: pnpm test:cov:web
-
-  # The web build tier compiles the Next.js production bundle. It proves the
-  # dashboard builds against the shared-subpath library import and that no
-  # NestJS/AWS-SDK code leaks into the client bundle. NEXT_PUBLIC_API_URL is the
-  # only build-time env the bundle needs; it is a non-secret endpoint.
-  web-build:
-    name: Web build
-    runs-on: ubuntu-latest
-    needs: lint
-    permissions:
-      contents: read
-    timeout-minutes: 15
-    env:
-      NEXT_PUBLIC_API_URL: http://localhost:3001
-    steps:
-      - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      - name: Setup workspace
-        uses: ./.github/actions/setup
-      - name: Build the web app
-        run: pnpm --filter web build
-
-  # The API e2e tier boots a real MinIO through Testcontainers (no compose,
-  # no services block) and performs the presigned round-trips with plain fetch.
-  # GitHub-hosted runners ship a Docker daemon, so Testcontainers pulls and boots
-  # the pinned MinIO image directly; the timeout is generous to cover a cold image
-  # pull. The suite runs with --runInBand and one container at a time, so it stays
-  # memory-safe on the runner. The locally linked library is provisioned by the
-  # shared composite, exactly as the other jobs.
-  e2e:
-    name: E2E
-    runs-on: ubuntu-latest
-    # Gate on the unit tier too so a coverage regression fails before the slower
-    # container-backed e2e runs and can never report green alongside a red unit job.
-    needs: [lint, unit]
-    permissions:
-      contents: read
-    timeout-minutes: 20
-    steps:
-      - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      - name: Setup workspace
-        uses: ./.github/actions/setup
-      - name: API e2e (presigned round-trips against Testcontainers MinIO)
-        run: pnpm --filter api run test:e2e
-
-  # The Playwright journey smoke boots the whole stack: the compose MinIO (via
-  # the repo `infra:up`, run by the suite's globalSetup), the API dev server, and
-  # the web dev server, then walks the load-bearing dashboard journeys in one
-  # Chromium instance. Chromium is installed with its OS dependencies. A single
-  # worker keeps the run memory-safe on the runner (the library is loaded once by
-  # the API process, never fanned out).
+  # App-specific web smoke: Playwright's globalSetup boots the compose MinIO plus
+  # the API and web dev servers, then walks the dashboard journeys in one Chromium.
   playwright:
     name: Playwright journeys
+    needs: ci
     runs-on: ubuntu-latest
-    needs: [lint, web-build]
-    permissions:
-      contents: read
     timeout-minutes: 20
     env:
       NEXT_PUBLIC_API_URL: http://localhost:3001
     steps:
-      - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      - name: Setup workspace
-        uses: ./.github/actions/setup
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: bymaxone/.github/.github/actions/setup-node-pnpm@v1
+        with:
+          library-repo: bymaxone/nest-storage
       - name: Install Chromium with OS dependencies
         run: pnpm --filter web exec playwright install --with-deps chromium
       - name: Run the dashboard journey smoke
         run: pnpm --filter web run test:e2e
 
-  # The export-usage audit turns the Feature Coverage Matrix into a CI gate: it
-  # enumerates every public export of @bymax-one/nest-storage (both subpaths) and
-  # fails if any is not demonstrated somewhere under apps/. Zero-dependency Node,
-  # so it runs straight after the composite provisions and builds the library.
-  export-usage:
-    name: Export usage audit
-    runs-on: ubuntu-latest
-    needs: lint
-    permissions:
-      contents: read
-    timeout-minutes: 10
-    steps:
-      - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      - name: Setup workspace
-        uses: ./.github/actions/setup
-      - name: Audit library export usage
-        run: node scripts/audit-library-exports.mjs
-
-  # Mutation testing enforces api `break: 100` (zero survivors) and web `break: 90`
-  # (lib 100) via the committed Stryker configs. Mutating both apps is far slower
-  # than the two-core hosted runner completes inside a reasonable PR window, so this
-  # job runs only on push to main (post-merge) and is advisory (continue-on-error):
-  # the authoritative, blocking enforcement is local / pre-release (`pnpm mutation`),
-  # which the committed break thresholds gate. `pnpm mutation` fans out serialized
-  # (--workspace-concurrency=1) so the two apps never mutate at once and the linked
-  # library is not duplicated; each app's Stryker `concurrency: 2` bounds the pool.
-  mutation:
-    name: Mutation testing
-    runs-on: ubuntu-latest
-    needs: [unit, web-tests]
-    if: ${{ github.event_name == 'push' }}
-    continue-on-error: true
-    permissions:
-      contents: read
-    timeout-minutes: 45
-    steps:
-      - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      - name: Setup workspace
-        uses: ./.github/actions/setup
-      - name: Run Stryker mutation (api break:100, web break:90)
-        run: pnpm mutation
-      - name: Upload mutation reports
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: mutation-reports
-          path: |
-            apps/api/reports/mutation/
-            apps/web/reports/mutation/
-          retention-days: 7
+  security:
+    # Dependency review needs the dependency graph, which is only available on
+    # public repos (or private + GitHub Advanced Security). Gated on visibility so
+    # it starts running automatically once this repo is made public.
+    if: github.event_name == 'pull_request' && github.event.repository.visibility == 'public'
+    uses: bymaxone/.github/.github/workflows/security.yml@v1
+    with:
+      fail-on-severity: high
