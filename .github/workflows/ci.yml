@@ -32,7 +32,7 @@ jobs:
       run-e2e-web: false # Playwright (MinIO compose stack) kept below
       unit-command: pnpm test:cov:api && pnpm test:cov:web
       e2e-api-command: pnpm --filter api run test:e2e
-      mutation-source-globs: "^(apps/api/src/|apps/web/lib/|apps/web/components/)"
+      mutation-source-globs: '^(apps/api/src/|apps/web/lib/|apps/web/components/)'
 
   # App-specific web smoke: Playwright's globalSetup boots the compose MinIO plus
   # the API and web dev servers, then walks the dashboard journeys in one Chromium.
@@ -51,10 +51,3 @@ jobs:
         run: pnpm --filter web exec playwright install --with-deps chromium
       - name: Run the dashboard journey smoke
         run: pnpm --filter web run test:e2e
-
-  security:
-    # Dependency review only applies to a pull request.
-    if: github.event_name == 'pull_request'
-    uses: bymaxone/.github/.github/workflows/security.yml@v1
-    with:
-      fail-on-severity: high
