@@ -51,3 +51,12 @@ jobs:
         run: pnpm --filter web exec playwright install --with-deps chromium
       - name: Run the dashboard journey smoke
         run: pnpm --filter web run test:e2e
+
+  security:
+    # Dependency review needs the dependency graph, which is only available on
+    # public repos (or private + GitHub Advanced Security). Gated on visibility so
+    # it starts running automatically once this repo is made public.
+    if: github.event_name == 'pull_request' && github.event.repository.visibility == 'public'
+    uses: bymaxone/.github/.github/workflows/security.yml@v1
+    with:
+      fail-on-severity: high
