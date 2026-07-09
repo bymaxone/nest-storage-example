@@ -183,9 +183,9 @@ export function OverviewContent() {
                 ]
                   .filter(([, v]) => Boolean(v))
                   .map(([k, v]) => (
-                    <div key={k}>
+                    <div key={k} className="min-w-0">
                       <dt className="text-white/30">{k}</dt>
-                      <dd className="text-white/70">{String(v)}</dd>
+                      <dd className="break-all text-white/70">{String(v)}</dd>
                     </div>
                   ))}
               </dl>

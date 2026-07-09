@@ -14,6 +14,7 @@ import { toast } from 'sonner'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { apiGet, apiPost, type StorageApiError } from '@/lib/api-client'
 import type { ObjectMetadata } from '@bymax-one/nest-storage/shared'
+import type { DownloadUrlResponse } from '@/hooks/use-signed'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -25,13 +26,6 @@ import { TtlCountdown } from '@/components/transfer/TtlCountdown'
 interface BufferedResult {
   base64: string
   metadata: ObjectMetadata
-}
-
-interface SignedUrlResult {
-  url: string
-  expiresAt: string
-  requestedTtl: number
-  effectiveTtl: number
 }
 
 interface PublicUrlResult {
@@ -96,7 +90,7 @@ async function copyToClipboard(text: string, label: string) {
  * hex range, and URL tabs.
  */
 export function KeyDetailDrawer({ objectKey, onClose }: KeyDetailDrawerProps) {
-  const [signedUrl, setSignedUrl] = useState<SignedUrlResult | null>(null)
+  const [signedUrl, setSignedUrl] = useState<DownloadUrlResponse | null>(null)
 
   const meta = useQuery<ObjectMetadata>({
     queryKey: ['vault', 'meta', objectKey],
@@ -133,7 +127,7 @@ export function KeyDetailDrawer({ objectKey, onClose }: KeyDetailDrawerProps) {
 
   const issueSignedUrl = useMutation({
     mutationFn: () =>
-      apiPost<SignedUrlResult>('/signed/download-url', { key: objectKey, ttlSeconds: 300 }),
+      apiPost<DownloadUrlResponse>('/signed/download-url', { key: objectKey, ttlSeconds: 300 }),
     onSuccess: (data) => setSignedUrl(data),
     onError: (e: StorageApiError) => toast.error(`Signed URL: ${e.message}`),
   })
@@ -301,7 +295,7 @@ export function KeyDetailDrawer({ objectKey, onClose }: KeyDetailDrawerProps) {
                     </div>
                     <TtlCountdown
                       expiresAt={signedUrl.expiresAt}
-                      ttlSeconds={signedUrl.effectiveTtl}
+                      ttlSeconds={signedUrl.effectiveTtlSeconds}
                       className="self-start"
                     />
                   </div>

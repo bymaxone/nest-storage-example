@@ -283,8 +283,10 @@ describe('KeyDetailDrawer — URLs tab', () => {
     apiPostMock.mockResolvedValue({
       url: 'http://localhost:9000/vault/docs/report.pdf?X-Amz-Signature=secret',
       expiresAt: new Date(Date.now() + 300_000).toISOString(),
-      requestedTtl: 300,
-      effectiveTtl: 300,
+      requestedTtlSeconds: 300,
+      effectiveTtlSeconds: 300,
+      clamped: false,
+      maxTtlSeconds: 3600,
     })
     renderDrawer()
     await userEvent.click(screen.getByRole('tab', { name: 'URLs' }))
@@ -316,8 +318,10 @@ describe('KeyDetailDrawer — URLs tab', () => {
     apiPostMock.mockResolvedValue({
       url: 'not a url',
       expiresAt: new Date(Date.now() + 300_000).toISOString(),
-      requestedTtl: 300,
-      effectiveTtl: 300,
+      requestedTtlSeconds: 300,
+      effectiveTtlSeconds: 300,
+      clamped: false,
+      maxTtlSeconds: 3600,
     })
     renderDrawer()
     await userEvent.click(screen.getByRole('tab', { name: 'URLs' }))

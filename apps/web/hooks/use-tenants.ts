@@ -6,8 +6,17 @@
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { apiGet, apiDelete, apiPostForm } from '@/lib/api-client'
+import { apiGet, apiDelete, apiPost } from '@/lib/api-client'
+import { MAX_TEXT_UPLOAD_BYTES, truncateToByteLength } from '@/lib/text'
 import type { ListedObject, UploadResult } from '@bymax-one/nest-storage/shared'
+
+/** Response from POST /tenants/:tenant/upload. */
+export interface TenantUploadResponse {
+  tenant: string
+  key: string
+  fullKey: string
+  result: UploadResult
+}
 
 /** Objects listed under a tenant prefix. */
 export interface TenantObjects {
@@ -54,6 +63,21 @@ export function useTenantObjects(tenant: string) {
 }
 
 /**
+ * Derives a storage-safe extension slug from a file name. Returns the lowercased
+ * characters after the last dot when they form a 1-8 char alphanumeric slug;
+ * otherwise falls back to `'txt'` (no dot, or a non-slug extension).
+ *
+ * @param fileName - The original file name.
+ * @returns A 1-8 char lowercase alphanumeric extension, or `'txt'`.
+ */
+function deriveExtension(fileName: string): string {
+  const dotIndex = fileName.lastIndexOf('.')
+  if (dotIndex === -1) return 'txt'
+  const ext = fileName.slice(dotIndex + 1).toLowerCase()
+  return /^[a-z0-9]{1,8}$/.test(ext) ? ext : 'txt'
+}
+
+/**
  * Mutation to upload a file under a tenant's prefix.
  *
  * @returns TanStack mutation that calls POST /tenants/:tenant/upload.
@@ -61,10 +85,15 @@ export function useTenantObjects(tenant: string) {
 export function useTenantUpload() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ tenant, file }: { tenant: string; file: File }) => {
-      const form = new FormData()
-      form.append('file', file)
-      return apiPostForm<UploadResult>(`/tenants/${encodeURIComponent(tenant)}/upload`, form)
+    // The tenant endpoint stores a text body under `{tenant}/{category}/{uuid}`.
+    // Read the dropped file as text and derive a safe extension slug.
+    mutationFn: async ({ tenant, file }: { tenant: string; file: File }) => {
+      const text = truncateToByteLength(await file.text(), MAX_TEXT_UPLOAD_BYTES)
+      return apiPost<TenantUploadResponse>(`/tenants/${encodeURIComponent(tenant)}/upload`, {
+        category: 'files',
+        content: text.length > 0 ? text : `demo upload ${file.name}`,
+        extension: deriveExtension(file.name),
+      })
     },
     onSuccess: (_data, { tenant }) => qc.invalidateQueries({ queryKey: ['tenants', tenant] }),
   })

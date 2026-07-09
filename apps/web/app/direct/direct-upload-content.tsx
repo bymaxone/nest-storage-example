@@ -11,12 +11,16 @@
 import { useState, useCallback } from 'react'
 import { toast } from 'sonner'
 import { CheckCircle, AlertTriangle } from 'lucide-react'
-import { useSignedUploadUrl, useConfirmUpload } from '@/hooks/use-signed'
+import {
+  useSignedUploadUrl,
+  useConfirmUpload,
+  type UploadUrlResponse,
+  type ConfirmResult,
+} from '@/hooks/use-signed'
 import { putWithHeaders } from '@/lib/direct-upload'
 import { UploadDropzone } from '@/components/transfer/UploadDropzone'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import type { ConfirmResult } from '@/hooks/use-signed'
 
 type Step = 'idle' | 'issued' | 'uploading' | 'confirming' | 'done'
 
@@ -26,15 +30,11 @@ const MAX_DIRECT_UPLOAD_BYTES = 25 * 1024 * 1024
 /** TTL (seconds) requested for the demo presigned PUT URL. */
 const DIRECT_UPLOAD_TTL_SECONDS = 300
 
-interface UploadUrlResponse {
-  url: string
-  expiresAt: string
-  key: string
-  requiredHeaders: Record<string, string>
-  method: 'PUT'
-  requestedTtl: number
-  effectiveTtl: number
-}
+/**
+ * Category the demo files upload under. The server composes the final key as
+ * `{category}/{uuid}` and returns it as `key`.
+ */
+const DIRECT_UPLOAD_CATEGORY = 'attachments'
 
 /** Direct upload flow: issue → PUT → confirm. */
 export function DirectUploadContent() {
@@ -53,7 +53,7 @@ export function DirectUploadContent() {
       setStep('idle')
       try {
         const result = await issueUrl.mutateAsync({
-          key: `direct/${file.name}`,
+          category: DIRECT_UPLOAD_CATEGORY,
           contentType: file.type || 'application/octet-stream',
           ttlSeconds: DIRECT_UPLOAD_TTL_SECONDS,
           maxSizeBytes: MAX_DIRECT_UPLOAD_BYTES,
@@ -82,7 +82,7 @@ export function DirectUploadContent() {
       const r = await confirm.mutateAsync(issued.key)
       setConfirmResult(r)
       setStep('done')
-      toast.success(`Confirm: ${r.scanVerdict ?? 'no verdict'}`)
+      toast.success(`Confirm: ${r.scan?.status ?? 'no verdict'}`)
     } catch (e) {
       toast.error(`Direct upload failed: ${(e as Error).message}`)
       setStep('issued')
@@ -202,11 +202,8 @@ export function DirectUploadContent() {
             </CardTitle>
           </CardHeader>
           <CardContent className="font-mono text-xs space-y-1">
-            <Row
-              label="Key"
-              value={confirmResult.exists !== undefined ? String(confirmResult.exists) : '—'}
-            />
-            <Row label="Scan verdict" value={confirmResult.scanVerdict ?? '—'} />
+            <Row label="Confirmed" value={String(confirmResult.confirmed)} />
+            <Row label="Scan verdict" value={confirmResult.scan?.status ?? '—'} />
             {confirmResult.metadata && (
               <>
                 <Row label="Size" value={String(confirmResult.metadata.size)} />

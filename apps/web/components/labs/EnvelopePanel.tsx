@@ -56,12 +56,12 @@ export function EnvelopePanel({ envelope, className }: EnvelopePanelProps) {
       aria-label={`Error: ${code}`}
     >
       {/* Header row: HTTP status + code badge */}
-      <div className="mb-3 flex items-center gap-3">
+      <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2">
         <AlertTriangle className="h-4 w-4 shrink-0 text-red-400" aria-hidden="true" />
         <span className={cn('text-lg font-bold tabular-nums', statusColor)}>{httpStatus}</span>
         <span
           className={cn(
-            'rounded-full px-2 py-0.5 text-xs',
+            'max-w-full break-all rounded-full px-2 py-0.5 text-xs',
             isKnownCode
               ? 'bg-brand-500/15 text-brand-400 border border-brand-500/20'
               : 'bg-white/5 text-white/50 border border-white/10',
@@ -72,7 +72,7 @@ export function EnvelopePanel({ envelope, className }: EnvelopePanelProps) {
       </div>
 
       {/* Message */}
-      <p className="mb-3 text-white/80">{message}</p>
+      <p className="mb-3 break-words text-white/80">{message}</p>
 
       {/* Details tree */}
       {details && Object.keys(details).length > 0 && (
@@ -80,7 +80,7 @@ export function EnvelopePanel({ envelope, className }: EnvelopePanelProps) {
           <summary className="cursor-pointer select-none text-xs text-white/40 hover:text-white/60">
             Details ▸
           </summary>
-          <pre className="mt-2 overflow-x-auto rounded bg-black/30 p-3 text-xs text-white/60 whitespace-pre-wrap">
+          <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-all rounded bg-black/30 p-3 text-xs text-white/60">
             {JSON.stringify(details, null, 2)}
           </pre>
         </details>

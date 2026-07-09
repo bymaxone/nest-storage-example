@@ -11,10 +11,10 @@ import { useTenantsList, useTenantObjects, useTenantUpload, useTenantClear } fro
 vi.mock('@/lib/api-client', () => ({
   apiGet: vi.fn(),
   apiDelete: vi.fn(),
-  apiPostForm: vi.fn(),
+  apiPost: vi.fn(),
 }))
 
-import { apiGet, apiDelete, apiPostForm } from '@/lib/api-client'
+import { apiGet, apiDelete, apiPost } from '@/lib/api-client'
 
 function wrapper() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -23,14 +23,23 @@ function wrapper() {
   }
 }
 
-const uploadResult = {
-  key: 'tenant-a/uploads/file.png',
-  bucket: 'vault',
-  etag: '"abc"',
-  contentType: 'image/png',
-  publicUrl: 'http://localhost:9000/vault/tenant-a/uploads/file.png',
-  multipart: false,
-  fromIdempotencyCache: false,
+const uploadResponse = {
+  tenant: 'alpha',
+  key: 'alpha/files/uuid.png',
+  fullKey: 'storage-example/alpha/files/uuid.png',
+  result: {
+    key: 'storage-example/alpha/files/uuid.png',
+    bucket: 'vault',
+    etag: '"abc"',
+    contentType: 'text/plain',
+    publicUrl: 'http://localhost:9000/vault/storage-example/alpha/files/uuid.png',
+    multipart: false,
+    fromIdempotencyCache: false,
+  },
+}
+
+function makeFile(name = 'file.png') {
+  return new File(['data'], name, { type: 'image/png' })
 }
 
 describe('useTenantsList', () => {
@@ -71,27 +80,108 @@ describe('useTenantObjects', () => {
 })
 
 describe('useTenantUpload', () => {
-  const mockPostForm = vi.mocked(apiPostForm)
-  beforeEach(() => mockPostForm.mockReset())
+  const mockPost = vi.mocked(apiPost)
+  beforeEach(() => mockPost.mockReset())
 
-  it('posts FormData to /tenants/:tenant/upload', async () => {
-    mockPostForm.mockResolvedValueOnce(uploadResult)
-    const { result } = renderHook(() => useTenantUpload(), { wrapper: wrapper() })
-    const file = new File(['data'], 'file.png', { type: 'image/png' })
-    await act(async () => {
-      await result.current.mutateAsync({ tenant: 'alpha', file })
+  it('posts a JSON body to /tenants/:tenant/upload', async () => {
+    let capturedBody: unknown
+    mockPost.mockImplementation((_path: string, body?: unknown) => {
+      capturedBody = body
+      return Promise.resolve(uploadResponse)
     })
-    expect(mockPostForm).toHaveBeenCalledWith('/tenants/alpha/upload', expect.any(FormData))
+    const { result } = renderHook(() => useTenantUpload(), { wrapper: wrapper() })
+    await act(async () => {
+      await result.current.mutateAsync({ tenant: 'alpha', file: makeFile() })
+    })
+    expect(mockPost).toHaveBeenCalledWith('/tenants/alpha/upload', expect.any(Object))
+    // The dropped file's text becomes `content`; its extension is derived as a slug.
+    expect(capturedBody).toEqual({ category: 'files', content: 'data', extension: 'png' })
+  })
+
+  // Scenario: a file with no dot in its name has no extension to derive, so the
+  // hook must send the safe `'txt'` fallback rather than an empty slug.
+  it('falls back to a safe extension for files without a valid extension', async () => {
+    let capturedBody: { extension?: string } | undefined
+    mockPost.mockImplementation((_path: string, body?: unknown) => {
+      capturedBody = body as { extension?: string }
+      return Promise.resolve(uploadResponse)
+    })
+    const { result } = renderHook(() => useTenantUpload(), { wrapper: wrapper() })
+    await act(async () => {
+      await result.current.mutateAsync({ tenant: 'alpha', file: makeFile('noext') })
+    })
+    expect(capturedBody?.extension).toBe('txt')
+  })
+
+  it('falls back to placeholder content for an empty file', async () => {
+    let capturedBody: { content?: string } | undefined
+    mockPost.mockImplementation((_path: string, body?: unknown) => {
+      capturedBody = body as { content?: string }
+      return Promise.resolve(uploadResponse)
+    })
+    const { result } = renderHook(() => useTenantUpload(), { wrapper: wrapper() })
+    const emptyFile = new File([], 'blank.txt', { type: 'text/plain' })
+    await act(async () => {
+      await result.current.mutateAsync({ tenant: 'alpha', file: emptyFile })
+    })
+    // An empty body would be rejected by the endpoint's min(1) rule, so the hook
+    // substitutes a non-empty placeholder derived from the file name.
+    expect(capturedBody?.content).toBe('demo upload blank.txt')
+  })
+
+  // Scenario: the endpoint caps the text body at 64 KiB, so an oversized file is
+  // truncated to exactly the byte limit before it is sent.
+  it('truncates the content to the 64 KiB limit', async () => {
+    let capturedBody: { content?: string } | undefined
+    mockPost.mockImplementation((_path: string, body?: unknown) => {
+      capturedBody = body as { content?: string }
+      return Promise.resolve(uploadResponse)
+    })
+    const { result } = renderHook(() => useTenantUpload(), { wrapper: wrapper() })
+    const bigFile = new File(['a'.repeat(70_000)], 'big.txt', { type: 'text/plain' })
+    await act(async () => {
+      await result.current.mutateAsync({ tenant: 'alpha', file: bigFile })
+    })
+    expect(capturedBody?.content).toHaveLength(65_536)
+  })
+
+  // Scenario: a non-alphanumeric character before the extension makes it fail the
+  // slug pattern, so the hook must reject it and fall back to `'txt'`.
+  it('rejects a non-slug extension with leading junk, falling back to txt', async () => {
+    let capturedBody: { extension?: string } | undefined
+    mockPost.mockImplementation((_path: string, body?: unknown) => {
+      capturedBody = body as { extension?: string }
+      return Promise.resolve(uploadResponse)
+    })
+    const { result } = renderHook(() => useTenantUpload(), { wrapper: wrapper() })
+    await act(async () => {
+      await result.current.mutateAsync({ tenant: 'alpha', file: makeFile('weird.!pdf') })
+    })
+    expect(capturedBody?.extension).toBe('txt')
+  })
+
+  // Scenario: a non-alphanumeric character after the extension also breaks the
+  // slug pattern, guarding the trailing-junk branch alongside the leading one.
+  it('rejects a non-slug extension with trailing junk, falling back to txt', async () => {
+    let capturedBody: { extension?: string } | undefined
+    mockPost.mockImplementation((_path: string, body?: unknown) => {
+      capturedBody = body as { extension?: string }
+      return Promise.resolve(uploadResponse)
+    })
+    const { result } = renderHook(() => useTenantUpload(), { wrapper: wrapper() })
+    await act(async () => {
+      await result.current.mutateAsync({ tenant: 'alpha', file: makeFile('weird.pdf!') })
+    })
+    expect(capturedBody?.extension).toBe('txt')
   })
 
   it('encodes special characters in tenant name', async () => {
-    mockPostForm.mockResolvedValueOnce(uploadResult)
+    mockPost.mockResolvedValueOnce(uploadResponse)
     const { result } = renderHook(() => useTenantUpload(), { wrapper: wrapper() })
-    const file = new File(['data'], 'file.png', { type: 'image/png' })
     await act(async () => {
-      await result.current.mutateAsync({ tenant: 'tenant/a', file })
+      await result.current.mutateAsync({ tenant: 'tenant/a', file: makeFile() })
     })
-    expect(mockPostForm).toHaveBeenCalledWith('/tenants/tenant%2Fa/upload', expect.any(FormData))
+    expect(mockPost).toHaveBeenCalledWith('/tenants/tenant%2Fa/upload', expect.any(Object))
   })
 })
 
@@ -118,13 +208,13 @@ describe('useTenantClear', () => {
   })
 })
 
-describe('tenant form fields, cache invalidation, and query keys', () => {
+describe('tenant cache invalidation and query keys', () => {
   const mockGet = vi.mocked(apiGet)
-  const mockPostForm = vi.mocked(apiPostForm)
+  const mockPost = vi.mocked(apiPost)
   const mockDelete = vi.mocked(apiDelete)
   beforeEach(() => {
     mockGet.mockReset()
-    mockPostForm.mockReset()
+    mockPost.mockReset()
     mockDelete.mockReset()
   })
 
@@ -139,30 +229,13 @@ describe('tenant form fields, cache invalidation, and query keys', () => {
     return { invalidate, Wrap }
   }
 
-  // Scenario: the tenant upload appends the file under the exact 'file' field.
-  it('appends the file under the "file" field', async () => {
-    let form: FormData | undefined
-    mockPostForm.mockImplementation((_p: string, f: FormData) => {
-      form = f
-      return Promise.resolve(uploadResult)
-    })
-    const { Wrap } = clientWithSpy()
-    const { result } = renderHook(() => useTenantUpload(), { wrapper: Wrap })
-    const file = new File(['data'], 'file.png', { type: 'image/png' })
-    await act(async () => {
-      await result.current.mutateAsync({ tenant: 'alpha', file })
-    })
-    expect(form?.get('file')).toBeInstanceOf(File)
-  })
-
   // Scenario: a tenant upload invalidates the per-tenant cache key ['tenants', tenant].
   it('invalidates ["tenants", tenant] after a tenant upload', async () => {
-    mockPostForm.mockResolvedValueOnce(uploadResult)
+    mockPost.mockResolvedValueOnce(uploadResponse)
     const { invalidate, Wrap } = clientWithSpy()
     const { result } = renderHook(() => useTenantUpload(), { wrapper: Wrap })
-    const file = new File(['data'], 'file.png', { type: 'image/png' })
     await act(async () => {
-      await result.current.mutateAsync({ tenant: 'alpha', file })
+      await result.current.mutateAsync({ tenant: 'alpha', file: makeFile() })
     })
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['tenants', 'alpha'] })
   })

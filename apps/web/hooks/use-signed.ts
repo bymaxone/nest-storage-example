@@ -12,20 +12,26 @@ import { apiPost } from '@/lib/api-client'
 /** Response from POST /signed/download-url. */
 export interface DownloadUrlResponse {
   url: string
+  method: 'GET'
+  requiredHeaders: Record<string, string>
   expiresAt: string
-  requestedTtl: number
-  effectiveTtl: number
+  requestedTtlSeconds: number
+  effectiveTtlSeconds: number
+  clamped: boolean
+  maxTtlSeconds: number
 }
 
 /** Response from POST /signed/upload-url. */
 export interface UploadUrlResponse {
   url: string
-  expiresAt: string
   key: string
   requiredHeaders: Record<string, string>
   method: 'PUT'
-  requestedTtl: number
-  effectiveTtl: number
+  expiresAt: string
+  requestedTtlSeconds: number
+  effectiveTtlSeconds: number
+  clamped: boolean
+  maxTtlSeconds: number
 }
 
 /** One part URL entry from a multipart presign response. */
@@ -44,7 +50,8 @@ export interface MultipartUrlsResponse {
 
 /** Response from POST /signed/confirm. */
 export interface ConfirmResult {
-  exists: boolean
+  confirmed: boolean
+  key: string
   metadata?: {
     key: string
     bucket: string
@@ -53,7 +60,15 @@ export interface ConfirmResult {
     etag: string
     lastModified: string
   }
-  scanVerdict?: string
+  scan?: {
+    status: string
+  }
+  checks?: {
+    sizeWithinPolicy: boolean
+    mimeAllowed: boolean
+    scanClean: boolean
+  }
+  note?: string
 }
 
 /** Parameters for issuing a download URL. */
@@ -64,9 +79,10 @@ export interface DownloadUrlParams {
   responseContentDisposition?: string
 }
 
-/** Parameters for issuing an upload URL. */
+/** Parameters for issuing an upload URL. The server composes the object key
+ * from `category` + a generated UUID and returns it as `key`. */
 export interface UploadUrlParams {
-  key: string
+  category: string
   contentType: string
   ttlSeconds?: number
   maxSizeBytes?: number
