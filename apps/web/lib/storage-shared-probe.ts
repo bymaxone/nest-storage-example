@@ -16,6 +16,7 @@ import {
   DEFAULT_VIDEO_MIME_WHITELIST,
   MAX_SIGNED_URL_TTL_SECONDS,
   STORAGE_ERROR_CODES,
+  type SignedUrlResult,
   type UploadResult,
 } from '@bymax-one/nest-storage/shared'
 
@@ -43,3 +44,14 @@ export const sharedSubpathResolutionProbe = {
  * @returns the same result unchanged.
  */
 export const describeUploadResult = (result: UploadResult): UploadResult => result
+
+/**
+ * References the shared `SignedUrlResult` type in both parameter and return
+ * position so the compiler proves the type export resolves from `./shared`. The
+ * dashboard consumes the over-the-wire JSON variant of this shape (dates and
+ * TTL fields serialized), so the canonical library type is anchored here rather
+ * than at a wiring site.
+ * @param result a signed URL result described by the shared contract.
+ * @returns the same result unchanged.
+ */
+export const describeSignedUrlResult = (result: SignedUrlResult): SignedUrlResult => result
