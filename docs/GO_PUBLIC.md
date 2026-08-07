@@ -26,15 +26,15 @@ gh repo edit bymaxone/nest-storage-example --visibility public --accept-visibili
 
 Two workflows stay dormant while the repo is private and begin running once it is public:
 
-- **CodeQL** (`.github/workflows/codeql.yml`) — a caller of the org's reusable analysis in
+- **CodeQL** (`.github/workflows/codeql.yml`); a caller of the org's reusable analysis in
   `bymaxone/.github`, which resolves the repository's visibility through the API rather than the event
   payload, so the gate also holds on the weekly run. It uses `github/codeql-action`, which is
   GitHub-owned and permitted by the org Actions policy, and activates cleanly on the flip. Its
   `Repository visibility` job runs in both states; only the analysis waits for public.
-- **OpenSSF Scorecard** (`.github/workflows/scorecard.yml`) — publishes supply-chain posture to the
+- **OpenSSF Scorecard** (`.github/workflows/scorecard.yml`); publishes supply-chain posture to the
   Security tab.
 
-## ⚠️ Operator action item — Scorecard is a third-party action
+## ⚠️ Operator action item; Scorecard is a third-party action
 
 `scorecard.yml` uses **`ossf/scorecard-action`**, which is a **third-party** action. This org's
 GitHub Actions policy currently permits **only GitHub-owned and verified actions** (the
@@ -42,7 +42,7 @@ GitHub Actions policy currently permits **only GitHub-owned and verified actions
 **blocked** from running until an operator does one of the following:
 
 1. **Allowlist it.** Add `ossf/scorecard-action@*` to the allowed-actions patterns in the
-   organization (or repository) Actions settings — `Settings → Actions → General → Allowed actions`,
+   organization (or repository) Actions settings; `Settings → Actions → General → Allowed actions`,
    or via the org policy API. `ossf/scorecard-action` is a well-known OpenSSF action, but it is still
    third-party, so it must be explicitly allowed.
 2. **Or adapt/remove the workflow.** Drop `scorecard.yml` (or replace the Scorecard step with a
