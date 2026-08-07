@@ -28,7 +28,7 @@ Two workflows stay dormant while the repo is private and begin running once it i
 
 - **CodeQL** (`.github/workflows/codeql.yml`); a caller of the org's reusable analysis in
   `bymaxone/.github`, which resolves the repository's visibility through the API rather than the event
-  payload, so the gate also holds on the weekly run. It uses `github/codeql-action`, which is
+  payload, so the answer is the same on every trigger. It uses `github/codeql-action`, which is
   GitHub-owned and permitted by the org Actions policy, and activates cleanly on the flip. Its
   `Repository visibility` job runs in both states; only the analysis waits for public.
 - **OpenSSF Scorecard** (`.github/workflows/scorecard.yml`); publishes supply-chain posture to the

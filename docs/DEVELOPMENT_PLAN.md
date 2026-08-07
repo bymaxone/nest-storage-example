@@ -100,7 +100,7 @@ Applies to every phase; the task files repeat the load-bearing ones per task.
 9. **CI from day one:** the `ci` workflow (lint, typecheck, format) exists from P0 and every later
    job joins incrementally; **CodeQL and OpenSSF Scorecard run conditionally**
    (CodeQL through the org's reusable analysis, Scorecard through
-   `if: ${{ !github.event.repository.private }}`) so they are inert while the repository is
+   `if: ${{ !github.event.repository.private }}`) so they produce no findings while the repository is
    private and activate on the public flip.
 10. **No placeholders:** no `.gitkeep`, no empty directories, no dead scaffolding.
 
