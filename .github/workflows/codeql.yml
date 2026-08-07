@@ -1,8 +1,8 @@
-# CodeQL static analysis for JavaScript/TypeScript.
-# This workflow is guarded by a visibility check: it runs only when the repository is public.
-# It will activate automatically when the repository is flipped from private to public,
-# satisfying the requirement of having security scanning from day one without noise while private.
-
+# CodeQL — thin caller of the org-wide reusable analysis (bymaxone/.github).
+#
+# The whole definition, including the public-repository gate that decides
+# whether scanning may run at all, lives in bymaxone/.github so the licensing
+# rule exists once rather than in every repository that copies it.
 name: CodeQL
 
 on:
@@ -10,34 +10,21 @@ on:
     branches: [main]
   pull_request:
   schedule:
-    # Run weekly on Sunday at 03:00 UTC to catch newly published CVEs
     - cron: '0 3 * * 0'
 
-permissions:
-  contents: read
-
 jobs:
-  analyze:
-    name: CodeQL analyze
-    runs-on: ubuntu-latest
-    if: ${{ !github.event.repository.private }}
+  # Job id is the convention across the org: it prefixes the reported check,
+  # so every repo shows `codeql / Analyze (<language>)` under the same name.
+  codeql:
+    # Declared on the calling job, which is the only place that reaches the
+    # called workflow: a job that sets its own permissions replaces the
+    # workflow-level set rather than intersecting with it, and a called
+    # workflow cannot be granted more than its caller holds. Leaving this
+    # block out and relying on a workflow-level `contents: read` is what
+    # made the first attempt fail to start: security-events: write, which
+    # uploading SARIF requires, was above the ceiling the job had inherited.
     permissions:
       contents: read
       security-events: write
       actions: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-        with:
-          persist-credentials: false
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@411c4c9a36b3fca4d674f06b6396b2c6d23522c6 # v3.36.3
-        with:
-          languages: javascript-typescript
-          build-mode: none
-
-      - name: Perform CodeQL analysis
-        uses: github/codeql-action/analyze@411c4c9a36b3fca4d674f06b6396b2c6d23522c6 # v3.36.3
-        with:
-          category: '/language:javascript-typescript'
+    uses: bymaxone/.github/.github/workflows/codeql.yml@v1
