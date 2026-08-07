@@ -808,7 +808,8 @@ Every `it()` carries a scenario comment. Suites run sequentially with bounded wo
 - **CI from day one** (Phase 0): `lint`, `typecheck`, `format:check`, then `test:cov`, `e2e`,
   `web-build`, `mutation`, `export-usage` join as their phases land, each incremental-safe.
 - **Public-only jobs are conditional**: CodeQL and OpenSSF Scorecard workflows run behind
-  `if: ${{ !github.event.repository.private }}` so they are inert while the repo is private and
+  a visibility gate — CodeQL through the org's reusable analysis, Scorecard through
+  `if: ${{ !github.event.repository.private }}` — so they are inert while the repo is private and
   activate automatically on the visibility flip. Secret scanning and dependency review run
   regardless.
 - Conventional Commits; branch names `feat/phase-NN-<slug>` created with `git switch -c`; one PR

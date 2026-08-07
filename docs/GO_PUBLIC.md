@@ -24,11 +24,13 @@ gh repo edit bymaxone/nest-storage-example --visibility public --accept-visibili
 
 ## What activates on the flip
 
-Two workflows are guarded by `if: ${{ !github.event.repository.private }}` and stay dormant while the
-repo is private. They begin running once it is public:
+Two workflows stay dormant while the repo is private and begin running once it is public:
 
-- **CodeQL** (`.github/workflows/codeql.yml`) — uses `github/codeql-action`, which is GitHub-owned and
-  permitted by the org Actions policy. It activates cleanly on the flip.
+- **CodeQL** (`.github/workflows/codeql.yml`) — a caller of the org's reusable analysis in
+  `bymaxone/.github`, which resolves the repository's visibility through the API rather than the event
+  payload, so the gate also holds on the weekly run. It uses `github/codeql-action`, which is
+  GitHub-owned and permitted by the org Actions policy, and activates cleanly on the flip. Its
+  `Repository visibility` job runs in both states; only the analysis waits for public.
 - **OpenSSF Scorecard** (`.github/workflows/scorecard.yml`) — publishes supply-chain posture to the
   Security tab.
 
